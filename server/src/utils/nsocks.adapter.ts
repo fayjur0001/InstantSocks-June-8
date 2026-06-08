@@ -216,11 +216,13 @@ function mapSearchProxy(raw: Record<string, unknown>): NsocksProxyItem {
     speed: speedStr,
     price: Number(raw.price ?? 0),
     added: addedStr,
+    // pbl_black বাদ: PBL = ISP নিজের dynamic IP range block (outgoing mail policy only)
+    // প্রায় সব residential/ISP proxy PBL-এ থাকে — actual quality indicator না
+    // NSocks.net নিজেও এগুলো blacklisted দেখায় না
     blacklisted:
-      raw.sbl_black === "1" ||
-      raw.css_black === "1" ||
-      raw.xbl_black === "1" ||
-      raw.pbl_black === "1",
+      raw.sbl_black === "1" ||   // Spamhaus SBL — spam source
+      raw.css_black === "1" ||   // Spamhaus CSS — snowshoe spam
+      raw.xbl_black === "1",     // Exploits Block List — infected machine
     connectionString: `socks5://${raw.sock_real_ip ?? id}`,
     zone: raw.time_zone ? String(raw.time_zone) : undefined,
     usage: usageStr,

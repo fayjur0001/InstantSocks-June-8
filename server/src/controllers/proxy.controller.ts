@@ -717,22 +717,17 @@ export async function renewProxy(req: Request, res: Response) {
         return null;
       }
 
+      // INSERT না — NSocks-এ traffic renew হয়, DB-তে নতুন row নয়।
+      // নতুন INSERT করলে getBalance() ওই price আবার deduct করে (double charge)।
       const [row] = await tx
-        .insert(Socks5ProxyTransactionModel)
-        .values({
-          userId,
-          port: existing.port,
-          note: existing.note,
-          originalPrice: existing.originalPrice,
-          price: existing.price,
-          country: existing.country,
-          ip: existing.ip,
-          state: existing.state,
-          city: existing.city,
-          zip: existing.zip,
-          type: existing.type,
-          auth: existing.auth,
-        })
+        .update(Socks5ProxyTransactionModel)
+        .set({ updatedAt: new Date() })
+        .where(
+          and(
+            eq(Socks5ProxyTransactionModel.id, rentalId),
+            eq(Socks5ProxyTransactionModel.userId, userId)
+          )
+        )
         .returning();
 
       return row;
@@ -1072,9 +1067,27 @@ export async function getNsocksHistory(req: Request, res: Response) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function nsocksRefundProxy(req: Request, res: Response) {
   try {
+    const userId = req.payload!.id;
+
     const { historyId } = z
       .object({ historyId: z.number().int().positive() })
       .parse(req.body);
+
+    // ownership verify — User A যেন User B-এর proxy refund না করতে পারে
+    const ownership = await db.query.Socks5ProxyTransactionModel.findFirst({
+      where: (m, { and, eq, like }) =>
+        and(
+          eq(m.userId, userId),
+          like(m.note, `%nsocks_history_id:${historyId}%`)
+        ),
+      columns: { id: true },
+    });
+    if (!ownership) {
+      return res.status(403).json({
+        success: false,
+        message: "Proxy not found or access denied.",
+      });
+    }
 
     const apiKey = await SiteOptions.socks5ProxyAPIKey.get();
     if (!apiKey) {
@@ -1097,9 +1110,27 @@ export async function nsocksRefundProxy(req: Request, res: Response) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function nsocksRenewProxyTraffic(req: Request, res: Response) {
   try {
+    const userId = req.payload!.id;
+
     const { historyId } = z
       .object({ historyId: z.number().int().positive() })
       .parse(req.body);
+
+    // ownership verify
+    const ownership = await db.query.Socks5ProxyTransactionModel.findFirst({
+      where: (m, { and, eq, like }) =>
+        and(
+          eq(m.userId, userId),
+          like(m.note, `%nsocks_history_id:${historyId}%`)
+        ),
+      columns: { id: true },
+    });
+    if (!ownership) {
+      return res.status(403).json({
+        success: false,
+        message: "Proxy not found or access denied.",
+      });
+    }
 
     const apiKey = await SiteOptions.socks5ProxyAPIKey.get();
     if (!apiKey) {
@@ -1122,12 +1153,30 @@ export async function nsocksRenewProxyTraffic(req: Request, res: Response) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function nsocksToggleAutoRenew(req: Request, res: Response) {
   try {
+    const userId = req.payload!.id;
+
     const { historyId, enable } = z
       .object({
         historyId: z.number().int().positive(),
         enable: z.boolean(),
       })
       .parse(req.body);
+
+    // ownership verify
+    const ownership = await db.query.Socks5ProxyTransactionModel.findFirst({
+      where: (m, { and, eq, like }) =>
+        and(
+          eq(m.userId, userId),
+          like(m.note, `%nsocks_history_id:${historyId}%`)
+        ),
+      columns: { id: true },
+    });
+    if (!ownership) {
+      return res.status(403).json({
+        success: false,
+        message: "Proxy not found or access denied.",
+      });
+    }
 
     const apiKey = await SiteOptions.socks5ProxyAPIKey.get();
     if (!apiKey) {

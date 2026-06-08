@@ -163,22 +163,27 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
                     </span>
                   </p>
                 )}
-                {proxy.rating !== undefined && (
-                  <p className="flex justify-between items-center">
-                    <span className="text-[11px] uppercase text-c-slate-500">Rating</span>
-                    <span className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <span
-                          key={star}
-                          className={star <= proxy.rating! ? "text-c-emerald-400" : "text-c-slate-700"}
-                          style={{ fontSize: "13px", lineHeight: 1 }}
-                        >
-                          ★
-                        </span>
-                      ))}
-                    </span>
-                  </p>
-                )}
+                {proxy.rating !== undefined && (() => {
+                  // clamp + round: API range unclear (1-5 or 0-10), float values possible
+                  const MAX_STARS = 5;
+                  const displayRating = Math.min(MAX_STARS, Math.round(Number(proxy.rating)));
+                  return (
+                    <p className="flex justify-between items-center">
+                      <span className="text-[11px] uppercase text-c-slate-500">Rating</span>
+                      <span className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={star <= displayRating ? "text-c-emerald-400" : "text-c-slate-700"}
+                            style={{ fontSize: "13px", lineHeight: 1 }}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </span>
+                    </p>
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-1 gap-y-1 pt-1 border-t border-c-slate-800/40 mt-1">
