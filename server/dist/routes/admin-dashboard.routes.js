@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const dashboard_controller_1 = require("@/controllers/dashboard.controller");
+const auth_middleware_1 = require("@/middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use((0, auth_middleware_1.requireAuth)(["admin", "super admin"]));
+router.get("/dashboard", dashboard_controller_1.getAdminDashboardStats);
+router.get("/statistics", dashboard_controller_1.getAdminStatistics);
+router.get("/statistics/top-users", dashboard_controller_1.getAdminTopUsers);
+router.get("/statistics/summary", dashboard_controller_1.getAdminSummaryBoxes);
+router.get("/statistics/proxy-transactions", dashboard_controller_1.getAdminProxyTransactions);
+exports.default = router;

@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const users_controller_1 = require("@/controllers/users.controller");
+const auth_middleware_1 = require("@/middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use((0, auth_middleware_1.requireAuth)(["admin", "super admin"]));
+router.get("/", users_controller_1.getUsers);
+router.get("/transactions", users_controller_1.getAllTransactions);
+router.patch("/:id/ban", users_controller_1.banUser);
+router.patch("/:id/unban", users_controller_1.unbanUser);
+router.patch("/:id/password", users_controller_1.changePassword);
+router.patch("/:id/role", users_controller_1.changeRole);
+router.put("/:id", users_controller_1.editUser);
+router.post("/:id/add-balance", users_controller_1.addBalance);
+exports.default = router;

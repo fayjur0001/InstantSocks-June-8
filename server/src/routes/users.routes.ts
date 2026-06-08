@@ -1,0 +1,14 @@
+import { Router } from "express";
+import { getUsers, banUser, unbanUser, changePassword, changeRole, editUser, addBalance, getAllTransactions } from "@/controllers/users.controller";
+import { requireAuth } from "@/middleware/auth.middleware";
+const router = Router();
+router.use(requireAuth(["admin", "super admin"]));
+router.get("/", getUsers);
+router.get("/transactions", getAllTransactions);
+router.patch("/:id/ban", banUser);
+router.patch("/:id/unban", unbanUser);
+router.patch("/:id/password", changePassword);
+router.patch("/:id/role", changeRole);
+router.put("/:id", editUser);
+router.post("/:id/add-balance", addBalance);
+export default router;

@@ -1,0 +1,106 @@
+import { Request, Response } from "express";
+import db from "@/db";
+import { NotificationModel } from "@/db/schema";
+import { and, desc, eq, gte, lt } from "drizzle-orm";
+
+// ─── Helper: filter → date range ─────────────────────────────────────────────
+function getFilterRange(filter: string): { from?: Date; to?: Date } {
+  const now = new Date();
+
+  if (filter === "today") {
+    const from = new Date(now);
+    from.setHours(0, 0, 0, 0);
+    return { from };
+  }
+
+  if (filter === "week") {
+    const from = new Date(now);
+    from.setDate(from.getDate() - 7);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(now);
+    to.setHours(0, 0, 0, 0);
+    return { from, to };
+  }
+
+  if (filter === "earlier") {
+    const to = new Date(now);
+    to.setDate(to.getDate() - 7);
+    to.setHours(0, 0, 0, 0);
+    return { to };
+  }
+
+  // "all" — no range
+  return {};
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/notifications?filter=today|week|earlier|all
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getNotifications(req: Request, res: Response) {
+  try {
+    const userId = req.payload!.id;
+    const filter = (req.query.filter as string) || "all";
+    const { from, to } = getFilterRange(filter);
+
+    const conditions = [eq(NotificationModel.userId, userId)];
+    if (from) conditions.push(gte(NotificationModel.createdAt, from));
+    if (to)   conditions.push(lt(NotificationModel.createdAt, to));
+
+    const notifications = await db
+      .select()
+      .from(NotificationModel)
+      .where(and(...conditions))
+      .orderBy(desc(NotificationModel.createdAt))
+      .limit(100);
+
+    res.json({ success: true, data: notifications });
+  } catch (e) {
+    console.error("GET NOTIFICATIONS ERROR:", e);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /api/notifications/read — সব notification isRead = true
+// ─────────────────────────────────────────────────────────────────────────────
+export async function markAllRead(req: Request, res: Response) {
+  try {
+    const userId = req.payload!.id;
+
+    await db
+      .update(NotificationModel)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(NotificationModel.userId, userId),
+          eq(NotificationModel.isRead, false),
+        )
+      );
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error("MARK ALL READ ERROR:", e);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: notification insert করার জন্য — controller থেকে call হবে
+// ─────────────────────────────────────────────────────────────────────────────
+export async function createNotification({
+  userId,
+  type,
+  title,
+  message,
+}: {
+  userId: number;
+  type:    string;
+  title:   string;
+  message: string;
+}) {
+  try {
+    await db.insert(NotificationModel).values({ userId, type, title, message });
+  } catch (e) {
+    console.error("CREATE NOTIFICATION ERROR:", e);
+  }
+}

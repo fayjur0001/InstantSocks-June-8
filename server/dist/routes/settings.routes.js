@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_middleware_1 = require("@/middleware/auth.middleware");
+const settings_controller_1 = require("@/controllers/settings.controller");
+const router = (0, express_1.Router)();
+const adminOnly = (0, auth_middleware_1.requireAuth)(["admin", "super admin"]);
+router.get("/settings", adminOnly, settings_controller_1.getSettings);
+router.put("/settings", adminOnly, settings_controller_1.updateSettings);
+router.get("/payment-api", adminOnly, settings_controller_1.getPaymentApi);
+router.put("/payment-api", adminOnly, settings_controller_1.updatePaymentApi);
+router.get("/products-api", adminOnly, settings_controller_1.getProductsApi);
+router.put("/products-api", adminOnly, settings_controller_1.updateProductsApi);
+router.get("/pricing", adminOnly, settings_controller_1.getPricing);
+router.put("/pricing", adminOnly, settings_controller_1.updatePricing);
+router.get("/callback", adminOnly, settings_controller_1.getCallback);
+router.put("/callback", adminOnly, settings_controller_1.updateCallback);
+exports.default = router;
