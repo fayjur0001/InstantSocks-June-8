@@ -482,9 +482,38 @@ export async function getMyRentals(req: Request, res: Response) {
 
     const total = countRows as number;
 
+    // NSocks history থেকে real-time online status আনো
+    let nsocksHistoryMap: Record<string, { online: number; minsLeft: string }> = {};
+    try {
+      const apiKey = await SiteOptions.socks5ProxyAPIKey.get();
+      if (apiKey) {
+        const historyData = await nsocksGetHistory(apiKey, { paid: 1, count: 100 });
+        for (const h of historyData.proxies) {
+          nsocksHistoryMap[h.historyId] = {
+            online:   h.online,
+            minsLeft: h.minsLeft,
+          };
+        }
+      }
+    } catch {
+      // NSocks history না আসলে DB data দিয়ে চলবে — silent fallback
+    }
+
+    // rentals-এ nsocksOnline ও nsocksMinsLeft যোগ করো
+    const enriched = rentals.map((r) => {
+      const noteMatch = r.note?.match(/nsocks_history_id:(\d+)/);
+      const historyId = noteMatch?.[1];
+      const nsocksStatus = historyId ? nsocksHistoryMap[historyId] : null;
+      return {
+        ...r,
+        nsocksOnline:   nsocksStatus ? nsocksStatus.online   : null,  // 1=online, 0=offline, null=unknown
+        nsocksMinsLeft: nsocksStatus ? nsocksStatus.minsLeft : null,
+      };
+    });
+
     return res.json({
       success: true,
-      rentals,
+      rentals: enriched,
       total,
       totalPage: Math.ceil(total / limit),
     });

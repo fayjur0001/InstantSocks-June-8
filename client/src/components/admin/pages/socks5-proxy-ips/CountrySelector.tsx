@@ -1,4 +1,3 @@
-import { toFlagEmoji } from "@/lib/helpers";
 import { Country, FilterState } from "@/types/admin/socks5-proxy-ips";
 import React from "react";
 
@@ -28,7 +27,14 @@ function CountrySelector({ regionCountries, setActiveCountry, setFilters, setPag
                             : "bg-c-slate-900/30 text-c-slate-500 border-c-slate-800/50 hover:bg-c-slate-800 hover:text-c-slate-300"
                             }`}
                     >
-                        <span className="text-[14px] leading-none">{toFlagEmoji(c.code)}</span>
+                        <img
+                            src={`https://flagcdn.com/16x12/${c.code.toLowerCase()}.png`}
+                            width={16}
+                            height={12}
+                            alt={c.code}
+                            className="inline-block shrink-0"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
                         <span>
                             {c.name} - {c.count}
                         </span>

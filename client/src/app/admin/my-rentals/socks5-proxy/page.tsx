@@ -23,7 +23,7 @@ interface ProxyDisplay {
   port: string;            // internal tracking port
   type: string;
   note: string;
-  status: "Active" | "Expired";
+  status: "Active" | "Offline" | "Expired";
   bought: string;
   price: string;
   connectionString: string;
@@ -39,6 +39,13 @@ function toDisplay(r: RentalItem): ProxyDisplay {
     ? r.ip.split(":")
     : [r.ip, ""];
 
+  // NSocks online status থাকলে সেটা use করো, নাহলে 30-day fallback
+  const nsocksOnline = r.nsocksOnline;
+  const status: "Active" | "Offline" | "Expired" =
+    nsocksOnline === 1 ? "Active"  :
+    nsocksOnline === 0 ? "Offline" :
+    isExpired          ? "Expired" : "Active";
+
   return {
     id: String(r.id),
     ip: proxyIp,           // শুধু IP
@@ -50,7 +57,7 @@ function toDisplay(r: RentalItem): ProxyDisplay {
     port: r.port,          // internal tracking port
     type: r.type,
     note: r.note || "-",
-    status: isExpired ? "Expired" : "Active",
+    status,
     bought: new Date(r.createdAt).toLocaleString(),
     price: `$ ${r.price.toFixed(2)}`,
     connectionString: r.auth,
@@ -218,12 +225,19 @@ export default function AdminMyRentals() {
             <SelectContent className="bg-c-bg-850 border-c-emerald-900/30 text-c-slate-200">
               <SelectItem value="all">STATUS</SelectItem>
               <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Offline">Offline</SelectItem>
               <SelectItem value="Expired">Expired</SelectItem>
             </SelectContent>
           </Select>
         ),
         cell: ({ row }) => (
-          <span className={row.original.status === "Active" ? "text-c-emerald-400 font-semibold text-[12px]" : "text-c-red-400 font-semibold text-[12px]"}>
+          <span className={
+            row.original.status === "Active"
+              ? "text-c-emerald-400 font-semibold text-[12px]"
+              : row.original.status === "Offline"
+              ? "text-c-amber-400 font-semibold text-[12px]"
+              : "text-c-red-400 font-semibold text-[12px]"
+          }>
             {row.original.status}
           </span>
         ),
@@ -293,7 +307,11 @@ export default function AdminMyRentals() {
                 <p><span className="text-c-slate-500 mr-2 uppercase">Type:</span>{selectedProxy.type}</p>
                 <p>
                   <span className="text-c-slate-500 mr-2 uppercase">Status:</span>
-                  <span className={selectedProxy.status === "Active" ? "text-c-emerald-400" : "text-c-red-400"}>
+                  <span className={
+                    selectedProxy.status === "Active"  ? "text-c-emerald-400" :
+                    selectedProxy.status === "Offline" ? "text-c-amber-400"   :
+                                                         "text-c-red-400"
+                  }>
                     {selectedProxy.status}
                   </span>
                 </p>

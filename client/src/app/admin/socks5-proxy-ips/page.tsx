@@ -134,12 +134,14 @@ export default function AdminProxyBrowser() {
           regionCountMap["usa"] = usEntry.count;
         }
 
-        // Build regions with dynamic counts — filter count 0
+        // Build regions with dynamic counts — filter count 0, sort by count desc then alphabetically
         const dynamicRegions: DynamicRegion[] = REGION_ORDER.map((id) => ({
           id,
           label: REGION_LABELS[id] ?? id,
           count: regionCountMap[id] ?? 0,
-        })).filter((r) => r.count > 0);
+        }))
+          .filter((r) => r.count > 0)
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 
         setCountries(dynamicCountries);
         setRegions(dynamicRegions);
@@ -162,10 +164,10 @@ export default function AdminProxyBrowser() {
       try {
         const res = await proxyApi.getStates();
         if (res.success) {
-          // count > 0 এবং sort by count desc
+          // count > 0 এবং sort alphabetically by state name
           const sorted = res.states
             .filter((s) => s.count > 0)
-            .sort((a, b) => b.count - a.count);
+            .sort((a, b) => a.state.localeCompare(b.state));
           setUsaStates(sorted);
         }
       } catch {
@@ -176,12 +178,12 @@ export default function AdminProxyBrowser() {
     })();
   }, [activeRegion]);
 
-  // ── Countries for active region — sorted by count desc ─────────────────────
+  // ── Countries for active region — alphabetically by name ───────────────────
   const regionCountries = useMemo(
     () =>
       countries
         .filter((c) => c.regionId === activeRegion)
-        .sort((a, b) => b.count - a.count),
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [countries, activeRegion]
   );
 

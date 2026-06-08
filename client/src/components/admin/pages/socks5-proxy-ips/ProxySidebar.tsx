@@ -141,7 +141,7 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
                 <p className="flex justify-between"><span className="text-[11px] uppercase text-c-slate-500">ORG</span> <span className="text-c-slate-300 truncate ml-4">{proxy.org}</span></p>
                 <p className="flex justify-between"><span className="text-[11px] uppercase text-c-slate-500">ISP</span> <span className="text-c-slate-300 truncate ml-4">{proxy.isp}</span></p>
                 {proxy.zone && (
-                  <p className="flex justify-between"><span className="text-[11px] uppercase text-c-slate-500">Zone</span> <span className="text-c-slate-300 ml-4">{proxy.zone}</span></p>
+                  <p className="flex justify-between"><span className="text-[11px] uppercase text-c-slate-500">Timezone</span> <span className="text-c-slate-300 ml-4">{proxy.zone}</span></p>
                 )}
               </div>
 

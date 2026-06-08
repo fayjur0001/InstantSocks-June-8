@@ -58,6 +58,9 @@ export interface RentalItem {
   createdAt: string;
   updatedAt: string;
   user?: { id: number; username: string; email: string } | null;
+  // NSocks real-time status — backend getMyRentals() থেকে আসে
+  nsocksOnline?:   number | null;   // 1=online, 0=offline, null=unknown
+  nsocksMinsLeft?: string | null;
 }
 
 export interface ProxyAuthInfo {
