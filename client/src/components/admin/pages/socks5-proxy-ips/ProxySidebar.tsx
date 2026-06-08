@@ -141,7 +141,7 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
                 <p className="flex justify-between"><span className="text-[11px] uppercase text-c-slate-500">ORG</span> <span className="text-c-slate-300 truncate ml-4">{proxy.org}</span></p>
                 <p className="flex justify-between"><span className="text-[11px] uppercase text-c-slate-500">ISP</span> <span className="text-c-slate-300 truncate ml-4">{proxy.isp}</span></p>
                 {proxy.zone && (
-                  <p className="flex justify-between"><span className="text-[11px] uppercase text-c-slate-500">Timezone</span> <span className="text-c-slate-300 ml-4">{proxy.zone}</span></p>
+                  <p className="flex justify-between"><span className="text-[11px] uppercase text-c-slate-500">Zone</span> <span className="text-c-slate-300 ml-4">{proxy.zone}</span></p>
                 )}
               </div>
 
@@ -155,6 +155,30 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
                     {proxy.blacklisted ? "Yes" : "No"}
                   </span>
                 </p>
+                {proxy.udp === true && (
+                  <p className="flex justify-between items-center">
+                    <span className="text-[11px] uppercase text-c-slate-500">UDP</span>
+                    <span className="bg-c-emerald-500/15 text-c-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-c-emerald-500/30 uppercase tracking-wide">
+                      Supported
+                    </span>
+                  </p>
+                )}
+                {proxy.rating !== undefined && (
+                  <p className="flex justify-between items-center">
+                    <span className="text-[11px] uppercase text-c-slate-500">Rating</span>
+                    <span className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className={star <= proxy.rating! ? "text-c-emerald-400" : "text-c-slate-700"}
+                          style={{ fontSize: "13px", lineHeight: 1 }}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </span>
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-y-1 pt-1 border-t border-c-slate-800/40 mt-1">

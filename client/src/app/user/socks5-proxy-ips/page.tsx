@@ -58,6 +58,8 @@ function toProxyItem(p: ProxyListItem): ProxyItem & { originalPrice?: number } {
     blacklisted: p.blacklisted,
     usage: p.usage,
     connectionString: p.connectionString,
+    udp: p.udp,
+    rating: p.rating,
   };
 }
 
@@ -135,14 +137,12 @@ export default function ProxyBrowser() {
           regionCountMap["usa"] = usEntry.count;
         }
 
-        // Build regions with dynamic counts — filter count 0, sort by count desc then alphabetically
+        // Build regions with dynamic counts
         const dynamicRegions: DynamicRegion[] = REGION_ORDER.map((id) => ({
           id,
           label: REGION_LABELS[id] ?? id,
           count: regionCountMap[id] ?? 0,
-        }))
-          .filter((r) => r.count > 0)
-          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)); // count না থাকলে নেই
+        })).filter((r) => r.count > 0); // count 0 হলে দেখাব না
 
         setCountries(dynamicCountries);
         setRegions(dynamicRegions);
@@ -165,10 +165,10 @@ export default function ProxyBrowser() {
       try {
         const res = await proxyApi.getStates();
         if (res.success) {
-          // count > 0 এবং sort alphabetically by state name
+          // count > 0 এবং sort by count desc
           const sorted = res.states
             .filter((s) => s.count > 0)
-            .sort((a, b) => a.state.localeCompare(b.state));
+            .sort((a, b) => b.count - a.count);
           setUsaStates(sorted);
         }
       } catch {
@@ -179,12 +179,12 @@ export default function ProxyBrowser() {
     })();
   }, [activeRegion]);
 
-  // ── Countries for active region — alphabetically by name ───────────────────
+  // ── Countries for active region ─────────────────────────────────────────────
   const regionCountries = useMemo(
     () =>
       countries
         .filter((c) => c.regionId === activeRegion)
-        .sort((a, b) => a.name.localeCompare(b.name)),
+        .sort((a, b) => b.count - a.count),
     [countries, activeRegion]
   );
 

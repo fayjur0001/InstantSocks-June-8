@@ -34,6 +34,8 @@ export interface ProxyItem {
   blacklisted: boolean;
   usage?: string;         // traffic_limit + traffic_price থেকে তৈরি, সবসময় থাকে না
   connectionString: string;
+  udp?: boolean;
+  rating?: number;
 }
 
 export interface FilterState {

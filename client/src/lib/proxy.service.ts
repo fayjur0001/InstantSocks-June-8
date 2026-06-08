@@ -6,6 +6,11 @@ export interface ProxyListParams {
   state?: string;
   page?: number;
   limit?: number;
+  excludeBlacks?: boolean;
+  excludeUsed?: boolean;
+  highSpeed?: boolean;
+  udp?: boolean;
+  sort?: string;
 }
 
 export interface ProxyListItem {
@@ -30,6 +35,8 @@ export interface ProxyListItem {
   blacklisted: boolean;
   usage: string;
   connectionString: string;
+  udp?: boolean;
+  rating?: number;
 }
 
 export interface CartItem {
@@ -58,9 +65,6 @@ export interface RentalItem {
   createdAt: string;
   updatedAt: string;
   user?: { id: number; username: string; email: string } | null;
-  // NSocks real-time status — backend getMyRentals() থেকে আসে
-  nsocksOnline?:   number | null;   // 1=online, 0=offline, null=unknown
-  nsocksMinsLeft?: string | null;
 }
 
 export interface ProxyAuthInfo {
@@ -82,6 +86,24 @@ export interface ProxyState {
   count: number;
 }
 
+// ─── NSocks History Params ────────────────────────────────────────────────────
+
+export interface NsocksHistoryParams {
+  ip?: string;
+  port?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  zip?: string;
+  isp?: string;
+  type?: string;
+  online?: 0 | 1;
+  paid?: 0 | 1;
+  comment?: string;
+  page?: number;
+  count?: number;
+}
+
 // ─── I1 — Proxy List ──────────────────────────────────────────────────────────
 
 export const proxyApi = {
@@ -101,6 +123,11 @@ export const proxyApi = {
     if (params.state) q.set("state", params.state);
     if (params.page) q.set("page", String(params.page));
     if (params.limit) q.set("limit", String(params.limit));
+    if (params.excludeBlacks) q.set("excludeBlacks", "true");
+    if (params.excludeUsed)   q.set("excludeUsed",   "true");
+    if (params.highSpeed)     q.set("highSpeed",      "true");
+    if (params.udp)           q.set("udp",            "true");
+    if (params.sort)          q.set("sort",           params.sort);
     return apiFetch(`/api/proxy/list?${q.toString()}`);
   },
 
@@ -236,6 +263,85 @@ export const proxyApi = {
       method: "POST",
       body: JSON.stringify({ currentPort, newPort }),
     }),
+
+  // ─── NSocks Direct (user) ────────────────────────────────────────────────────
+
+  /**
+   * GET /api/proxy/nsocks-history
+   * User-এর NSocks proxy history আনে।
+   */
+  getNsocksHistory: (params: NsocksHistoryParams = {}): Promise<{
+    success: boolean;
+    data: unknown;
+  }> => {
+    const q = new URLSearchParams();
+    if (params.ip)      q.set("ip",      params.ip);
+    if (params.port)    q.set("port",    params.port);
+    if (params.country) q.set("country", params.country);
+    if (params.state)   q.set("state",   params.state);
+    if (params.city)    q.set("city",    params.city);
+    if (params.zip)     q.set("zip",     params.zip);
+    if (params.isp)     q.set("isp",     params.isp);
+    if (params.type)    q.set("type",    params.type);
+    if (params.online  !== undefined) q.set("online",  String(params.online));
+    if (params.paid    !== undefined) q.set("paid",    String(params.paid));
+    if (params.comment) q.set("comment", params.comment);
+    if (params.page)    q.set("page",    String(params.page));
+    if (params.count)   q.set("count",   String(params.count));
+    return apiFetch(`/api/proxy/nsocks-history?${q.toString()}`);
+  },
+
+  /**
+   * POST /api/proxy/nsocks-refund
+   */
+  nsocksRefund: (historyId: number): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/proxy/nsocks-refund", {
+      method: "POST",
+      body: JSON.stringify({ historyId }),
+    }),
+
+  /**
+   * POST /api/proxy/nsocks-renew-traffic
+   */
+  nsocksRenewTraffic: (historyId: number): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/proxy/nsocks-renew-traffic", {
+      method: "POST",
+      body: JSON.stringify({ historyId }),
+    }),
+
+  /**
+   * POST /api/proxy/nsocks-autorenew
+   */
+  nsocksAutoRenew: (
+    historyId: number,
+    enable: boolean
+  ): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/proxy/nsocks-autorenew", {
+      method: "POST",
+      body: JSON.stringify({ historyId, enable }),
+    }),
+
+  /**
+   * POST /api/proxy/check-risk
+   */
+  checkRisk: (
+    service: "scl" | "ipq",
+    proxyId?: string,
+    ip?: string
+  ): Promise<{ success: boolean; data: unknown }> =>
+    apiFetch("/api/proxy/check-risk", {
+      method: "POST",
+      body: JSON.stringify({ service, proxyId, ip }),
+    }),
+
+  /**
+   * POST /api/proxy/check-blacks
+   */
+  checkBlacks: (proxyId: string): Promise<{ success: boolean; data: unknown }> =>
+    apiFetch("/api/proxy/check-blacks", {
+      method: "POST",
+      body: JSON.stringify({ proxyId }),
+    }),
 };
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
@@ -256,6 +362,11 @@ export const adminProxyApi = {
     if (params.state) q.set("state", params.state);
     if (params.page) q.set("page", String(params.page));
     if (params.limit) q.set("limit", String(params.limit));
+    if (params.excludeBlacks) q.set("excludeBlacks", "true");
+    if (params.excludeUsed)   q.set("excludeUsed",   "true");
+    if (params.highSpeed)     q.set("highSpeed",      "true");
+    if (params.udp)           q.set("udp",            "true");
+    if (params.sort)          q.set("sort",           params.sort);
     return apiFetch(`/api/admin/proxy/ips?${q.toString()}`);
   },
 
@@ -276,4 +387,104 @@ export const adminProxyApi = {
     if (userId) q.set("userId", String(userId));
     return apiFetch(`/api/admin/proxy/all?${q.toString()}`);
   },
+
+  // ─── Admin NSocks Direct ─────────────────────────────────────────────────────
+
+  /**
+   * GET /api/admin/proxy/nsocks-balance
+   */
+  getNsocksBalance: (): Promise<{ success: boolean; data: unknown }> =>
+    apiFetch("/api/admin/proxy/nsocks-balance"),
+
+  /**
+   * GET /api/admin/proxy/nsocks-history
+   */
+  getNsocksHistory: (params: NsocksHistoryParams = {}): Promise<{
+    success: boolean;
+    data: unknown;
+  }> => {
+    const q = new URLSearchParams();
+    if (params.ip)      q.set("ip",      params.ip);
+    if (params.port)    q.set("port",    params.port);
+    if (params.country) q.set("country", params.country);
+    if (params.state)   q.set("state",   params.state);
+    if (params.city)    q.set("city",    params.city);
+    if (params.zip)     q.set("zip",     params.zip);
+    if (params.isp)     q.set("isp",     params.isp);
+    if (params.type)    q.set("type",    params.type);
+    if (params.online  !== undefined) q.set("online",  String(params.online));
+    if (params.paid    !== undefined) q.set("paid",    String(params.paid));
+    if (params.comment) q.set("comment", params.comment);
+    if (params.page)    q.set("page",    String(params.page));
+    if (params.count)   q.set("count",   String(params.count));
+    return apiFetch(`/api/admin/proxy/nsocks-history?${q.toString()}`);
+  },
+
+  /**
+   * POST /api/admin/proxy/nsocks-refund
+   */
+  nsocksRefund: (historyId: number): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/admin/proxy/nsocks-refund", {
+      method: "POST",
+      body: JSON.stringify({ historyId }),
+    }),
+
+  /**
+   * POST /api/admin/proxy/nsocks-renew-traffic
+   */
+  nsocksRenewTraffic: (historyId: number): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/admin/proxy/nsocks-renew-traffic", {
+      method: "POST",
+      body: JSON.stringify({ historyId }),
+    }),
+
+  /**
+   * POST /api/admin/proxy/nsocks-autorenew
+   */
+  nsocksAutoRenew: (
+    historyId: number,
+    enable: boolean
+  ): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/admin/proxy/nsocks-autorenew", {
+      method: "POST",
+      body: JSON.stringify({ historyId, enable }),
+    }),
+
+  /**
+   * POST /api/admin/proxy/check-risk
+   */
+  checkRisk: (
+    service: "scl" | "ipq",
+    proxyId?: string,
+    ip?: string
+  ): Promise<{ success: boolean; data: unknown }> =>
+    apiFetch("/api/admin/proxy/check-risk", {
+      method: "POST",
+      body: JSON.stringify({ service, proxyId, ip }),
+    }),
+
+  /**
+   * POST /api/admin/proxy/check-blacks
+   */
+  checkBlacks: (proxyId: string): Promise<{ success: boolean; data: unknown }> =>
+    apiFetch("/api/admin/proxy/check-blacks", {
+      method: "POST",
+      body: JSON.stringify({ proxyId }),
+    }),
+
+  /**
+   * GET /api/admin/proxy/countries
+   */
+  getCountries: (): Promise<{
+    success: boolean;
+    countries: ProxyCountry[];
+  }> => apiFetch("/api/admin/proxy/countries"),
+
+  /**
+   * GET /api/admin/proxy/states
+   */
+  getStates: (): Promise<{
+    success: boolean;
+    states: ProxyState[];
+  }> => apiFetch("/api/admin/proxy/states"),
 };

@@ -10,7 +10,6 @@ import RegionSelector from "@/components/admin/pages/socks5-proxy-ips/RegionSele
 import CountrySelector from "@/components/admin/pages/socks5-proxy-ips/CountrySelector";
 import TypeFilter from "@/components/admin/pages/socks5-proxy-ips/TypeFilter";
 import { adminProxyApi, proxyApi, type ProxyListItem, type CartItem } from "@/lib/proxy.service";
-import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 
@@ -59,6 +58,8 @@ function toProxyItem(p: ProxyListItem): ProxyItem & { originalPrice?: number } {
     blacklisted: p.blacklisted,
     usage: p.usage,
     connectionString: p.connectionString,
+    udp: p.udp,
+    rating: p.rating,
   };
 }
 
@@ -107,7 +108,7 @@ export default function AdminProxyBrowser() {
     (async () => {
       setLoadingMeta(true);
       try {
-        const res = await proxyApi.getCountries();
+        const res = await adminProxyApi.getCountries();
         if (!res.success) return;
 
         const dynamicCountries: DynamicCountry[] = [];
@@ -134,19 +135,17 @@ export default function AdminProxyBrowser() {
           regionCountMap["usa"] = usEntry.count;
         }
 
-        // Build regions with dynamic counts — filter count 0, sort by count desc then alphabetically
+        // Build regions with dynamic counts — filter count 0
         const dynamicRegions: DynamicRegion[] = REGION_ORDER.map((id) => ({
           id,
           label: REGION_LABELS[id] ?? id,
           count: regionCountMap[id] ?? 0,
-        }))
-          .filter((r) => r.count > 0)
-          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+        })).filter((r) => r.count > 0);
 
         setCountries(dynamicCountries);
         setRegions(dynamicRegions);
       } catch {
-        // silent — empty state দেখাবে
+        toast.error("Failed to load country list");
       } finally {
         setLoadingMeta(false);
       }
@@ -162,12 +161,12 @@ export default function AdminProxyBrowser() {
     (async () => {
       setLoadingStates(true);
       try {
-        const res = await proxyApi.getStates();
+        const res = await adminProxyApi.getStates();
         if (res.success) {
-          // count > 0 এবং sort alphabetically by state name
+          // count > 0 এবং sort by count desc
           const sorted = res.states
             .filter((s) => s.count > 0)
-            .sort((a, b) => a.state.localeCompare(b.state));
+            .sort((a, b) => b.count - a.count);
           setUsaStates(sorted);
         }
       } catch {
@@ -178,12 +177,12 @@ export default function AdminProxyBrowser() {
     })();
   }, [activeRegion]);
 
-  // ── Countries for active region — alphabetically by name ───────────────────
+  // ── Countries for active region — sorted by count desc ─────────────────────
   const regionCountries = useMemo(
     () =>
       countries
         .filter((c) => c.regionId === activeRegion)
-        .sort((a, b) => a.name.localeCompare(b.name)),
+        .sort((a, b) => b.count - a.count),
     [countries, activeRegion]
   );
 
