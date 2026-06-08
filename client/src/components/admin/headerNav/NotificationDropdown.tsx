@@ -64,7 +64,7 @@ const NotificationDropdown = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const { notificationsCount, refreshNotifications } = useAuth();
+  const { user, notificationsCount, refreshNotifications } = useAuth();
 
   // Fetch whenever tab changes or popover opens
   useEffect(() => {
@@ -77,6 +77,33 @@ const NotificationDropdown = () => {
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
   }, [activeTab, open]);
+
+  // Pusher real-time subscription — নতুন notification এলে bell badge refresh হবে
+  useEffect(() => {
+    if (!user) return;
+    const PUSHER_KEY     = process.env.NEXT_PUBLIC_PUSHER_KEY;
+    const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+    if (!PUSHER_KEY || !PUSHER_CLUSTER) return;
+
+    let pusherClient: any;
+    let channel: any;
+
+    (async () => {
+      const PusherJS = (await import("pusher-js")).default;
+      pusherClient = new PusherJS(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
+      channel = pusherClient.subscribe(`user-${user.id}`);
+      channel.bind("revalidate", (data: { page: string; action?: string }) => {
+        if (data.page === "/notifications" && data.action === "notification") {
+          refreshNotifications();
+        }
+      });
+    })();
+
+    return () => {
+      channel?.unbind_all();
+      pusherClient?.disconnect();
+    };
+  }, [user, refreshNotifications]);
 
   // When popover opens, mark all read and refresh count
   const handleOpen = (isOpen: boolean) => {

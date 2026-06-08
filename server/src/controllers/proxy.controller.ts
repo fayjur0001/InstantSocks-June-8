@@ -12,6 +12,7 @@ import { z } from "zod";
 import getBalance from "@/utils/get-balance";
 import SiteOptions from "@/utils/site-options";
 import { createNotification } from "@/controllers/notification.controller";
+import pusher from "@/utils/pusher";
 import {
   nsocksFetchList,
   nsocksBuyProxy,
@@ -430,13 +431,22 @@ export async function rentProxy(req: Request, res: Response) {
         .json({ success: false, message: "Insufficient balance." });
     }
 
+    const notifTitle   = "Proxy Rented Successfully";
+    const notifMessage = `You have rented ${transactions.length} proxy${
+      transactions.length > 1 ? "s" : ""
+    } for $${totalCost.toFixed(2)}.`;
+
     await createNotification({
       userId,
-      type: "proxy_rent",
-      title: "Proxy Rented Successfully",
-      message: `You have rented ${transactions.length} proxy${
-        transactions.length > 1 ? "s" : ""
-      } for $${totalCost.toFixed(2)}.`,
+      type:    "proxy_rent",
+      title:   notifTitle,
+      message: notifMessage,
+    });
+    // Bell badge real-time update
+    await pusher({
+      page:    "/notifications",
+      to:      `user-${userId}`,
+      payload: { action: "notification", title: notifTitle, message: notifMessage },
     });
 
     return res.status(201).json({

@@ -226,11 +226,19 @@ export async function updateAdminTransaction(req: Request, res: Response) {
     }
 
     if (status === "approved") {
+      const notifTitle   = "Top-Up Approved";
+      const notifMessage = `Your deposit of $${updated.amount.toFixed(2)} has been approved.`;
       await createNotification({
         userId:  updated.userId,
         type:    "topup_approved",
-        title:   "Top-Up Approved",
-        message: `Your deposit of $${updated.amount.toFixed(2)} has been approved.`,
+        title:   notifTitle,
+        message: notifMessage,
+      });
+      // Bell badge real-time update — user channel এ notification action fire করো
+      await pusher({
+        page:    "/notifications",
+        to:      `user-${updated.userId}`,
+        payload: { action: "notification", title: notifTitle, message: notifMessage },
       });
     }
 
@@ -617,11 +625,18 @@ export async function topUpCallback(req: Request, res: Response) {
 
         if (isConfirmed && updated.length > 0) {
           const fund = updated[0];
+          const notifTitle   = "Top-Up Approved";
+          const notifMessage = `Your deposit of $${fund.amount.toFixed(2)} has been approved.`;
           await createNotification({
             userId:  fund.userId,
             type:    "topup_approved",
-            title:   "Top-Up Approved",
-            message: `Your deposit of $${fund.amount.toFixed(2)} has been approved.`,
+            title:   notifTitle,
+            message: notifMessage,
+          });
+          await pusher({
+            page:    "/notifications",
+            to:      `user-${fund.userId}`,
+            payload: { action: "notification", title: notifTitle, message: notifMessage },
           });
         }
 
@@ -643,11 +658,18 @@ export async function topUpCallback(req: Request, res: Response) {
 
         if (isConfirmed && updated.length > 0) {
           const fund = updated[0];
+          const notifTitle   = "Top-Up Approved";
+          const notifMessage = `Your deposit of $${fund.amount.toFixed(2)} has been approved.`;
           await createNotification({
             userId:  fund.userId,
             type:    "topup_approved",
-            title:   "Top-Up Approved",
-            message: `Your deposit of $${fund.amount.toFixed(2)} has been approved.`,
+            title:   notifTitle,
+            message: notifMessage,
+          });
+          await pusher({
+            page:    "/notifications",
+            to:      `user-${fund.userId}`,
+            payload: { action: "notification", title: notifTitle, message: notifMessage },
           });
         }
 
@@ -668,11 +690,18 @@ export async function topUpCallback(req: Request, res: Response) {
 
         if (isConfirmed && updated.length > 0) {
           const fund = updated[0];
+          const notifTitle   = "Top-Up Approved";
+          const notifMessage = `Your deposit of $${fund.amount.toFixed(2)} has been approved.`;
           await createNotification({
             userId:  fund.userId,
             type:    "topup_approved",
-            title:   "Top-Up Approved",
-            message: `Your deposit of $${fund.amount.toFixed(2)} has been approved.`,
+            title:   notifTitle,
+            message: notifMessage,
+          });
+          await pusher({
+            page:    "/notifications",
+            to:      `user-${fund.userId}`,
+            payload: { action: "notification", title: notifTitle, message: notifMessage },
           });
         }
 
