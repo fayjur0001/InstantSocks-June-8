@@ -26,6 +26,7 @@ export interface TicketMessage {
   message: string;
   createdAt: string;
   seenByOther: boolean;
+  senderInfo: { agentSerial: number | null } | null;
 }
 
 export interface CreateTicketPayload {

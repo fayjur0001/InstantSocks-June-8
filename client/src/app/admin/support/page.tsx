@@ -136,25 +136,14 @@ export default function AdminSupportPage() {
   }, [user, fetchTickets]);
 
   // --- Action handlers ---
-  const handleCloseOrDelete = async (ticketId: string, isClosed: boolean) => {
-    if (isClosed) {
-      if (!confirm("Permanently delete this ticket? This cannot be undone.")) return;
-      try {
-        await supportApi.deleteTicket(Number(ticketId));
-        toast.success("Ticket deleted.");
-        fetchTickets();
-      } catch {
-        toast.error("Failed to delete ticket.");
-      }
-    } else {
-      if (!confirm("Close this ticket?")) return;
-      try {
-        await supportApi.closeTicket(Number(ticketId));
-        toast.success("Ticket closed.");
-        fetchTickets();
-      } catch {
-        toast.error("Failed to close ticket.");
-      }
+  const handleDelete = async (ticketId: string) => {
+    if (!confirm("Permanently delete this ticket? This cannot be undone.")) return;
+    try {
+      await supportApi.deleteTicket(Number(ticketId));
+      toast.success("Ticket deleted.");
+      fetchTickets();
+    } catch {
+      toast.error("Failed to delete ticket.");
     }
   };
 
@@ -234,13 +223,9 @@ export default function AdminSupportPage() {
           <Button
             variant="outline"
             size="icon"
-            title={row.original.isClosed ? "Delete Ticket" : "Close Ticket"}
-            className={`h-8 w-8 border-c-slate-700 bg-transparent hover:border-c-red-900 ${
-              row.original.isClosed
-                ? "text-c-red-400 hover:bg-red-950 hover:text-c-red-300"
-                : "text-c-orange-400 hover:bg-orange-950 hover:text-c-orange-300"
-            }`}
-            onClick={() => handleCloseOrDelete(row.original.id, row.original.isClosed)}
+            title="Delete Ticket"
+            className="h-8 w-8 border-c-slate-700 bg-transparent text-c-red-400 hover:bg-red-950 hover:border-c-red-900 hover:text-c-red-300"
+            onClick={() => handleDelete(row.original.id)}
           >
             <Trash2 className="w-4 h-4" />
           </Button>

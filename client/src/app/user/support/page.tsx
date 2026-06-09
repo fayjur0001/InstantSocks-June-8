@@ -15,9 +15,21 @@ import { useAuth } from "@/hooks/useAuth";
 interface SupportTicketRow {
   id: string;
   ticketId: string;
+  category: string;
   subject: string;
   status: "In Progress" | "Completed" | "Open";
 }
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "general": "General",
+  "proxies-issues": "Proxies Issues",
+  "number-sms-issues": "Number/SMS",
+  "devices-issues": "Devices Issues",
+  "payment-billing": "Payment/Billing",
+  "technical": "Technical",
+  "feedback": "Feedback",
+  "others": "Others",
+};
 
 function toUiStatus(ticket: Ticket): "In Progress" | "Completed" | "Open" {
   if (ticket.status === "closed") return "Completed";
@@ -47,6 +59,7 @@ export default function UserSupportPage() {
           res.tickets.map((t: Ticket) => ({
             id: String(t.id),
             ticketId: `TCK-${String(t.id).padStart(5, "0")}`,
+            category: t.category ?? "",
             subject: t.subject,
             status: toUiStatus(t),
           }))
@@ -97,6 +110,21 @@ export default function UserSupportPage() {
           {row.original.ticketId}
         </span>
       ),
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => {
+        const cat = row.original.category;
+        const label = CATEGORY_LABELS[cat] ?? cat ?? "—";
+        return cat ? (
+          <Badge className="rounded-full py-0.5 font-medium shadow-none bg-c-cyan-900/30 text-c-cyan-400 border-none px-4">
+            {label}
+          </Badge>
+        ) : (
+          <span className="text-c-slate-500 text-sm">—</span>
+        );
+      },
     },
     {
       accessorKey: "subject",

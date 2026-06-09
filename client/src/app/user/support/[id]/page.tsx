@@ -159,12 +159,13 @@ export default function UserSupportChatPage() {
         )}
         {messages.map((msg) => {
           const isOwn = String(msg.userId) === String(user?.id);
-          const isAgent = ticket?.agentId !== null && ticket?.agentId !== undefined && String(msg.userId) === String(ticket?.agentId);
-          const agentSerial = ticket?.agentInfo?.agentSerial;
-          const agentLabel = agentSerial !== undefined && agentSerial !== null
-            ? `AGT-${String(agentSerial).padStart(3, "0")}`
-            : "Support Agent";
-          const senderLabel = isAgent ? agentLabel : "User";
+          const isStaffMsg = msg.senderInfo !== null && msg.senderInfo !== undefined;
+          const agentSerial = msg.senderInfo?.agentSerial;
+          const senderLabel = isStaffMsg
+            ? (agentSerial !== undefined && agentSerial !== null
+                ? `AGT-${String(agentSerial).padStart(3, "0")}`
+                : "Support Agent")
+            : "User";
 
           return (
             <div key={msg.id} className={`${isOwn ? "self-end" : "self-start"} max-w-[70%] space-y-2`}>
