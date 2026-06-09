@@ -137,6 +137,10 @@ export default function AdminSupportPage() {
 
   // --- Action handlers ---
   const handleDelete = async (ticketId: string) => {
+    if (user?.role !== "super admin") {
+      toast.error("You cannot delete ticket.");
+      return;
+    }
     if (!confirm("Permanently delete this ticket? This cannot be undone.")) return;
     try {
       await supportApi.deleteTicket(Number(ticketId));
