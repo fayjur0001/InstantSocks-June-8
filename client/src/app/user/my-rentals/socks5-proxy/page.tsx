@@ -68,7 +68,7 @@ function toDisplay(r: RentalItem): ProxyDisplay {
     status,
     bought: new Date(r.createdAt).toLocaleString(),
     price: `$ ${r.price.toFixed(2)}`,
-    connectionString: r.auth,
+    connectionString: r.auth && r.ip ? `socks5://${r.auth}@${r.ip}` : r.auth,
   };
 }
 
