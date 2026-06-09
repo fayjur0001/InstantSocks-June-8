@@ -29,6 +29,10 @@ router.post("/", createTicket);
 router.get("/unclaimed", requireAuth(["support", "admin", "super admin"]), getUnclaimedTickets);
 router.get("/other-tickets", requireAuth(["support", "admin", "super admin"]), getOtherTickets);
 
+// Message edit / delete — static prefix routes MUST come before /:ticketId wildcard
+router.patch("/messages/:messageId", editMessage);
+router.delete("/messages/:messageId", deleteMessage);
+
 // Ticket-specific routes (any authenticated user)
 router.get("/:ticketId", getTicket);
 router.get("/:ticketId/messages", getMessages);
@@ -37,9 +41,5 @@ router.patch("/:ticketId/close", requireAuth(["support", "admin", "super admin"]
 router.patch("/:ticketId/reopen", reopenTicket); // ticket owner + staff উভয়েই reopen করতে পারবে
 router.patch("/:ticketId/claim", requireAuth(["support", "admin", "super admin"]), claimTicket);
 router.delete("/:ticketId", requireAuth(["admin", "super admin"]), deleteTicket);
-
-// Message edit / delete (owner only)
-router.patch("/messages/:messageId", editMessage);
-router.delete("/messages/:messageId", deleteMessage);
 
 export default router;

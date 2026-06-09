@@ -339,6 +339,7 @@ export async function generateNowPayments(req: Request, res: Response) {
       userId,
       walletAddress: res2.pay_address,
       currency: cryptoCurrency,
+      method: "now_payments",
     });
 
     await Promise.all([

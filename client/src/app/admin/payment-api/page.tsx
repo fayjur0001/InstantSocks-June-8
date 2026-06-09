@@ -21,7 +21,7 @@ const buildProviders = (
     initialConfig: {
       apiKey: nowApiKey,
       callbackSecret: nowSecret,
-      callbackUrl: `${HOST_URL}/top-up/callback?method=now-payments&secret=${nowSecret}`,
+      callbackUrl: `${HOST_URL}/api/topup/callback?method=now-payments&secret=${nowSecret}`,
     },
   },
   {
@@ -30,7 +30,7 @@ const buildProviders = (
     initialConfig: {
       apiKey: yaanApiKey,
       callbackSecret: yaanSecret,
-      callbackUrl: `${HOST_URL}/top-up/callback?method=yaan-pay&secret=${yaanSecret}`,
+      callbackUrl: `${HOST_URL}/api/topup/callback?method=yaan-pay&secret=${yaanSecret}`,
     },
   },
   {
@@ -39,7 +39,7 @@ const buildProviders = (
     initialConfig: {
       apiKey: blockApiKey,
       callbackSecret: blockSecret,
-      callbackUrl: `${HOST_URL}/top-up/callback?method=blockonomics&secret=${blockSecret}`,
+      callbackUrl: `${HOST_URL}/api/topup/callback?method=blockonomics&secret=${blockSecret}`,
     },
   },
 ];

@@ -1,11 +1,17 @@
 import db from "@/db";
 import { SiteOptionModel } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 async function get(name: string): Promise<string | null> {
   return db.query.SiteOptionModel.findFirst({ where: (m, { eq }) => eq(m.name, name) }).then((r) => r?.value ?? null);
 }
 async function set(name: string, value: string | null) {
-  await db.insert(SiteOptionModel).values({ value, name }).onConflictDoUpdate({ set: { value }, target: SiteOptionModel.name });
+  const existing = await db.query.SiteOptionModel.findFirst({ where: (m, { eq }) => eq(m.name, name) });
+  if (existing) {
+    await db.update(SiteOptionModel).set({ value }).where(eq(SiteOptionModel.name, name));
+  } else {
+    await db.insert(SiteOptionModel).values({ value, name });
+  }
 }
 
 const mk = (name: string, def: number = 0) => ({

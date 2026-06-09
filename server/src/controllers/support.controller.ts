@@ -23,10 +23,11 @@ export async function editMessage(req: Request, res: Response) {
     const ticket = await db.query.TicketModel.findFirst({ where: (m, { eq }) => eq(m.id, existing.ticketId) });
     if (ticket) {
       const page = `/support/${existing.ticketId}`;
-      await pusher({ page, to: `user-${ticket.userId}` });
+      const notifies = [pusher({ page, to: `user-${ticket.userId}` })];
       if (ticket.agentId && ticket.agentId !== ticket.userId) {
-        await pusher({ page, to: `user-${ticket.agentId}` });
+        notifies.push(pusher({ page, to: `user-${ticket.agentId}` }));
       }
+      await Promise.all(notifies);
     }
     res.json({ success: true });
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
@@ -43,15 +44,18 @@ export async function deleteMessage(req: Request, res: Response) {
     if (!existing) { res.status(404).json({ success: false, message: "Message not found." }); return; }
     if (existing.userId !== userId) { res.status(403).json({ success: false, message: "Access denied." }); return; }
 
+    // FK constraint: seen_by records আগে delete করতে হবে, তারপর message
+    await db.delete(TicketMessageSeenByModel).where(eq(TicketMessageSeenByModel.messageId, messageId));
     await db.delete(TicketMessageModel).where(eq(TicketMessageModel.id, messageId));
 
     const ticket = await db.query.TicketModel.findFirst({ where: (m, { eq }) => eq(m.id, existing.ticketId) });
     if (ticket) {
       const page = `/support/${existing.ticketId}`;
-      await pusher({ page, to: `user-${ticket.userId}` });
+      const notifies = [pusher({ page, to: `user-${ticket.userId}` })];
       if (ticket.agentId && ticket.agentId !== ticket.userId) {
-        await pusher({ page, to: `user-${ticket.agentId}` });
+        notifies.push(pusher({ page, to: `user-${ticket.agentId}` }));
       }
+      await Promise.all(notifies);
     }
     res.json({ success: true });
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
@@ -214,18 +218,19 @@ export async function sendMessage(req: Request, res: Response) {
     await db.update(TicketModel).set(updateFields).where(eq(TicketModel.id, ticketId));
 
     const page = `/support/${ticketId}`;
-    await pusher({ page, to: `user-${ticket.userId}` });
+    const notifies: Promise<void>[] = [pusher({ page, to: `user-${ticket.userId}` })];
     // আগের agent (যদি ভিন্ন কেউ হয়) কে notify করো
     if (ticket.agentId && ticket.agentId !== userId && ticket.agentId !== ticket.userId) {
-      await pusher({ page, to: `user-${ticket.agentId}` });
+      notifies.push(pusher({ page, to: `user-${ticket.agentId}` }));
     }
     // Current replier কে notify করো
     if (isStaff && userId !== ticket.userId) {
-      await pusher({ page, to: `user-${userId}` });
+      notifies.push(pusher({ page, to: `user-${userId}` }));
     }
     // Staff ও admin channel এ notify করো যাতে their ticket list refresh হয়
-    await pusher({ page: "/support/other-tickets", to: "admin" });
-    await pusher({ page: "/support/my-tickets", to: "staff" });
+    notifies.push(pusher({ page: "/support/other-tickets", to: "admin" }));
+    notifies.push(pusher({ page: "/support/my-tickets", to: "staff" }));
+    await Promise.all(notifies);
     res.json({ success: true });
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
 }
@@ -300,14 +305,15 @@ export async function closeTicket(req: Request, res: Response) {
     if (forbidden) { res.status(403).json({ success: false, message: "Access denied." }); return; }
     if (!ticket) { res.status(404).json({ success: false, message: "Ticket not found." }); return; }
     await db.update(TicketModel).set({ status: "closed" }).where(eq(TicketModel.id, ticketId));
-    await pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` });
-    // Agent কেও notify করো
+    const notifies: Promise<void>[] = [
+      pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` }),
+      pusher({ page: "/support/other-tickets", to: "admin" }),
+      pusher({ page: "/support/unclaimed-tickets", to: "staff" }),
+    ];
     if (ticket.agentId) {
-      await pusher({ page: "/support/my-tickets", to: `user-${ticket.agentId}` });
+      notifies.push(pusher({ page: "/support/my-tickets", to: `user-${ticket.agentId}` }));
     }
-    // Admin/staff list refresh
-    await pusher({ page: "/support/other-tickets", to: "admin" });
-    await pusher({ page: "/support/unclaimed-tickets", to: "staff" });
+    await Promise.all(notifies);
     res.json({ success: true });
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
 }
@@ -327,18 +333,18 @@ export async function reopenTicket(req: Request, res: Response) {
       .set({ status: "opened", agentId: requesterId })
       .where(eq(TicketModel.id, ticketId));
 
-    // Ticket owner কে notify করো
-    await pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` });
-    // আগের agent যদি ভিন্ন কেউ হয়, তাকেও notify করো (তার My Tickets থেকে সরে যাবে)
+    const notifies: Promise<void>[] = [
+      pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` }),
+      pusher({ page: "/support/unclaimed-tickets", to: "staff" }),
+      pusher({ page: "/support/other-tickets", to: "admin" }),
+    ];
     if (prevAgentId && prevAgentId !== requesterId && prevAgentId !== ticket.userId) {
-      await pusher({ page: "/support/my-tickets", to: `user-${prevAgentId}` });
+      notifies.push(pusher({ page: "/support/my-tickets", to: `user-${prevAgentId}` }));
     }
-    // Reopen করা agent কে notify করো — তার My Tickets-এ আসবে
     if (requesterId !== ticket.userId) {
-      await pusher({ page: "/support/my-tickets", to: `user-${requesterId}` });
+      notifies.push(pusher({ page: "/support/my-tickets", to: `user-${requesterId}` }));
     }
-    await pusher({ page: "/support/unclaimed-tickets", to: "staff" });
-    await pusher({ page: "/support/other-tickets", to: "admin" });
+    await Promise.all(notifies);
     res.json({ success: true });
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
 }
@@ -354,10 +360,12 @@ export async function claimTicket(req: Request, res: Response) {
     });
     if (!ticket) throw new UnloggingError("Ticket not found.");
     await db.update(TicketModel).set({ agentId }).where(eq(TicketModel.id, ticketId));
-    await pusher({ page: "/support/unclaimed-tickets", to: "staff" });
-    await pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` });
-    await pusher({ page: "/support/my-tickets", to: `user-${agentId}` });
-    await pusher({ page: "/support/other-tickets", to: "admin" });
+    await Promise.all([
+      pusher({ page: "/support/unclaimed-tickets", to: "staff" }),
+      pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` }),
+      pusher({ page: "/support/my-tickets", to: `user-${agentId}` }),
+      pusher({ page: "/support/other-tickets", to: "admin" }),
+    ]);
     res.json({ success: true });
   } catch (e) {
     if (e instanceof UnloggingError) { res.status(400).json({ success: false, message: e.message }); return; }
@@ -383,13 +391,15 @@ export async function deleteTicket(req: Request, res: Response) {
     }
     await db.delete(TicketModel).where(eq(TicketModel.id, ticketId));
 
-    // Notify করো
-    await pusher({ page: "/support/other-tickets", to: "admin" });
-    await pusher({ page: "/support/unclaimed-tickets", to: "staff" });
-    await pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` });
+    const notifies: Promise<void>[] = [
+      pusher({ page: "/support/other-tickets", to: "admin" }),
+      pusher({ page: "/support/unclaimed-tickets", to: "staff" }),
+      pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` }),
+    ];
     if (ticket.agentId) {
-      await pusher({ page: "/support/my-tickets", to: `user-${ticket.agentId}` });
+      notifies.push(pusher({ page: "/support/my-tickets", to: `user-${ticket.agentId}` }));
     }
+    await Promise.all(notifies);
     res.json({ success: true });
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
 }

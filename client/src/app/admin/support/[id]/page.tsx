@@ -91,12 +91,13 @@ export default function AdminSupportChatPage() {
     const trimmed = messageInput.trim();
     if (!trimmed || sending) return;
     setSending(true);
+    setMessageInput("");
     try {
       await supportApi.sendMessage(ticketId, trimmed);
-      setMessageInput("");
       fetchData();
     } catch {
       toast.error("Failed to send message.");
+      setMessageInput(trimmed);
     } finally {
       setSending(false);
     }
@@ -138,12 +139,16 @@ export default function AdminSupportChatPage() {
   const handleEditSave = async (messageId: number) => {
     const trimmed = editingText.trim();
     if (!trimmed) return;
+    const prevMessages = messages;
+    setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, message: trimmed } : m));
+    setEditingId(null);
+    setEditingText("");
     try {
       await supportApi.editMessage(messageId, trimmed);
-      setEditingId(null);
-      setEditingText("");
-      fetchData();
-    } catch { toast.error("Failed to edit message."); }
+    } catch {
+      toast.error("Failed to edit message.");
+      setMessages(prevMessages);
+    }
   };
 
   const handleEditCancel = () => {
@@ -153,10 +158,14 @@ export default function AdminSupportChatPage() {
 
   const handleDeleteMessage = async (messageId: number) => {
     if (!confirm("Delete this message?")) return;
+    const prevMessages = messages;
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
     try {
       await supportApi.deleteMessage(messageId);
-      fetchData();
-    } catch { toast.error("Failed to delete message."); }
+    } catch {
+      toast.error("Failed to delete message.");
+      setMessages(prevMessages);
+    }
   };
 
   const statusLabel = ticket?.status === "closed" ? "Completed" : ticket?.agentId ? "In Progress" : "Open";

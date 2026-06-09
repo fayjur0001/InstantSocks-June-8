@@ -82,12 +82,13 @@ export default function UserSupportChatPage() {
     const trimmed = messageInput.trim();
     if (!trimmed || sending) return;
     setSending(true);
+    setMessageInput("");
     try {
       await supportApi.sendMessage(ticketId, trimmed);
-      setMessageInput("");
       fetchData();
     } catch {
       toast.error("Failed to send message.");
+      setMessageInput(trimmed);
     } finally {
       setSending(false);
     }
