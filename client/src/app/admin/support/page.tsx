@@ -17,11 +17,12 @@ import { useAuth } from "@/hooks/useAuth";
 interface SupportTicketRow {
   id: string;
   ticketId: string;
-  category: "Billing" | "Technical";
+  category: string;
   subject: string;
   status: "In Progress" | "Completed" | "Open";
   tab: "unclaimed" | "mine" | "other";
   agentInfo: { agentSerial: number | null; username: string } | null;
+  isClosed: boolean;
 }
 
 function toUiStatus(ticket: Ticket): "In Progress" | "Completed" | "Open" {
@@ -30,20 +31,16 @@ function toUiStatus(ticket: Ticket): "In Progress" | "Completed" | "Open" {
   return "Open";
 }
 
-function toUiCategory(ticket: Ticket): "Billing" | "Technical" {
-  // category field থাকলে use করো, না থাকলে subject থেকে guess করো
-  const sub = ticket.subject?.toLowerCase() ?? "";
-  if (
-    sub.includes("bill") ||
-    sub.includes("payment") ||
-    sub.includes("subscription") ||
-    sub.includes("invoice") ||
-    sub.includes("charge")
-  ) {
-    return "Billing";
-  }
-  return "Technical";
-}
+const CATEGORY_LABELS: Record<string, string> = {
+  "general": "General",
+  "proxies-issues": "Proxies Issues",
+  "number-sms-issues": "Number/SMS",
+  "devices-issues": "Devices Issues",
+  "payment-billing": "Payment/Billing",
+  "technical": "Technical",
+  "feedback": "Feedback",
+  "others": "Others",
+};
 
 export default function AdminSupportPage() {
   const { user } = useAuth();
@@ -58,11 +55,6 @@ export default function AdminSupportPage() {
     "In Progress": "bg-c-orange-900/30 text-c-orange-400 border-c-orange-800/50",
     Completed: "bg-c-green-tw-900/30 text-c-green-tw-400 border-c-green-tw-800/50",
     Open: "bg-c-blue-900/30 text-c-blue-400 border-c-blue-800/50",
-  };
-
-  const categoryStyles = {
-    Billing: "bg-c-cyan-900/30 text-c-cyan-400 border-none px-4",
-    Technical: "bg-c-orange-900/30 text-c-orange-400 border-none px-4",
   };
 
   // --- Fetch Tickets ---
@@ -84,11 +76,12 @@ export default function AdminSupportPage() {
         rawTickets.map((t: Ticket) => ({
           id: String(t.id),
           ticketId: `TCK-${String(t.id).padStart(5, "0")}`,
-          category: toUiCategory(t),
+          category: t.category ?? "",
           subject: t.subject,
           status: toUiStatus(t),
           tab: activeTab,
           agentInfo: (t as any).agentInfo ?? null,
+          isClosed: t.status === "closed",
         }))
       );
       setPage(1);
@@ -142,15 +135,26 @@ export default function AdminSupportPage() {
     };
   }, [user, fetchTickets]);
 
-  // --- Delete handler ---
-  const handleDelete = async (ticketId: string) => {
-    if (!confirm("Are you sure you want to close this ticket?")) return;
-    try {
-      await supportApi.closeTicket(Number(ticketId));
-      toast.success("Ticket closed successfully.");
-      fetchTickets();
-    } catch {
-      toast.error("Failed to close ticket.");
+  // --- Action handlers ---
+  const handleCloseOrDelete = async (ticketId: string, isClosed: boolean) => {
+    if (isClosed) {
+      if (!confirm("Permanently delete this ticket? This cannot be undone.")) return;
+      try {
+        await supportApi.deleteTicket(Number(ticketId));
+        toast.success("Ticket deleted.");
+        fetchTickets();
+      } catch {
+        toast.error("Failed to delete ticket.");
+      }
+    } else {
+      if (!confirm("Close this ticket?")) return;
+      try {
+        await supportApi.closeTicket(Number(ticketId));
+        toast.success("Ticket closed.");
+        fetchTickets();
+      } catch {
+        toast.error("Failed to close ticket.");
+      }
     }
   };
 
@@ -168,15 +172,17 @@ export default function AdminSupportPage() {
     {
       accessorKey: "category",
       header: "Category",
-      cell: ({ row }) => (
-        <Badge
-          className={`rounded-full py-0.5 font-medium shadow-none ${
-            categoryStyles[row.original.category]
-          }`}
-        >
-          {row.original.category}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const cat = row.original.category;
+        const label = CATEGORY_LABELS[cat] ?? cat ?? "—";
+        return cat ? (
+          <Badge className="rounded-full py-0.5 font-medium shadow-none bg-c-cyan-900/30 text-c-cyan-400 border-none px-4">
+            {label}
+          </Badge>
+        ) : (
+          <span className="text-c-slate-500 text-sm">—</span>
+        );
+      },
     },
     {
       accessorKey: "subject",
@@ -228,9 +234,13 @@ export default function AdminSupportPage() {
           <Button
             variant="outline"
             size="icon"
-            title="Close Ticket"
-            className="h-8 w-8 border-c-slate-700 bg-transparent text-c-red-400 hover:bg-red-950 hover:text-c-red-300 hover:border-c-red-900"
-            onClick={() => handleDelete(row.original.id)}
+            title={row.original.isClosed ? "Delete Ticket" : "Close Ticket"}
+            className={`h-8 w-8 border-c-slate-700 bg-transparent hover:border-c-red-900 ${
+              row.original.isClosed
+                ? "text-c-red-400 hover:bg-red-950 hover:text-c-red-300"
+                : "text-c-orange-400 hover:bg-orange-950 hover:text-c-orange-300"
+            }`}
+            onClick={() => handleCloseOrDelete(row.original.id, row.original.isClosed)}
           >
             <Trash2 className="w-4 h-4" />
           </Button>

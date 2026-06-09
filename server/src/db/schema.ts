@@ -78,6 +78,7 @@ export const TicketModel = pgTable("tickets", {
   userId: integer("user_id").notNull().references(() => UserModel.id),
   agentId: integer("agent_id").references(() => UserModel.id),
   subject: varchar("subject").notNull(),
+  category: varchar("category"),
   status: ticketStatusEnum("status").notNull().default("opened"),
   ...timestamps,
 });

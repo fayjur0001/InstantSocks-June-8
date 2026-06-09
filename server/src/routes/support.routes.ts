@@ -12,6 +12,7 @@ import {
   claimTicket,
   editMessage,
   deleteMessage,
+  deleteTicket,
 } from "@/controllers/support.controller";
 import { requireAuth } from "@/middleware/auth.middleware";
 
@@ -35,6 +36,7 @@ router.post("/:ticketId/messages", sendMessage);
 router.patch("/:ticketId/close", requireAuth(["support", "admin", "super admin"]), closeTicket);
 router.patch("/:ticketId/reopen", reopenTicket); // ticket owner + staff উভয়েই reopen করতে পারবে
 router.patch("/:ticketId/claim", requireAuth(["support", "admin", "super admin"]), claimTicket);
+router.delete("/:ticketId", requireAuth(["admin", "super admin"]), deleteTicket);
 
 // Message edit / delete (owner only)
 router.patch("/messages/:messageId", editMessage);

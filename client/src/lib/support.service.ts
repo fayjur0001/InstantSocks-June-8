@@ -9,6 +9,7 @@ export interface Ticket {
   userId: number;
   agentId: number | null;
   subject: string;
+  category: string | null;
   status: TicketStatus;
   createdAt: string;
   updatedAt: string;
@@ -31,6 +32,7 @@ export interface CreateTicketPayload {
   subject: string;
   message: string;
   toUserId?: number;
+  category?: string;
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────────
@@ -99,4 +101,8 @@ export const supportApi = {
   // Delete a message (owner only)
   deleteMessage: (messageId: number): Promise<{ success: boolean }> =>
     apiFetch(`/api/support/messages/${messageId}`, { method: "DELETE" }),
+
+  // Delete a ticket (admin only — permanent)
+  deleteTicket: (ticketId: number): Promise<{ success: boolean }> =>
+    apiFetch(`/api/support/${ticketId}`, { method: "DELETE" }),
 };

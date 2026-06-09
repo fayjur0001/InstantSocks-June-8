@@ -145,8 +145,18 @@ export async function getTicket(req: Request, res: Response) {
 export async function createTicket(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
-    const { subject, message, toUserId } = z.object({ subject: z.string().min(1), message: z.string().min(1), toUserId: z.number().optional() }).parse(req.body);
-    const [ticket] = await db.insert(TicketModel).values({ userId, subject, agentId: toUserId }).returning();
+    const { subject, message, toUserId, category } = z.object({
+      subject: z.string().min(1),
+      message: z.string().min(1),
+      toUserId: z.number().optional(),
+      category: z.string().optional(),
+    }).parse(req.body);
+    const [ticket] = await db.insert(TicketModel).values({
+      userId,
+      subject,
+      category: category ?? null,
+      agentId: toUserId,
+    }).returning();
     const [msg] = await db.insert(TicketMessageModel).values({ ticketId: ticket.id, userId, message }).returning();
     await db.insert(TicketMessageSeenByModel).values({ messageId: msg.id, userId });
     await pusher({ page: "/support/my-tickets", to: `user-${userId}` });
@@ -168,10 +178,22 @@ export async function sendMessage(req: Request, res: Response) {
     if (ticket.status === "closed") { res.status(400).json({ success: false, message: "Ticket is closed." }); return; }
     const [msg] = await db.insert(TicketMessageModel).values({ ticketId, userId, message }).returning();
     await db.insert(TicketMessageSeenByModel).values({ messageId: msg.id, userId });
+
+    // Ticket updatedAt update করো এবং staff এর reply এর সময় agentId না থাকলে set করো
+    const isStaff = req.payload!.role === "admin" || req.payload!.role === "super admin" || req.payload!.role === "support";
+    const updateFields: Record<string, any> = { updatedAt: new Date() };
+    if (isStaff && !ticket.agentId) {
+      updateFields.agentId = userId;
+    }
+    await db.update(TicketModel).set(updateFields).where(eq(TicketModel.id, ticketId));
+
     const page = `/support/${ticketId}`;
     await pusher({ page, to: `user-${ticket.userId}` });
     if (ticket.agentId && ticket.agentId !== ticket.userId) {
       await pusher({ page, to: `user-${ticket.agentId}` });
+    } else if (isStaff && !ticket.agentId) {
+      // নতুন agentId set হয়েছে, নিজেকেও notify করো
+      await pusher({ page, to: `user-${userId}` });
     }
     // Staff ও admin channel এ notify করো যাতে their ticket list refresh হয়
     await pusher({ page: "/support/other-tickets", to: "admin" });
@@ -283,4 +305,33 @@ export async function claimTicket(req: Request, res: Response) {
     if (e instanceof UnloggingError) { res.status(400).json({ success: false, message: e.message }); return; }
     res.status(500).json({ success: false, message: "Internal server error." });
   }
+}
+
+export async function deleteTicket(req: Request, res: Response) {
+  try {
+    const ticketId = z.coerce.number().int().min(1).parse(req.params.ticketId);
+    const ticket = await db.query.TicketModel.findFirst({ where: (m, { eq }) => eq(m.id, ticketId) });
+    if (!ticket) { res.status(404).json({ success: false, message: "Ticket not found." }); return; }
+
+    // Ticket এর সব messages এর seen records delete করো
+    const msgs = await db.query.TicketMessageModel.findMany({
+      where: (m, { eq }) => eq(m.ticketId, ticketId),
+      columns: { id: true },
+    });
+    if (msgs.length > 0) {
+      const msgIds = msgs.map((m) => m.id);
+      await db.delete(TicketMessageSeenByModel).where(inArray(TicketMessageSeenByModel.messageId, msgIds));
+      await db.delete(TicketMessageModel).where(inArray(TicketMessageModel.id, msgIds));
+    }
+    await db.delete(TicketModel).where(eq(TicketModel.id, ticketId));
+
+    // Notify করো
+    await pusher({ page: "/support/other-tickets", to: "admin" });
+    await pusher({ page: "/support/unclaimed-tickets", to: "staff" });
+    await pusher({ page: "/support/my-tickets", to: `user-${ticket.userId}` });
+    if (ticket.agentId) {
+      await pusher({ page: "/support/my-tickets", to: `user-${ticket.agentId}` });
+    }
+    res.json({ success: true });
+  } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
 }

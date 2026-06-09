@@ -38,7 +38,11 @@ const CreateTicketModal = ({
     }
     setLoading(true);
     try {
-      const res = await supportApi.createTicket({ subject: subject.trim(), message: message.trim() });
+      const res = await supportApi.createTicket({
+        subject: subject.trim(),
+        message: message.trim(),
+        category: category || undefined,
+      });
       if (res.success) {
         toast.success("Ticket created successfully!");
         setSubject("");

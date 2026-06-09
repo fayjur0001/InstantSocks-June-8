@@ -1,60 +1,102 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
-import { Paperclip, CheckCheck, Pencil, Trash } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Eye, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { supportApi, Ticket, TicketMessage } from "@/lib/support.service";
-import { useAuth } from "@/hooks/useAuth";
+import { ColumnDef } from "@tanstack/react-table";
+import { ReusableTable } from "@/components/tables/ReusableTable";
+import CreateTicketModal from "@/components/modals/CreateTicketModal";
+import Link from "next/link";
+import { supportApi, Ticket } from "@/lib/support.service";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-function formatTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+// --- Types ---
+
+interface SupportTicketRow {
+  id: string;
+  ticketId: string;
+  category: string;
+  subject: string;
+  status: "In Progress" | "Completed" | "Open";
+  tab: "unclaimed" | "mine" | "other";
+  agentInfo: { agentSerial: number | null; username: string } | null;
+  isClosed: boolean;
 }
 
-export default function AdminSupportChatPage() {
-  const { id } = useParams<{ id: string }>();
-  const ticketId = Number(id);
+function toUiStatus(ticket: Ticket): "In Progress" | "Completed" | "Open" {
+  if (ticket.status === "closed") return "Completed";
+  if (ticket.agentId) return "In Progress";
+  return "Open";
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "general": "General",
+  "proxies-issues": "Proxies Issues",
+  "number-sms-issues": "Number/SMS",
+  "devices-issues": "Devices Issues",
+  "payment-billing": "Payment/Billing",
+  "technical": "Technical",
+  "feedback": "Feedback",
+  "others": "Others",
+};
+
+export default function AdminSupportPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<"unclaimed" | "mine" | "other">("unclaimed");
+  const [page, setPage] = useState(1);
+  const [tickets, setTickets] = useState<SupportTicketRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
 
-  const [ticket, setTicket] = useState<Ticket | null>(null);
-  const [messages, setMessages] = useState<TicketMessage[]>([]);
-  const [messageInput, setMessageInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingText, setEditingText] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  // --- Status & Category Styles ---
+  const statusStyles = {
+    "In Progress": "bg-c-orange-900/30 text-c-orange-400 border-c-orange-800/50",
+    Completed: "bg-c-green-tw-900/30 text-c-green-tw-400 border-c-green-tw-800/50",
+    Open: "bg-c-blue-900/30 text-c-blue-400 border-c-blue-800/50",
+  };
 
-  const fetchData = useCallback(async () => {
+  // --- Fetch Tickets ---
+  const fetchTickets = useCallback(async () => {
+    setLoading(true);
     try {
-      const [ticketRes, msgsRes] = await Promise.all([
-        supportApi.getTicket(ticketId),
-        supportApi.getMessages(ticketId),
-      ]);
-      if (ticketRes.success) setTicket(ticketRes.ticket);
-      if (msgsRes.success) setMessages(msgsRes.messages);
+      let rawTickets: Ticket[] = [];
+      if (activeTab === "unclaimed") {
+        const res = await supportApi.getUnclaimedTickets();
+        if (res.success) rawTickets = res.tickets;
+      } else if (activeTab === "mine") {
+        const res = await supportApi.getMyTickets();
+        if (res.success) rawTickets = res.tickets;
+      } else {
+        const res = await supportApi.getOtherTickets();
+        if (res.success) rawTickets = res.tickets;
+      }
+      setTickets(
+        rawTickets.map((t: Ticket) => ({
+          id: String(t.id),
+          ticketId: `TCK-${String(t.id).padStart(5, "0")}`,
+          category: t.category ?? "",
+          subject: t.subject,
+          status: toUiStatus(t),
+          tab: activeTab,
+          agentInfo: (t as any).agentInfo ?? null,
+          isClosed: t.status === "closed",
+        }))
+      );
+      setPage(1);
     } catch {
-      toast.error("Failed to load ticket.");
+      toast.error("Failed to load tickets.");
     } finally {
       setLoading(false);
     }
-  }, [ticketId]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  }, [activeTab]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    fetchTickets();
+  }, [fetchTickets]);
 
-  // Pusher real-time — Bug ৩ fix: staff + admin channel ও শুনছে
+  // --- Pusher real-time revalidation ---
   useEffect(() => {
     if (!user) return;
     const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY;
@@ -68,10 +110,16 @@ export default function AdminSupportChatPage() {
       const PusherClient = (await import("pusher-js")).default;
       pusher = new PusherClient(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
 
+      const revalidatePages = [
+        "/support/my-tickets",
+        "/support/unclaimed-tickets",
+        "/support/other-tickets",
+      ];
+
       const bind = (channelName: string) => {
         const ch = pusher.subscribe(channelName);
         ch.bind("revalidate", (data: { page: string }) => {
-          if (data.page === `/support/${ticketId}`) fetchData();
+          if (revalidatePages.includes(data.page)) fetchTickets();
         });
         channels.push(ch);
       };
@@ -85,237 +133,193 @@ export default function AdminSupportChatPage() {
       channels.forEach((ch) => ch.unbind_all());
       pusher?.disconnect();
     };
-  }, [user, ticketId, fetchData]);
+  }, [user, fetchTickets]);
 
-  const handleSend = async () => {
-    const trimmed = messageInput.trim();
-    if (!trimmed || sending) return;
-    setSending(true);
-    try {
-      await supportApi.sendMessage(ticketId, trimmed);
-      setMessageInput("");
-      fetchData();
-    } catch {
-      toast.error("Failed to send message.");
-    } finally {
-      setSending(false);
+  // --- Action handlers ---
+  const handleCloseOrDelete = async (ticketId: string, isClosed: boolean) => {
+    if (isClosed) {
+      if (!confirm("Permanently delete this ticket? This cannot be undone.")) return;
+      try {
+        await supportApi.deleteTicket(Number(ticketId));
+        toast.success("Ticket deleted.");
+        fetchTickets();
+      } catch {
+        toast.error("Failed to delete ticket.");
+      }
+    } else {
+      if (!confirm("Close this ticket?")) return;
+      try {
+        await supportApi.closeTicket(Number(ticketId));
+        toast.success("Ticket closed.");
+        fetchTickets();
+      } catch {
+        toast.error("Failed to close ticket.");
+      }
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
-  };
+  // --- Table Configuration ---
+  const ticketColumns: ColumnDef<SupportTicketRow>[] = [
+    {
+      accessorKey: "ticketId",
+      header: "Ticket ID",
+      cell: ({ row }) => (
+        <span className="text-c-slate-300 font-medium text-sm">
+          {row.original.ticketId}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => {
+        const cat = row.original.category;
+        const label = CATEGORY_LABELS[cat] ?? cat ?? "—";
+        return cat ? (
+          <Badge className="rounded-full py-0.5 font-medium shadow-none bg-c-cyan-900/30 text-c-cyan-400 border-none px-4">
+            {label}
+          </Badge>
+        ) : (
+          <span className="text-c-slate-500 text-sm">—</span>
+        );
+      },
+    },
+    {
+      accessorKey: "subject",
+      header: "Subject",
+      cell: ({ row }) => (
+        <span className="text-c-slate-300 text-sm">{row.original.subject}</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const { agentInfo } = row.original;
+        const agentLabel = agentInfo?.agentSerial !== undefined && agentInfo?.agentSerial !== null
+          ? `AGT-${String(agentInfo.agentSerial).padStart(3, "0")}`
+          : null;
+        return (
+          <div className="flex flex-col gap-1">
+            <Badge
+              variant="outline"
+              className={`rounded-full px-4 py-0.5 border font-medium shadow-none w-fit ${
+                statusStyles[row.original.status]
+              }`}
+            >
+              {row.original.status}
+            </Badge>
+            {agentLabel && (
+              <span className="text-[11px] text-c-slate-500 ml-1">{agentLabel}</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "action",
+      header: "Action",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Link href={`/admin/support/${row.original.id}`}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-2 border-c-slate-700 bg-transparent text-c-slate-300 hover:bg-c-slate-800 hover:text-white"
+            >
+              <Eye className="w-4 h-4" />
+              View
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="icon"
+            title={row.original.isClosed ? "Delete Ticket" : "Close Ticket"}
+            className={`h-8 w-8 border-c-slate-700 bg-transparent hover:border-c-red-900 ${
+              row.original.isClosed
+                ? "text-c-red-400 hover:bg-red-950 hover:text-c-red-300"
+                : "text-c-orange-400 hover:bg-orange-950 hover:text-c-orange-300"
+            }`}
+            onClick={() => handleCloseOrDelete(row.original.id, row.original.isClosed)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
-  const handleClose = async () => {
-    try {
-      await supportApi.closeTicket(ticketId);
-      toast.success("Ticket closed.");
-      fetchData();
-    } catch { toast.error("Failed to close ticket."); }
-  };
+  const paginated = tickets.slice((page - 1) * 5, page * 5);
 
-  const handleReopen = async () => {
-    try {
-      await supportApi.reopenTicket(ticketId);
-      toast.success("Ticket reopened.");
-      fetchData();
-    } catch { toast.error("Failed to reopen ticket."); }
-  };
-
-  const handleClaim = async () => {
-    try {
-      await supportApi.claimTicket(ticketId);
-      toast.success("Ticket claimed!");
-      fetchData();
-    } catch { toast.error("Failed to claim ticket."); }
-  };
-
-  // Bug ৪ fix: Edit message
-  const handleEditStart = (msg: TicketMessage) => {
-    setEditingId(msg.id);
-    setEditingText(msg.message);
-  };
-
-  const handleEditSave = async (messageId: number) => {
-    const trimmed = editingText.trim();
-    if (!trimmed) return;
-    try {
-      await supportApi.editMessage(messageId, trimmed);
-      setEditingId(null);
-      setEditingText("");
-      fetchData();
-    } catch { toast.error("Failed to edit message."); }
-  };
-
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditingText("");
-  };
-
-  // Bug ৪ fix: Delete message
-  const handleDelete = async (messageId: number) => {
-    if (!confirm("Delete this message?")) return;
-    try {
-      await supportApi.deleteMessage(messageId);
-      fetchData();
-    } catch { toast.error("Failed to delete message."); }
-  };
-
-  const statusLabel = ticket?.status === "closed" ? "Completed" : ticket?.agentId ? "In Progress" : "Open";
-  const statusStyle =
-    ticket?.status === "closed"
-      ? "bg-c-green-tw-900/30 text-c-green-tw-400 hover:bg-c-green-tw-900/40 border-c-green-tw-800/50"
-      : ticket?.agentId
-      ? "bg-c-orange-900/30 text-c-orange-400 hover:bg-c-orange-900/40 border-c-orange-800/50"
-      : "bg-c-blue-900/30 text-c-blue-400 hover:bg-c-blue-900/40 border-c-blue-800/50";
-
-  const ticketLabel = `TCK-${String(ticketId).padStart(5, "0")}`;
-
-  if (loading) {
-    return (
-      <div className="relative overflow-hidden gap-0 bg-black rounded-[12px] h-full flex items-center justify-center">
-        <p className="text-c-slate-400 text-sm">Loading ticket...</p>
-      </div>
-    );
-  }
+  const tabs: { key: "unclaimed" | "mine" | "other"; label: string }[] = [
+    { key: "unclaimed", label: "Unclaimed" },
+    { key: "mine", label: "My Tickets" },
+    { key: "other", label: "All Tickets" },
+  ];
 
   return (
-    <div className="relative overflow-hidden gap-0 bg-black rounded-[12px] h-full">
-      {/* Header Section */}
-      <div className="p-8 pb-6 relative">
-        <div className="flex items-start justify-between">
+    <div className="space-y-6">
+      <div className="space-y-4 p-4 bg-black rounded-2xl">
+        {/* Header inside the card */}
+        <div className="flex justify-between items-start mb-6">
           <div className="space-y-1">
-            <h3 className="text-2xl font-bold text-white">{ticketLabel}</h3>
-            <p className="text-sm text-c-slate-400">{ticket?.subject}</p>
+            <h3 className="font-bold text-white/90">Support Tickets</h3>
+            <p className="text-sm text-c-slate-400">
+              Manage and track your support requests
+            </p>
           </div>
-          <div className="flex gap-2">
-            {!ticket?.agentId && ticket?.status === "opened" && (
-              <Button size="sm" variant="outline" className="border-c-slate-700 bg-transparent text-c-blue-400 hover:bg-c-slate-800" onClick={handleClaim}>
-                Claim
-              </Button>
-            )}
-            {ticket?.status === "opened" ? (
-              <Button size="sm" variant="outline" className="border-c-slate-700 bg-transparent text-c-red-400 hover:bg-red-950" onClick={handleClose}>
-                Close Ticket
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" className="border-c-slate-700 bg-transparent text-c-green-tw-400 hover:bg-c-slate-800" onClick={handleReopen}>
-                Reopen Ticket
-              </Button>
-            )}
-          </div>
+          <Button onClick={() => setIsCreateTicketOpen(true)}>
+            <Plus className="w-4 h-4" />
+            Create New Ticket
+          </Button>
         </div>
 
-        <div className="flex gap-2 mt-4">
-          <Badge className={`border px-4 py-1 rounded-full text-xs font-medium shadow-none ${statusStyle}`}>
-            {statusLabel}
-          </Badge>
+        {/* Tabs */}
+        <div className="flex gap-2 border-b border-c-slate-800 pb-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? "bg-c-slate-800 text-white"
+                  : "text-c-slate-400 hover:text-c-slate-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* Chat Body Section */}
-      <div className="px-8 py-4 h-[370px] sm:h-[420px] lg:h-[450px] mb-[72px] lg:mb-[97px] overflow-y-auto space-y-6 flex flex-col">
-        {messages.length === 0 && (
-          <p className="text-c-slate-500 text-sm text-center mt-8">No messages yet.</p>
-        )}
-        {messages.map((msg) => {
-          const isOwn = String(msg.userId) === String(user?.id);
-          const isAgent = ticket?.agentId !== null && ticket?.agentId !== undefined && String(msg.userId) === String(ticket?.agentId);
-          const agentSerial = ticket?.agentInfo?.agentSerial;
-          const agentLabel = agentSerial !== undefined && agentSerial !== null
-            ? `AGT-${String(agentSerial).padStart(3, "0")}`
-            : "Support Agent";
-          const senderLabel = isAgent ? agentLabel : "User";
-          const isEditing = editingId === msg.id;
-
-          return (
-            <div key={msg.id} className={`${isOwn ? "self-end" : "self-start"} max-w-[70%] space-y-2`}>
-              {isOwn && (
-                <div className="flex flex-wrap items-center justify-end gap-1.5 text-[11px] text-c-slate-500 mr-1">
-                  <button
-                    className="flex items-center gap-1 hover:text-c-slate-300 transition-colors"
-                    onClick={() => handleEditStart(msg)}
-                  >
-                    <Pencil className="w-3 h-3" /> Edit
-                  </button>
-                  <span>•</span>
-                  <button
-                    className="flex items-center gap-1 hover:text-c-red-400 transition-colors"
-                    onClick={() => handleDelete(msg.id)}
-                  >
-                    <Trash className="w-3 h-3" /> Delete
-                  </button>
-                </div>
-              )}
-              {!isOwn && (
-                <div className="text-[11px] text-c-slate-500 ml-1 mb-1">{senderLabel}</div>
-              )}
-
-              {isEditing ? (
-                <div className="flex flex-col gap-2">
-                  <Input
-                    value={editingText}
-                    onChange={(e) => setEditingText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleEditSave(msg.id);
-                      if (e.key === "Escape") handleEditCancel();
-                    }}
-                    className="h-10 border-c-slate-700 bg-c-slate-800 text-c-slate-200 text-sm"
-                    autoFocus
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button size="sm" variant="outline" className="h-7 text-xs border-c-slate-700 bg-transparent text-c-slate-300" onClick={handleEditCancel}>Cancel</Button>
-                    <Button size="sm" className="h-7 text-xs" onClick={() => handleEditSave(msg.id)}>Save</Button>
-                  </div>
-                </div>
-              ) : (
-                <div className={`p-4 rounded-2xl text-sm leading-relaxed ${isOwn ? "bg-green text-white rounded-tr-none" : "bg-c-slate-800 text-c-slate-300 rounded-tl-none"}`}>
-                  {msg.message}
-                </div>
-              )}
-
-              <div className={`flex flex-wrap items-center gap-1.5 text-[11px] text-c-slate-500 ${isOwn ? "justify-end mr-1" : "justify-start ml-1"}`}>
-                <span>{formatDate(msg.createdAt)}</span>
-                <span>•</span>
-                <span>{formatTime(msg.createdAt)}</span>
-                {isOwn && (
-                  <>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <CheckCheck className={`w-3.5 h-3.5 ${msg.seenByOther ? "text-c-blue-400" : ""}`} />
-                      {msg.seenByOther ? "Read" : "Sent"}
-                    </span>
-                  </>
-                )}
+        {/* Inner Table Container */}
+        <div className="space-y-4">
+          <h4 className="font-bold text-white/90 text-sm ml-1">
+            {tabs.find((t) => t.key === activeTab)?.label ?? "Tickets"}
+          </h4>
+          <div className="rounded-xl overflow-hidden border border-c-slate-800">
+            {loading ? (
+              <div className="py-12 text-center text-c-slate-400 text-sm">
+                Loading tickets...
               </div>
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Footer / Input Section */}
-      <div className="p-3 lg:p-6 flex gap-3 items-center absolute bottom-0 left-0 w-full bg-c-bg-900/90 backdrop-blur-sm border-t border-c-slate-800">
-        <div className="relative flex-1">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-c-slate-500 cursor-pointer hover:text-c-slate-300">
-            <Paperclip className="w-5 h-5 rotate-45" />
+            ) : (
+              <ReusableTable
+                columns={ticketColumns}
+                data={paginated}
+                currentPage={page}
+                setCurrentPage={setPage}
+                itemsPerPage={5}
+                totalItems={tickets.length}
+              />
+            )}
           </div>
-          <Input
-            placeholder="Type your message..."
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={ticket?.status === "closed" || sending}
-            className="h-12 pl-12 pr-4 border-c-slate-800 bg-transparent rounded-lg focus-visible:ring-c-purple text-sm text-c-slate-200 placeholder:text-c-slate-500"
-          />
         </div>
-        <Button
-          className="h-12 px-8"
-          onClick={handleSend}
-          disabled={ticket?.status === "closed" || sending || !messageInput.trim()}
-        >
-          {sending ? "Sending..." : "Send"}
-        </Button>
+
+        {/* Create Ticket Modal */}
+        <CreateTicketModal
+          isCreateTicketOpen={isCreateTicketOpen}
+          setIsCreateTicketOpen={setIsCreateTicketOpen}
+          onCreated={fetchTickets}
+        />
       </div>
     </div>
   );
