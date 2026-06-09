@@ -509,15 +509,16 @@ export async function getMyRentals(req: Request, res: Response) {
       // NSocks history না আসলে DB data দিয়ে চলবে — silent fallback
     }
 
-    // rentals-এ nsocksOnline ও nsocksMinsLeft যোগ করো
+    // rentals-এ nsocksOnline, nsocksMinsLeft, nsocksHistoryId যোগ করো
     const enriched = rentals.map((r) => {
       const noteMatch = r.note?.match(/nsocks_history_id:(\d+)/);
-      const historyId = noteMatch?.[1];
+      const historyId = noteMatch?.[1] ?? null;
       const nsocksStatus = historyId ? nsocksHistoryMap[historyId] : null;
       return {
         ...r,
-        nsocksOnline:   nsocksStatus ? nsocksStatus.online   : null,  // 1=online, 0=offline, null=unknown
-        nsocksMinsLeft: nsocksStatus ? nsocksStatus.minsLeft : null,
+        nsocksHistoryId: historyId,                                    // client-side actions এর জন্য
+        nsocksOnline:    nsocksStatus ? nsocksStatus.online   : null,  // 1=online, 0=offline, null=unknown
+        nsocksMinsLeft:  nsocksStatus ? nsocksStatus.minsLeft : null,
       };
     });
 

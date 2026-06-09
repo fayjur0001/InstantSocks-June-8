@@ -16,7 +16,7 @@ export interface ProxyListParams {
 export interface ProxyListItem {
   id: string;
   ip: string;
-  domain: string;
+  domain?: string;
   countryCode: string;
   country: string;
   state: string;
@@ -65,6 +65,10 @@ export interface RentalItem {
   createdAt: string;
   updatedAt: string;
   user?: { id: number; username: string; email: string } | null;
+  // NSocks enriched fields (getMyRentals response)
+  nsocksHistoryId?: string | null;
+  nsocksOnline?: number | null;
+  nsocksMinsLeft?: string | null;
 }
 
 export interface ProxyAuthInfo {
