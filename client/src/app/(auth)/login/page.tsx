@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/lib/api";
 import { safeRedirect } from "@/lib/helpers";
 import { toast } from "sonner";
 
@@ -82,6 +83,17 @@ function LoginPageContent() {
 
     setLoading(true);
     try {
+      // ✅ FIX: Login এর আগে maintenance check করো।
+      //         Maintenance active থাকলে modal দেখাও, login হতে দিও না।
+      //         Admin/super admin এর জন্য check করার দরকার নেই —
+      //         তারা এই portal এ আসেই না (instants portal আলাদা)।
+      const statusData = await apiFetch("/api/site-status").catch(() => null);
+      if (statusData?.maintenance) {
+        setMaintenanceModal({ open: true, message: statusData.message });
+        setLoading(false);
+        return;
+      }
+
       const loginData = await login(identifier, password, pin, rememberMe);
 
       if (

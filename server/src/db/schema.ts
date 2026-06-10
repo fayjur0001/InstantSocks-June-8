@@ -39,7 +39,7 @@ export const AdditionalUserInformationModel = pgTable("additional_user_informati
   website: varchar("website"),
   telegram: varchar("telegram"),
   jabber: varchar("jabber"),
-  profilePicture: varchar("profile_image"),
+  profilePicture: text("profile_image"),
   bio: varchar("bio"),
   ...timestamps,
 });
