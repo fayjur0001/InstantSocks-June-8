@@ -72,11 +72,11 @@ const HeaderNav = () => {
   };
 
   const authUser = {
-    name: user?.full_name || user?.username || "User",
-    email: user?.email || "",
-    image: "/user.jpeg",
-    role: getRoleLabel(user?.role),
-  };
+  name: user?.full_name || user?.username || "User",
+  email: user?.email || "",
+  image: user?.avatar || "/user.jpeg",  // avatar থাকলে দেখাও, না থাকলে default
+  role: getRoleLabel(user?.role),
+};
 
   return (
     <>

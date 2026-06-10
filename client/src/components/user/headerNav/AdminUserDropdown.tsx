@@ -32,7 +32,7 @@ const AdminUserDropdown = ({ user, handleLogout }: AdminUserDropdownProps) => {
       >
         {/* User Avatar */}
         <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-brand-500">
-          <Image src={`${user?.image}`} width={32} height={32} alt="" />
+          <img src={user?.image || "/user.jpeg"} width={32} height={32} alt="" className="w-full h-full object-cover" />
         </div>
 
         {/* User Name and Role */}

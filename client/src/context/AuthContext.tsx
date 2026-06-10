@@ -1,3 +1,5 @@
+// src/context/AuthContext.tsx
+
 "use client";
 
 import React, {
@@ -23,6 +25,17 @@ export interface AuthUser {
   isShadowAdmin?: boolean;
   banned?: boolean;
   bannedTill?: string | null;
+  // ─── Profile fields ───────────────────────────────────────────────────────
+  avatar?: string;       // me() থেকে আসে — additionalInfo.profilePicture
+  firstName?: string;
+  nickName?: string;
+  lastName?: string;
+  website?: string;
+  telegram?: string;
+  jabber?: string;
+  bio?: string;
+  badge?: string;
+  isOnline?: boolean;
 }
 
 interface AuthState {
@@ -36,8 +49,6 @@ interface AuthContextValue extends AuthState {
   login: (identifier: string, password: string, pin: string, rememberMe?: boolean) => Promise<LoginResponse>;
   logout: () => Promise<void>;
   loginAs: (userId: string) => Promise<void>;
-  // ✅ FIX: exitLoginAs now returns the restored role so the caller can navigate
-  // AFTER state is fully confirmed — eliminates the race condition.
   exitLoginAs: () => Promise<{ role: string } | null>;
   refreshUser: () => Promise<void>;
   refreshBalance: () => Promise<void>;
@@ -86,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       const data = await authApi.me();
+      // me() response: { user: { avatar, firstName, ... } }
+      // spread করে সব field ঠিকঠাক map হচ্ছে
       setState((prev) => ({ ...prev, user: data?.user ?? data }));
     } catch {
       setState((prev) => ({ ...prev, user: null }));
@@ -134,7 +147,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    // আগে state clear করো — server fail করলেও redirect কাজ করবে
     setState({ user: null, balance: 0, notificationsCount: 0, loading: false });
     try {
       await authApi.logout();
@@ -143,43 +155,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── LOGIN AS ────────────────────────────────────────────────────────────────
-  // Admin একজন user হিসেবে login করে। Server cookie set করে।
-  // এরপর user+balance+notifications সব fresh fetch করা হয়।
   const loginAs = useCallback(async (userId: string) => {
     await apiFetch("/api/auth/login-as", {
       method: "POST",
       body: JSON.stringify({ id: userId }),
     });
-
-    // ✅ FIX: loginAs এর পর সব data fresh fetch — balance cache problem দূর হবে
     const data = await fetchAllAuthData();
     setState({ ...data, loading: false });
   }, []);
 
-  // ── EXIT LOGIN AS ───────────────────────────────────────────────────────────
-  // Shadow session শেষ করে admin session এ ফিরে যাওয়া।
-  // Server original admin token restore করে। এরপর fresh fetch।
-  //
-  // ✅ FIX (Race Condition): পুরনো version void return করত, তাই caller
-  // setState() flush হওয়ার আগেই router.push() করে ফেলত।
-  // admin/layout.tsx তখনো stale isShadowAdmin:true state দেখে আবার
-  // /user/dashboard এ redirect করত — এটাই "ভুল dashboard" দেখার কারণ।
-  //
-  // নতুন version: fetchAllAuthData() শেষে confirmed role return করে।
-  // caller সেই role দেখে navigate করে — state guaranteed confirmed।
   const exitLoginAs = useCallback(async (): Promise<{ role: string } | null> => {
     let exitData: { role?: string } | null = null;
     try {
       exitData = await apiFetch("/api/auth/exit-login-as", { method: "POST" });
     } catch {
-      // Server error হলেও state clear করো — login page এ পাঠাও
       setState({ user: null, balance: 0, notificationsCount: 0, loading: false });
       return null;
     }
-
-    // Full document navigation happens immediately after this returns, so avoid
-    // intermediate auth refreshes that can briefly render the wrong dashboard.
     return { role: exitData?.role ?? "" };
   }, []);
 
