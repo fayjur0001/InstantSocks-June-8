@@ -1,7 +1,9 @@
+// PATH: client/src/components/user/headerNav/NotificationDropdown.tsx
+
 "use client";
 
-import { useEffect, useState } from "react";
-import { Server, FileText, Settings, Wallet } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Server, FileText, Settings, Wallet, ShieldCheck, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BsBellFill } from "react-icons/bs";
 import { useAuth } from "@/context/AuthContext";
@@ -41,6 +43,12 @@ const NotifIcon = ({ type }: { type: string }) => {
       return (
         <div className={baseClass}>
           <Server className="w-5 h-5 text-c-slate-200" />
+        </div>
+      );
+    case "security":
+      return (
+        <div className={baseClass}>
+          <ShieldCheck className="w-5 h-5 text-yellow-400" />
         </div>
       );
     case "system":
@@ -105,13 +113,45 @@ const NotificationDropdown = () => {
     };
   }, [user, refreshNotifications]);
 
-  // When popover opens, mark all read and refresh count
+  // When popover opens, refresh count only (don't auto-mark-all-read)
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (isOpen && notificationsCount > 0) {
-      notificationService.markAllRead().then(() => refreshNotifications());
-    }
+    if (isOpen) refreshNotifications();
   };
+
+  // ── Mark one read ────────────────────────────────────────────────────────
+  const handleMarkOne = useCallback(
+    async (e: React.MouseEvent, id: number) => {
+      e.stopPropagation();
+      // Optimistic update
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+      try {
+        await notificationService.markOneRead(id);
+        refreshNotifications();
+      } catch {
+        // Revert on failure
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, isRead: false } : n))
+        );
+      }
+    },
+    [refreshNotifications]
+  );
+
+  // ── Mark all read ────────────────────────────────────────────────────────
+  const handleMarkAllRead = useCallback(async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    try {
+      await notificationService.markAllRead();
+      refreshNotifications();
+    } catch {
+      // silently fail — next open will refetch
+    }
+  }, [refreshNotifications]);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <Popover open={open} onOpenChange={handleOpen}>
@@ -131,14 +171,24 @@ const NotificationDropdown = () => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4">
           <h2 className="text-lg font-bold text-white">Notification Centre</h2>
-          <Link href="/admin/notification">
-            <Button
-              variant="outline"
-              className="h-8 rounded-lg text-xs font-bold text-c-slate-400 border-c-slate-700 bg-transparent hover:bg-c-slate-800 hover:text-white px-4"
-            >
-              See All
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                className="h-8 rounded-lg text-xs font-bold text-c-slate-400 border border-c-slate-700 bg-transparent hover:bg-c-slate-800 hover:text-white px-3 transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+            <Link href="/user/notification">
+              <Button
+                variant="outline"
+                className="h-8 rounded-lg text-xs font-bold text-c-slate-400 border-c-slate-700 bg-transparent hover:bg-c-slate-800 hover:text-white px-4"
+              >
+                See All
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -174,32 +224,44 @@ const NotificationDropdown = () => {
             notifications.map((item, index) => (
               <div
                 key={item.id}
-                className={`flex items-start gap-4 px-6 py-5 group cursor-pointer hover:bg-c-slate-800/30 transition-colors ${
+                className={`flex items-start gap-4 px-6 py-5 group transition-colors ${
+                  !item.isRead ? "bg-c-slate-800/20" : ""
+                } hover:bg-c-slate-800/30 ${
                   index !== notifications.length - 1
                     ? "border-b border-c-slate-800/50"
                     : ""
                 }`}
               >
-                <div className="relative">
+                <div className="relative shrink-0">
                   <NotifIcon type={item.type} />
                 </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                <div className="flex-1 space-y-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       {!item.isRead && (
-                        <div className="w-2 h-2 rounded-full bg-green" />
+                        <div className="w-2 h-2 shrink-0 rounded-full bg-c-green-tw-500" />
                       )}
-                      <h4 className="text-[15px] font-bold text-c-slate-100">
+                      <h4 className={`text-[15px] font-bold truncate ${!item.isRead ? "text-white" : "text-c-slate-100"}`}>
                         {item.title}
                       </h4>
                     </div>
-                    <span className="text-[13px] font-medium text-c-slate-500">
+                    <span className="text-[13px] font-medium text-c-slate-500 shrink-0">
                       {formatRelativeTime(item.createdAt)}
                     </span>
                   </div>
                   <p className="text-[13.5px] leading-relaxed text-c-slate-400 font-medium line-clamp-2">
                     {item.message}
                   </p>
+                  {/* Individual read button — শুধু unread notification এ */}
+                  {!item.isRead && (
+                    <button
+                      onClick={(e) => handleMarkOne(e, item.id)}
+                      className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-c-slate-500 hover:text-c-green-tw-400 transition-colors"
+                    >
+                      <Check className="w-3 h-3" />
+                      Mark as read
+                    </button>
+                  )}
                 </div>
               </div>
             ))

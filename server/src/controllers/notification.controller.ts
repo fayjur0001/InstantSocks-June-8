@@ -85,6 +85,36 @@ export async function markAllRead(req: Request, res: Response) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PATCH /api/notifications/:id/read — একটা notification isRead = true
+// ─────────────────────────────────────────────────────────────────────────────
+export async function markOneRead(req: Request, res: Response) {
+  try {
+    const userId = req.payload!.id;
+    const id = parseInt(req.params.id, 10);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "Invalid id." });
+    }
+
+    await db
+      .update(NotificationModel)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(NotificationModel.id, id),
+          eq(NotificationModel.userId, userId),
+          eq(NotificationModel.isRead, false),
+        )
+      );
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error("MARK ONE READ ERROR:", e);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Helper: notification insert করার জন্য — controller থেকে call হবে
 // ─────────────────────────────────────────────────────────────────────────────
 export async function createNotification({

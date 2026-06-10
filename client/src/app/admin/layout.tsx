@@ -46,7 +46,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     // এই layout এ আর shadow check করার দরকার নেই।
   }, [user, loading, router]);
 
-  if (loading) return null;
+  // ✅ FIX: loading=true তে null না দিয়ে skeleton দাও — white page বন্ধ হবে
+  if (loading) {
+    return (
+      <div className="bg-black min-h-screen">
+        {/* Header skeleton */}
+        <div className="sticky top-0 z-50 flex justify-between h-17 shrink-0 items-center gap-2 border-b border-white/10 bg-black px-4">
+          <div className="h-7 w-32 rounded bg-white/5 animate-pulse" />
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-8 rounded-full bg-white/5 animate-pulse" />
+            <div className="h-8 w-24 rounded bg-white/5 animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (!user) return null;
 
   const isSupport = user.role === "support";

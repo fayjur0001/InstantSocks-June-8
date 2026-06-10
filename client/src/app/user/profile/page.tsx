@@ -254,6 +254,8 @@ const UserManagement: NextPage = () => {
         bio:       user.aboutBio,
       })
       toast.success(result.message || 'Your profile information has been updated successfully.')
+      // ✅ FIX: header এ নাম/username সাথে সাথে update হবে — extra refresh দরকার নেই
+      await refreshUser()
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Profile update failed. Please try again.'))
     }

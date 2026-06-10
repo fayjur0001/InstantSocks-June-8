@@ -37,6 +37,12 @@ export const notificationService = {
    */
   markAllRead: (): Promise<MarkAllReadResponse> =>
     apiFetch("/api/notifications/read", { method: "PATCH" }),
+
+  /**
+   * PATCH /api/notifications/:id/read — mark one as read
+   */
+  markOneRead: (id: number): Promise<MarkAllReadResponse> =>
+    apiFetch(`/api/notifications/${id}/read`, { method: "PATCH" }),
 };
 
 export function formatRelativeTime(createdAt: string): string {

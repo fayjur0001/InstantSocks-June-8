@@ -153,6 +153,7 @@ const InputWithVisibility = ({
 
 const UserManagement: NextPage = () => {
   const { refreshUser } = useAuth()
+  const originalUsernameRef = useRef('')
   const [user, setUser] = useState<UserProfile>({
     username: '',
     firstName: '',
@@ -185,6 +186,7 @@ const UserManagement: NextPage = () => {
         const data = await profileService.getProfile()
         if (!active) return
 
+        originalUsernameRef.current = data.user.username || ''
         setUser({
           username: data.user.username || '',
           firstName: data.user.firstName || '',
@@ -245,7 +247,8 @@ const UserManagement: NextPage = () => {
   const handleProfileUpdate = async () => {
     try {
       const result = await profileService.updateProfile({
-        username: user.username,
+        // ✅ FIX: username বদলা না হলে পাঠাবো না — "already taken" error বন্ধ হবে
+        ...(user.username !== originalUsernameRef.current && { username: user.username }),
         firstName: user.firstName,
         lastName: user.lastName,
         nickName: user.nickName,
@@ -255,6 +258,10 @@ const UserManagement: NextPage = () => {
         bio: user.aboutBio,
       })
       toast.success(result.message || 'Profile updated successfully.')
+      // ✅ FIX: header এ নাম/username সাথে সাথে update হবে — extra refresh দরকার নেই
+      await refreshUser()
+      // ref update করো যাতে পরের submit এ আবার change detect করে
+      originalUsernameRef.current = user.username
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Profile update failed.'))
     }

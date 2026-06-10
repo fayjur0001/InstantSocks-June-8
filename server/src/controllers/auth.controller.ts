@@ -796,6 +796,20 @@ export async function updateProfile(
       }
     }
 
+    // ✅ FIX: username change হলে JWT reissue — middleware username mismatch → 401 বন্ধ
+    if (username) {
+      const currentPayload = req.payload!;
+      setAuthCookie(res, { ...currentPayload, username });
+
+      // ✅ Security notification
+      await createNotification({
+        userId,
+        type: "security",
+        title: "Username Changed",
+        message: `Your username was successfully updated to "${username}". If you did not make this change, please contact support immediately.`,
+      });
+    }
+
     return res.json({
       success: true,
       message: "Profile updated successfully.",
@@ -836,6 +850,14 @@ export async function changePassword(req: Request, res: Response) {
 
     const hashed = await bcrypt.hash(newPassword, 10);
     await db.update(UserModel).set({ password: hashed }).where(eq(UserModel.id, userId));
+
+    // ✅ Security notification
+    await createNotification({
+      userId,
+      type: "security",
+      title: "Password Changed",
+      message: "Your account password was successfully changed. If you did not make this change, please contact support immediately.",
+    });
 
     return res.json({ success: true, message: "Password changed successfully." });
   } catch (error) {
@@ -879,6 +901,14 @@ export async function changePin(req: Request, res: Response) {
 
     const hashedPin = await bcrypt.hash(newPin, 10);
     await db.update(UserModel).set({ pinCode: hashedPin }).where(eq(UserModel.id, userId));
+
+    // ✅ Security notification
+    await createNotification({
+      userId,
+      type: "security",
+      title: "Secret PIN Changed",
+      message: "Your secret PIN was successfully changed. If you did not make this change, please contact support immediately.",
+    });
 
     return res.json({ success: true, message: "PIN changed successfully." });
   } catch (error) {
