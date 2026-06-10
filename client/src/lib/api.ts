@@ -157,6 +157,10 @@ export interface AdminSettingsData {
   notice?: string;
   maintenanceText?: string;
   siteLogo?: string;
+  maintenanceEnd?: string; // ISO timestamp — e.g. "2026-06-10T15:00:00.000Z"
+  rules?: string;
+  termsAndConditions?: string;
+  privacyPolicy?: string;
 }
 
 export interface PaymentApiProviderData {

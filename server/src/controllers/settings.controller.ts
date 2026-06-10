@@ -4,32 +4,38 @@ import SiteOptions from "@/utils/site-options";
 // PUBLIC — GET /api/site-status  (no auth required)
 export async function getSiteStatus(req: Request, res: Response) {
   try {
-    const [siteMode, maintenanceText] = await Promise.all([
+    const [siteMode, maintenanceText, maintenanceEnd] = await Promise.all([
       SiteOptions.siteMode.get(),
       SiteOptions.maintenanceText.get(),
+      SiteOptions.maintenanceEnd.get(),
     ]);
     res.json({
       success: true,
       maintenance: siteMode === "maintenance",
       message: maintenanceText || "The site is currently under maintenance. Please check back shortly.",
+      maintenanceEnd: maintenanceEnd || null,
     });
   } catch (e) {
     // DB down হলে lock-out করবো না
-    res.json({ success: true, maintenance: false, message: "" });
+    res.json({ success: true, maintenance: false, message: "", maintenanceEnd: null });
   }
 }
 
 // D1 — GET /api/admin/settings
 export async function getSettings(req: Request, res: Response) {
   try {
-    const [hostUrl, siteMode, notice, maintenanceText, siteLogo] = await Promise.all([
+    const [hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd, rules, termsAndConditions, privacyPolicy] = await Promise.all([
       SiteOptions.hostUrl.get(),
       SiteOptions.siteMode.get(),
       SiteOptions.notice.get(),
       SiteOptions.maintenanceText.get(),
       SiteOptions.siteLogo.get(),
+      SiteOptions.maintenanceEnd.get(),
+      SiteOptions.rules.get(),
+      SiteOptions.termsAndConditions.get(),
+      SiteOptions.privacyPolicy.get(),
     ]);
-    res.json({ success: true, data: { hostUrl, siteMode, notice, maintenanceText, siteLogo } });
+    res.json({ success: true, data: { hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd, rules, termsAndConditions, privacyPolicy } });
   } catch (e) {
     console.error("GET SETTINGS ERROR:", e);
     res.status(500).json({ success: false, message: "Internal server error." });
@@ -39,7 +45,7 @@ export async function getSettings(req: Request, res: Response) {
 // D1 — PUT /api/admin/settings
 export async function updateSettings(req: Request, res: Response) {
   try {
-    const { hostUrl, siteMode, notice, maintenanceText, siteLogo } = req.body;
+    const { hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd, rules, termsAndConditions, privacyPolicy } = req.body;
 
     // siteLogo validation — base64 data URL অথবা null/empty
     if (siteLogo !== undefined && siteLogo !== null && siteLogo !== "") {
@@ -52,12 +58,23 @@ export async function updateSettings(req: Request, res: Response) {
       }
     }
 
+    // maintenanceEnd validation — ISO timestamp অথবা empty
+    if (maintenanceEnd !== undefined && maintenanceEnd !== null && maintenanceEnd !== "") {
+      if (isNaN(Date.parse(maintenanceEnd))) {
+        return res.status(400).json({ success: false, message: "Invalid maintenanceEnd format. Must be ISO timestamp." });
+      }
+    }
+
     await Promise.all([
       hostUrl !== undefined && SiteOptions.hostUrl.set(hostUrl),
       siteMode !== undefined && SiteOptions.siteMode.set(siteMode),
       notice !== undefined && SiteOptions.notice.set(notice),
       maintenanceText !== undefined && SiteOptions.maintenanceText.set(maintenanceText),
       siteLogo !== undefined && SiteOptions.siteLogo.set(siteLogo || ""),
+      maintenanceEnd !== undefined && SiteOptions.maintenanceEnd.set(maintenanceEnd || ""),
+      rules !== undefined && SiteOptions.rules.set(rules),
+      termsAndConditions !== undefined && SiteOptions.termsAndConditions.set(termsAndConditions),
+      privacyPolicy !== undefined && SiteOptions.privacyPolicy.set(privacyPolicy),
     ]);
     res.json({ success: true, message: "Settings updated" });
   } catch (e) {

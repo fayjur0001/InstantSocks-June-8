@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import {
   Globe,
   Power,
-  Wrench,
   ShieldCheck,
   Coins,
   ImageIcon,
@@ -171,12 +170,25 @@ export default function SettingsPage() {
   useEffect(() => {
     adminSettingsApi.getSettings()
       .then(({ data }) => {
+        // maintenanceEnd থেকে remaining hours বের করো
+        let hours = 3;
+        if (data.maintenanceEnd) {
+          const remaining = (new Date(data.maintenanceEnd).getTime() - Date.now()) / (1000 * 60 * 60);
+          if (remaining > 0) hours = Math.ceil(remaining);
+        }
+
         setSettings((prev) => ({
           ...prev,
           hostUrl: data.hostUrl || prev.hostUrl,
           siteStatus: (data.siteMode === "maintenance" ? "offline" : "online") as "online" | "offline",
           notice: data.notice || prev.notice,
-          maintenance: { ...prev.maintenance, text: data.maintenanceText || prev.maintenance.text },
+          rules: data.rules || prev.rules,
+          termsAndConditions: data.termsAndConditions || prev.termsAndConditions,
+          privacyPolicy: data.privacyPolicy || prev.privacyPolicy,
+          maintenance: {
+            text: data.maintenanceText || prev.maintenance.text,
+            hours,
+          },
           siteLogo: data.siteLogo || null,
         }));
       })
@@ -186,12 +198,22 @@ export default function SettingsPage() {
 
   function handleSave() {
     setSaving(true);
+
+    // hours থেকে end timestamp calculate — site offline হলেই set করব
+    const maintenanceEnd = settings.siteStatus === "offline" && settings.maintenance.hours > 0
+      ? new Date(Date.now() + settings.maintenance.hours * 60 * 60 * 1000).toISOString()
+      : "";
+
     adminSettingsApi.updateSettings({
       hostUrl: settings.hostUrl,
       siteMode: settings.siteStatus === "offline" ? "maintenance" : "production",
       notice: settings.notice,
       maintenanceText: settings.maintenance.text,
       siteLogo: settings.siteLogo ?? "",
+      maintenanceEnd,
+      rules: settings.rules,
+      termsAndConditions: settings.termsAndConditions,
+      privacyPolicy: settings.privacyPolicy,
     })
       .then(() => console.log("Settings saved"))
       .catch((err) => console.error("Failed to save settings:", err))
@@ -267,8 +289,7 @@ export default function SettingsPage() {
         <div className="tabs-scrollable w-full mb-6">
           <TabsList className="inline-flex min-w-max gap-1 bg-c-bg-700 border border-c-bg-400 p-1 rounded-lg h-10">
             <TabsTrigger value="general"   className="data-[state=active]:bg-c-green-400 data-[state=active]:text-white text-c-gray-400 hover:text-c-gray-200 rounded-md px-3 text-sm flex items-center gap-1.5 whitespace-nowrap"><Globe className="w-3.5 h-3.5" />General</TabsTrigger>
-            <TabsTrigger value="status"    className="data-[state=active]:bg-c-green-400 data-[state=active]:text-white text-c-gray-400 hover:text-c-gray-200 rounded-md px-3 text-sm flex items-center gap-1.5 whitespace-nowrap"><Power className="w-3.5 h-3.5" />Status & Logo</TabsTrigger>
-            <TabsTrigger value="maintenance" className="data-[state=active]:bg-c-green-400 data-[state=active]:text-white text-c-gray-400 hover:text-c-gray-200 rounded-md px-3 text-sm flex items-center gap-1.5 whitespace-nowrap"><Wrench className="w-3.5 h-3.5" />Maintenance</TabsTrigger>
+            <TabsTrigger value="status"    className="data-[state=active]:bg-c-green-400 data-[state=active]:text-white text-c-gray-400 hover:text-c-gray-200 rounded-md px-3 text-sm flex items-center gap-1.5 whitespace-nowrap"><Power className="w-3.5 h-3.5" />Status & Maintenance</TabsTrigger>
             <TabsTrigger value="auth"      className="data-[state=active]:bg-c-green-400 data-[state=active]:text-white text-c-gray-400 hover:text-c-gray-200 rounded-md px-3 text-sm flex items-center gap-1.5 whitespace-nowrap"><ShieldCheck className="w-3.5 h-3.5" />Auth Info</TabsTrigger>
             <TabsTrigger value="topup"     className="data-[state=active]:bg-c-green-400 data-[state=active]:text-white text-c-gray-400 hover:text-c-gray-200 rounded-md px-3 text-sm flex items-center gap-1.5 whitespace-nowrap"><Coins className="w-3.5 h-3.5" />Top Up</TabsTrigger>
             <TabsTrigger value="notice"    className="data-[state=active]:bg-c-green-400 data-[state=active]:text-white text-c-gray-400 hover:text-c-gray-200 rounded-md px-3 text-sm flex items-center gap-1.5 whitespace-nowrap"><Bell className="w-3.5 h-3.5" />Notice</TabsTrigger>
@@ -281,7 +302,7 @@ export default function SettingsPage() {
         {/* ════════════════════════════════════
             TAB: GENERAL
         ════════════════════════════════════ */}
-        <TabsContent value="general">
+        <TabsContent value="general" className="space-y-5">
           <DarkCard title="Host Configuration" description="Set the base URL for your application.">
             <div className="max-w-md space-y-2">
               <Label htmlFor="hostUrl" className="text-c-gray-300">Host URL</Label>
@@ -292,42 +313,6 @@ export default function SettingsPage() {
                 onChange={(e) => updateField("hostUrl", e.target.value)}
                 className="bg-c-bg-800 border-c-bg-400 text-c-gray-200 placeholder-gray-500 focus-visible:ring-c-green-400"
               />
-            </div>
-          </DarkCard>
-        </TabsContent>
-
-        {/* ════════════════════════════════════
-            TAB: STATUS & LOGO
-        ════════════════════════════════════ */}
-        <TabsContent value="status" className="space-y-5">
-
-          {/* Site status selector */}
-          <DarkCard title="Website Status" description="Control whether your site is publicly accessible.">
-            <div className="flex items-center gap-4 max-w-sm">
-              {/* Animated dot indicator */}
-              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                settings.siteStatus === "online" ? "bg-c-green-tw-500 animate-pulse" : "bg-c-orange-500"
-              }`} />
-
-              <Select
-                value={settings.siteStatus}
-                onValueChange={(val) => updateField("siteStatus", val as "online" | "offline")}
-              >
-                <SelectTrigger className="bg-c-bg-800 border-c-bg-400 text-c-gray-200 focus:ring-c-green-400">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-c-bg-700 border-c-bg-400  text-c-gray-200">
-                  <SelectItem value="online" className="focus:bg-c-bg-400 hover:text-white!">Website is Online</SelectItem>
-                  <SelectItem value="offline" className="focus:bg-c-bg-400 hover:text-white!">Website is Offline</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Badge className={settings.siteStatus === "online"
-                ? "bg-c-green-tw-500/20 text-c-green-tw-400 border border-c-green-tw-500/30"
-                : "bg-c-orange-500/20 text-c-orange-400 border border-c-orange-500/30"
-              }>
-                {settings.siteStatus}
-              </Badge>
             </div>
           </DarkCard>
 
@@ -362,9 +347,41 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* ════════════════════════════════════
-            TAB: MAINTENANCE
+            TAB: STATUS & MAINTENANCE
         ════════════════════════════════════ */}
-        <TabsContent value="maintenance">
+        <TabsContent value="status" className="space-y-5">
+
+          {/* Site status selector */}
+          <DarkCard title="Website Status" description="Control whether your site is publicly accessible.">
+            <div className="flex items-center gap-4 max-w-sm">
+              {/* Animated dot indicator */}
+              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                settings.siteStatus === "online" ? "bg-c-green-tw-500 animate-pulse" : "bg-c-orange-500"
+              }`} />
+
+              <Select
+                value={settings.siteStatus}
+                onValueChange={(val) => updateField("siteStatus", val as "online" | "offline")}
+              >
+                <SelectTrigger className="bg-c-bg-800 border-c-bg-400 text-c-gray-200 focus:ring-c-green-400">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-c-bg-700 border-c-bg-400  text-c-gray-200">
+                  <SelectItem value="online" className="focus:bg-c-bg-400 hover:text-white!">Website is Online</SelectItem>
+                  <SelectItem value="offline" className="focus:bg-c-bg-400 hover:text-white!">Website is Offline</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Badge className={settings.siteStatus === "online"
+                ? "bg-c-green-tw-500/20 text-c-green-tw-400 border border-c-green-tw-500/30"
+                : "bg-c-orange-500/20 text-c-orange-400 border border-c-orange-500/30"
+              }>
+                {settings.siteStatus}
+              </Badge>
+            </div>
+          </DarkCard>
+
+          {/* Maintenance settings */}
           <DarkCard title="Maintenance Mode" description="Text shown to users when the site is in maintenance mode.">
             <div className="space-y-5">
 

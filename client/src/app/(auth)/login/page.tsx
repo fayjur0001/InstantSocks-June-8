@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -16,8 +16,39 @@ import { apiFetch } from "@/lib/api";
 import { safeRedirect } from "@/lib/helpers";
 import { toast } from "sonner";
 
+// ─── Countdown helpers ────────────────────────────────────────────────────────
+
+function calcTimeLeft(endIso: string | null): { h: number; m: number; s: number } | null {
+  if (!endIso) return null;
+  const diff = new Date(endIso).getTime() - Date.now();
+  if (diff <= 0) return null;
+  return {
+    h: Math.floor(diff / 3_600_000),
+    m: Math.floor((diff % 3_600_000) / 60_000),
+    s: Math.floor((diff % 60_000) / 1_000),
+  };
+}
+
+function useCountdown(endIso: string | null) {
+  const [time, setTime] = useState<{ h: number; m: number; s: number } | null>(
+    () => calcTimeLeft(endIso)
+  );
+  useEffect(() => {
+    setTime(calcTimeLeft(endIso));
+    if (!endIso) return;
+    const id = setInterval(() => {
+      const next = calcTimeLeft(endIso);
+      setTime(next);
+      if (!next) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [endIso]);
+  return time;
+}
+
 // ─── Maintenance Modal ────────────────────────────────────────────────────────
-function MaintenanceModal({ message, onClose }: { message: string; onClose: () => void }) {
+function MaintenanceModal({ message, endIso, onClose }: { message: string; endIso: string | null; onClose: () => void }) {
+  const time = useCountdown(endIso);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
@@ -31,18 +62,38 @@ function MaintenanceModal({ message, onClose }: { message: string; onClose: () =
         <h2 className="text-xl font-bold text-white mb-2">
           Site Under Maintenance
         </h2>
-        <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+        <p className="text-zinc-400 text-sm leading-relaxed mb-5">
           {message || "We're performing scheduled maintenance to improve your experience. Please check back shortly."}
         </p>
-        <div className="flex items-center justify-center gap-1.5 mb-6">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="w-2 h-2 rounded-full bg-amber-400 animate-bounce"
-              style={{ animationDelay: `${i * 0.15}s` }}
-            />
-          ))}
-        </div>
+        {time ? (
+          <div className="flex items-center justify-center gap-3 mb-5">
+            {[
+              { label: "Hours",   value: time.h },
+              { label: "Minutes", value: time.m },
+              { label: "Seconds", value: time.s },
+            ].map(({ label, value }, i) => (
+              <div key={label} className="flex items-center gap-3">
+                <div className="flex flex-col items-center">
+                  <span className="text-2xl font-bold text-amber-400 tabular-nums w-12 text-center">
+                    {String(value).padStart(2, "0")}
+                  </span>
+                  <span className="text-xs text-zinc-500 mt-0.5">{label}</span>
+                </div>
+                {i < 2 && <span className="text-xl font-bold text-zinc-600 mb-4">:</span>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-1.5 mb-5">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="w-2 h-2 rounded-full bg-amber-400 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        )}
         <Button
           onClick={onClose}
           className="w-full bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-xl h-11"
@@ -62,9 +113,10 @@ function LoginPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [maintenanceModal, setMaintenanceModal] = useState<{ open: boolean; message: string }>({
+  const [maintenanceModal, setMaintenanceModal] = useState<{ open: boolean; message: string; endIso: string | null }>({
     open: false,
     message: "",
+    endIso: null,
   });
 
   const { login, logout } = useAuth();
@@ -89,7 +141,11 @@ function LoginPageContent() {
       //         তারা এই portal এ আসেই না (instants portal আলাদা)।
       const statusData = await apiFetch("/api/site-status").catch(() => null);
       if (statusData?.maintenance) {
-        setMaintenanceModal({ open: true, message: statusData.message });
+        setMaintenanceModal({
+          open: true,
+          message: statusData.message,
+          endIso: statusData.maintenanceEnd || null,
+        });
         setLoading(false);
         return;
       }
@@ -112,7 +168,7 @@ function LoginPageContent() {
       const msg =
         err instanceof Error ? err.message : "Login failed. Please try again.";
       if (msg.toLowerCase().includes("maintenance")) {
-        setMaintenanceModal({ open: true, message: msg });
+        setMaintenanceModal({ open: true, message: msg, endIso: null });
       } else {
         setError(msg);
       }
@@ -126,7 +182,8 @@ function LoginPageContent() {
       {maintenanceModal.open && (
         <MaintenanceModal
           message={maintenanceModal.message}
-          onClose={() => setMaintenanceModal({ open: false, message: "" })}
+          endIso={maintenanceModal.endIso}
+          onClose={() => setMaintenanceModal({ open: false, message: "", endIso: null })}
         />
       )}
 

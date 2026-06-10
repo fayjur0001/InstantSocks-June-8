@@ -8,8 +8,48 @@ import HeaderNav from "@/components/user/headerNav/HeaderNav";
 import { WrenchIcon } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
+// ─── Countdown helpers ────────────────────────────────────────────────────────
+
+function calcTimeLeft(endIso: string | null): { h: number; m: number; s: number } | null {
+  if (!endIso) return null;
+  const diff = new Date(endIso).getTime() - Date.now();
+  if (diff <= 0) return null;
+  return {
+    h: Math.floor(diff / 3_600_000),
+    m: Math.floor((diff % 3_600_000) / 60_000),
+    s: Math.floor((diff % 60_000) / 1_000),
+  };
+}
+
+// calc function টা component এর বাইরে থাকায় stale closure সমস্যা নেই।
+// endIso change হলে useEffect restart হয় এবং setInterval নতুন করে চালু হয়।
+function useCountdown(endIso: string | null) {
+  const [time, setTime] = useState<{ h: number; m: number; s: number } | null>(
+    () => calcTimeLeft(endIso)
+  );
+
+  useEffect(() => {
+    // endIso change হলে immediately নতুন value দাও
+    setTime(calcTimeLeft(endIso));
+
+    if (!endIso) return;
+
+    const id = setInterval(() => {
+      const next = calcTimeLeft(endIso);
+      setTime(next);
+      if (!next) clearInterval(id); // time শেষ হলে interval বন্ধ করো
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [endIso]);
+
+  return time;
+}
+
 // ─── Maintenance Wall ─────────────────────────────────────────────────────────
-function MaintenanceWall({ message }: { message: string }) {
+function MaintenanceWall({ message, endIso }: { message: string; endIso: string | null }) {
+  const time = useCountdown(endIso);
+
   return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
       <div className="w-full max-w-lg text-center">
@@ -23,6 +63,28 @@ function MaintenanceWall({ message }: { message: string }) {
         <p className="text-zinc-400 text-base leading-relaxed mb-8 max-w-sm mx-auto">
           {message || "We're performing scheduled maintenance to improve your experience. Please check back shortly."}
         </p>
+
+        {/* Countdown timer — শুধু endIso থাকলে এবং time শেষ না হলে দেখাবে */}
+        {time && (
+          <div className="flex items-center justify-center gap-3 mb-8">
+            {[
+              { label: "Hours",   value: time.h },
+              { label: "Minutes", value: time.m },
+              { label: "Seconds", value: time.s },
+            ].map(({ label, value }, i) => (
+              <div key={label} className="flex items-center gap-3">
+                <div className="flex flex-col items-center">
+                  <span className="text-3xl font-bold text-amber-400 tabular-nums w-14 text-center">
+                    {String(value).padStart(2, "0")}
+                  </span>
+                  <span className="text-xs text-zinc-500 mt-1">{label}</span>
+                </div>
+                {i < 2 && <span className="text-2xl font-bold text-zinc-600 mb-4">:</span>}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="w-full max-w-xs mx-auto h-1 bg-white/5 rounded-full overflow-hidden">
           <div className="h-full bg-amber-400/60 rounded-full animate-[maintenance-bar_2s_ease-in-out_infinite]" />
         </div>
@@ -42,9 +104,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const redirected = useRef(false);
-  const [maintenance, setMaintenance] = useState<{ active: boolean; message: string }>({
+  const [maintenance, setMaintenance] = useState<{ active: boolean; message: string; endIso: string | null }>({
     active: false,
     message: "",
+    endIso: null,
   });
 
   // ✅ Maintenance check — admin/super admin bypass
@@ -53,9 +116,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (user.role === "admin" || user.role === "super admin") return;
 
     apiFetch("/api/site-status")
-      .then((data: { maintenance: boolean; message: string }) => {
+      .then((data: { maintenance: boolean; message: string; maintenanceEnd?: string | null }) => {
         if (data.maintenance) {
-          setMaintenance({ active: true, message: data.message });
+          setMaintenance({
+            active: true,
+            message: data.message,
+            endIso: data.maintenanceEnd || null,
+          });
         }
       })
       .catch(() => {/* network error — don't block */});
@@ -115,7 +182,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   // ✅ Maintenance active হলে wall দেখাও
   if (maintenance.active) {
-    return <MaintenanceWall message={maintenance.message} />;
+    return <MaintenanceWall message={maintenance.message} endIso={maintenance.endIso} />;
   }
 
   return (

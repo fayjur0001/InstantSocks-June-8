@@ -33,6 +33,10 @@ export default class SiteOptions {
   static siteLogo = mks("site-logo");
   static notice = mks("notice");
   static maintenanceText = mks("maintenance-text", "Site is undergoing maintenance");
+  static maintenanceEnd = mks("maintenance-end", ""); // ISO timestamp — e.g. "2026-06-10T15:00:00.000Z"
+  static rules = mks("rules", "");
+  static termsAndConditions = mks("terms-and-conditions", "");
+  static privacyPolicy = mks("privacy-policy", "");
   static providerCallbackSecret = mks("provider-callback-secret");
   static socks5ProxyAPIKey = mks("socks5-proxy-api-key");
   static smsPvaSecret = mks("sms-pva-secret");
