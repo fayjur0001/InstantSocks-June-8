@@ -1,6 +1,24 @@
 import { Request, Response } from "express";
 import SiteOptions from "@/utils/site-options";
 
+// PUBLIC — GET /api/site-status  (no auth required)
+export async function getSiteStatus(req: Request, res: Response) {
+  try {
+    const [siteMode, maintenanceText] = await Promise.all([
+      SiteOptions.siteMode.get(),
+      SiteOptions.maintenanceText.get(),
+    ]);
+    res.json({
+      success: true,
+      maintenance: siteMode === "maintenance",
+      message: maintenanceText || "The site is currently under maintenance. Please check back shortly.",
+    });
+  } catch (e) {
+    // DB down হলে lock-out করবো না
+    res.json({ success: true, maintenance: false, message: "" });
+  }
+}
+
 // D1 — GET /api/admin/settings
 export async function getSettings(req: Request, res: Response) {
   try {

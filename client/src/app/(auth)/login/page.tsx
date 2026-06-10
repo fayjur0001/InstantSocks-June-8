@@ -6,7 +6,7 @@ import React, { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Home, Eye, EyeOff, User, Lock, KeyRound } from "lucide-react";
+import { Home, Eye, EyeOff, User, Lock, KeyRound, WrenchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,6 +14,44 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { safeRedirect } from "@/lib/helpers";
 import { toast } from "sonner";
+
+// ─── Maintenance Modal ────────────────────────────────────────────────────────
+function MaintenanceModal({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative z-10 w-full max-w-md bg-[#121214] border border-white/10 rounded-2xl shadow-2xl p-6 text-center">
+        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 mx-auto mb-4">
+          <WrenchIcon className="w-8 h-8 text-amber-400" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">
+          Site Under Maintenance
+        </h2>
+        <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+          {message || "We're performing scheduled maintenance to improve your experience. Please check back shortly."}
+        </p>
+        <div className="flex items-center justify-center gap-1.5 mb-6">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="w-2 h-2 rounded-full bg-amber-400 animate-bounce"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            />
+          ))}
+        </div>
+        <Button
+          onClick={onClose}
+          className="w-full bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-xl h-11"
+        >
+          Dismiss
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +61,10 @@ function LoginPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [maintenanceModal, setMaintenanceModal] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: "",
+  });
 
   const { login, logout } = useAuth();
   const router = useRouter();
@@ -30,7 +72,7 @@ function LoginPageContent() {
   const currentYear = new Date().getFullYear();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); 
+    e.preventDefault();
     setError("");
 
     if (!identifier || !password || !pin) {
@@ -42,26 +84,26 @@ function LoginPageContent() {
     try {
       const loginData = await login(identifier, password, pin, rememberMe);
 
-      // Staff roles are not allowed on the user login page
       if (
         loginData.role === "admin" ||
         loginData.role === "super admin" ||
         loginData.role === "support"
       ) {
-        // ✅ FIX: ghost session clear করো — cookie ও AuthContext state দুটোই
         await logout();
         setError("Staff accounts must log in via the staff portal.");
         return;
       }
 
-      // Normal user — redirect to original destination or dashboard
-      // ✅ FIX: safeRedirect — external URL reject করে
       toast.success("You have logged in successfully. Welcome back!");
       router.push(safeRedirect(params.get("redirect"), "/user/dashboard"));
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Login failed. Please try again.";
-      setError(msg);
+      if (msg.toLowerCase().includes("maintenance")) {
+        setMaintenanceModal({ open: true, message: msg });
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -69,6 +111,13 @@ function LoginPageContent() {
 
   return (
     <main className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-[#09090b] selection:bg-c-green-400/30">
+      {maintenanceModal.open && (
+        <MaintenanceModal
+          message={maintenanceModal.message}
+          onClose={() => setMaintenanceModal({ open: false, message: "" })}
+        />
+      )}
+
       {/* Left column */}
       <section className="hidden lg:flex w-full lg:w-[50%] bg-zinc-100 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/auth-bg.png')] bg-cover bg-center opacity-30 mix-blend-multiply" />
