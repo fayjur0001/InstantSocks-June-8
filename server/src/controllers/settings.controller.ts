@@ -4,13 +4,14 @@ import SiteOptions from "@/utils/site-options";
 // D1 — GET /api/admin/settings
 export async function getSettings(req: Request, res: Response) {
   try {
-    const [hostUrl, siteMode, notice, maintenanceText] = await Promise.all([
+    const [hostUrl, siteMode, notice, maintenanceText, siteLogo] = await Promise.all([
       SiteOptions.hostUrl.get(),
       SiteOptions.siteMode.get(),
       SiteOptions.notice.get(),
       SiteOptions.maintenanceText.get(),
+      SiteOptions.siteLogo.get(),
     ]);
-    res.json({ success: true, data: { hostUrl, siteMode, notice, maintenanceText } });
+    res.json({ success: true, data: { hostUrl, siteMode, notice, maintenanceText, siteLogo } });
   } catch (e) {
     console.error("GET SETTINGS ERROR:", e);
     res.status(500).json({ success: false, message: "Internal server error." });
@@ -20,12 +21,25 @@ export async function getSettings(req: Request, res: Response) {
 // D1 — PUT /api/admin/settings
 export async function updateSettings(req: Request, res: Response) {
   try {
-    const { hostUrl, siteMode, notice, maintenanceText } = req.body;
+    const { hostUrl, siteMode, notice, maintenanceText, siteLogo } = req.body;
+
+    // siteLogo validation — base64 data URL অথবা null/empty
+    if (siteLogo !== undefined && siteLogo !== null && siteLogo !== "") {
+      if (!/^data:image\/(jpeg|png|webp|gif|svg\+xml);base64,/.test(siteLogo)) {
+        return res.status(400).json({ success: false, message: "Invalid logo format. Must be a base64 image." });
+      }
+      // ~2MB limit (base64 ~1.37x overhead)
+      if (siteLogo.length > 3_000_000) {
+        return res.status(400).json({ success: false, message: "Logo too large. Maximum size is ~2MB." });
+      }
+    }
+
     await Promise.all([
       hostUrl !== undefined && SiteOptions.hostUrl.set(hostUrl),
       siteMode !== undefined && SiteOptions.siteMode.set(siteMode),
       notice !== undefined && SiteOptions.notice.set(notice),
       maintenanceText !== undefined && SiteOptions.maintenanceText.set(maintenanceText),
+      siteLogo !== undefined && SiteOptions.siteLogo.set(siteLogo || ""),
     ]);
     res.json({ success: true, message: "Settings updated" });
   } catch (e) {

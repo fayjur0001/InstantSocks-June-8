@@ -148,10 +148,20 @@ export default function SettingsPage() {
 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) {
-      // Create a temporary URL to preview the uploaded image
-      updateField("siteLogo", URL.createObjectURL(file));
+    if (!file) return;
+
+    // file size check — ~2MB limit
+    if (file.size > 2_097_152) {
+      alert("Logo file too large. Maximum size is 2MB.");
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      // base64 data URL — preview + save-এ use হবে
+      updateField("siteLogo", reader.result as string);
+    };
+    reader.readAsDataURL(file);
   }
 
   const [saving, setSaving] = useState(false);
@@ -167,6 +177,7 @@ export default function SettingsPage() {
           siteStatus: (data.siteMode === "maintenance" ? "offline" : "online") as "online" | "offline",
           notice: data.notice || prev.notice,
           maintenance: { ...prev.maintenance, text: data.maintenanceText || prev.maintenance.text },
+          siteLogo: data.siteLogo || null,
         }));
       })
       .catch((err) => console.error("Failed to load settings:", err))
@@ -180,6 +191,7 @@ export default function SettingsPage() {
       siteMode: settings.siteStatus === "offline" ? "maintenance" : "production",
       notice: settings.notice,
       maintenanceText: settings.maintenance.text,
+      siteLogo: settings.siteLogo ?? "",
     })
       .then(() => console.log("Settings saved"))
       .catch((err) => console.error("Failed to save settings:", err))

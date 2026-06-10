@@ -156,6 +156,7 @@ export interface AdminSettingsData {
   siteMode?: string;
   notice?: string;
   maintenanceText?: string;
+  siteLogo?: string;
 }
 
 export interface PaymentApiProviderData {

@@ -67,6 +67,48 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
   }
 }
 
+// ─── 24h lockout helpers ──────────────────────────────────────────────────────
+const CHANGE_LOCKOUT_MS = 24 * 60 * 60 * 1000
+
+type SecurityChangeType = 'password' | 'pin' | null
+
+interface SecurityLockState {
+  type: SecurityChangeType
+  changedAt: number
+}
+
+// userId per-user key — অন্য user এর lock এ প্রভাব পড়বে না
+const lockKey = (userId: string | number) => `profile_security_change:${userId}`
+
+function getLockState(userId: string | number): SecurityLockState | null {
+  try {
+    const raw = localStorage.getItem(lockKey(userId))
+    if (!raw) return null
+    const parsed: SecurityLockState = JSON.parse(raw)
+    if (Date.now() - parsed.changedAt < CHANGE_LOCKOUT_MS) return parsed
+    localStorage.removeItem(lockKey(userId))
+    return null
+  } catch {
+    return null
+  }
+}
+
+function remainingTime(changedAt: number): string {
+  const remaining = CHANGE_LOCKOUT_MS - (Date.now() - changedAt)
+  if (remaining <= 0) return '0m'
+  const h = Math.floor(remaining / 3_600_000)
+  const m = Math.floor((remaining % 3_600_000) / 60_000)
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
+function saveLockState(userId: string | number, type: SecurityChangeType) {
+  localStorage.setItem(
+    lockKey(userId),
+    JSON.stringify({ type, changedAt: Date.now() } satisfies SecurityLockState)
+  )
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ─── UserProfile interface ────────────────────────────────────────────────────
 interface UserProfile {
   username: string
@@ -157,7 +199,7 @@ const InputWithVisibility = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const UserManagement: NextPage = () => {
-  const { refreshUser } = useAuth()
+  const { refreshUser, user: authUser } = useAuth()
   const [user, setUser] = useState<UserProfile>({
     username: '',
     firstName: '',
@@ -180,6 +222,9 @@ const UserManagement: NextPage = () => {
   const [newPasswordTouched, setNewPasswordTouched] = useState(false)
   const [newPinTouched, setNewPinTouched]       = useState(false)
 
+  // 24h lockout state
+  const [lockState, setLockStateLocal] = useState<SecurityLockState | null>(null)
+
   // Avatar upload
   const fileInputRef                            = useRef<HTMLInputElement>(null)
   const [avatarPreview, setAvatarPreview]       = useState<string | undefined>(undefined)
@@ -187,6 +232,8 @@ const UserManagement: NextPage = () => {
 
   // ── Bootstrap ───────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (authUser?.id) setLockStateLocal(getLockState(authUser.id))
+
     let active = true
     const loadProfile = async () => {
       try {
@@ -273,11 +320,24 @@ const UserManagement: NextPage = () => {
       toast.error(pwFail.label + '.')
       return
     }
+
+    // 24h lockout — pin was changed recently
+    if (lockState?.type === 'pin') {
+      toast.error(
+        `You recently changed your secret PIN. You can change your password again in ${remainingTime(lockState.changedAt)}.`
+      )
+      return
+    }
+
     try {
       const result = await profileService.changePassword(oldPassword, newPassword)
       setOldPassword('')
       setNewPassword('')
       setNewPasswordTouched(false)
+      if (authUser?.id) {
+        saveLockState(authUser.id, 'password')
+        setLockStateLocal(getLockState(authUser.id))
+      }
       toast.success(result.message || 'You have successfully changed your password.')
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Password change failed. Please check your current password.'))
@@ -296,11 +356,24 @@ const UserManagement: NextPage = () => {
       toast.error(pinFail.label + '.')
       return
     }
+
+    // 24h lockout — password was changed recently
+    if (lockState?.type === 'password') {
+      toast.error(
+        `You recently changed your password. You can change your secret PIN again in ${remainingTime(lockState.changedAt)}.`
+      )
+      return
+    }
+
     try {
       const result = await profileService.changePin(oldSecretPin, newSecretPin)
       setOldSecretPin('')
       setNewSecretPin('')
       setNewPinTouched(false)
+      if (authUser?.id) {
+        saveLockState(authUser.id, 'pin')
+        setLockStateLocal(getLockState(authUser.id))
+      }
       toast.success(result.message || 'You have successfully changed your secret PIN number.')
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'PIN change failed. Please check your current PIN.'))
@@ -442,20 +515,28 @@ const UserManagement: NextPage = () => {
                   {/* Change Password */}
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-c-zinc-400 mb-2">Change Password</h4>
-                    <InputWithVisibility id="oldPassword" label="Current Password"
-                      value={oldPassword} onChange={(e) => setOldPassword(e.target.value)}
-                      placeholder="Enter current password" />
-                    <InputWithVisibility id="newPassword" label="New Password"
-                      value={newPassword} onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true) }}
-                      placeholder="Enter new password" />
-                    <RuleChecklist rules={PASSWORD_RULES} value={newPassword} show={newPasswordTouched} />
-                    <Button
-                      type="button"
-                      onClick={handlePasswordChange}
-                      className="w-full bg-c-green-tw-600 hover:bg-c-green-tw-700 text-white mt-1"
-                    >
-                      Change Password
-                    </Button>
+                    {lockState?.type === 'pin' ? (
+                      <p className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-md px-3 py-2">
+                        🔒 Password change is locked for {remainingTime(lockState.changedAt)} because you recently changed your secret PIN.
+                      </p>
+                    ) : (
+                      <>
+                        <InputWithVisibility id="oldPassword" label="Current Password"
+                          value={oldPassword} onChange={(e) => setOldPassword(e.target.value)}
+                          placeholder="Enter current password" />
+                        <InputWithVisibility id="newPassword" label="New Password"
+                          value={newPassword} onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true) }}
+                          placeholder="Enter new password" />
+                        <RuleChecklist rules={PASSWORD_RULES} value={newPassword} show={newPasswordTouched} />
+                        <Button
+                          type="button"
+                          onClick={handlePasswordChange}
+                          className="w-full bg-c-green-tw-600 hover:bg-c-green-tw-700 text-white mt-1"
+                        >
+                          Change Password
+                        </Button>
+                      </>
+                    )}
                   </div>
 
                   <Separator className="bg-c-zinc-800" />
@@ -463,20 +544,28 @@ const UserManagement: NextPage = () => {
                   {/* Change Secret PIN */}
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-c-zinc-400 mb-2">Change Secret PIN</h4>
-                    <InputWithVisibility id="oldSecretPin" label="Current Secret PIN"
-                      value={oldSecretPin} onChange={(e) => setOldSecretPin(e.target.value)}
-                      placeholder="Enter current PIN" maxLength={6} />
-                    <InputWithVisibility id="newSecretPin" label="New Secret PIN"
-                      value={newSecretPin} onChange={(e) => { setNewSecretPin(e.target.value); setNewPinTouched(true) }}
-                      placeholder="Enter new PIN (6 digits)" maxLength={6} />
-                    <RuleChecklist rules={PIN_RULES} value={newSecretPin} show={newPinTouched} />
-                    <Button
-                      type="button"
-                      onClick={handlePinChange}
-                      className="w-full bg-c-green-tw-600 hover:bg-c-green-tw-700 text-white mt-1"
-                    >
-                      Change PIN
-                    </Button>
+                    {lockState?.type === 'password' ? (
+                      <p className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-md px-3 py-2">
+                        🔒 PIN change is locked for {remainingTime(lockState.changedAt)} because you recently changed your password.
+                      </p>
+                    ) : (
+                      <>
+                        <InputWithVisibility id="oldSecretPin" label="Current Secret PIN"
+                          value={oldSecretPin} onChange={(e) => setOldSecretPin(e.target.value)}
+                          placeholder="Enter current PIN" maxLength={6} />
+                        <InputWithVisibility id="newSecretPin" label="New Secret PIN"
+                          value={newSecretPin} onChange={(e) => { setNewSecretPin(e.target.value); setNewPinTouched(true) }}
+                          placeholder="Enter new PIN (6 digits)" maxLength={6} />
+                        <RuleChecklist rules={PIN_RULES} value={newSecretPin} show={newPinTouched} />
+                        <Button
+                          type="button"
+                          onClick={handlePinChange}
+                          className="w-full bg-c-green-tw-600 hover:bg-c-green-tw-700 text-white mt-1"
+                        >
+                          Change PIN
+                        </Button>
+                      </>
+                    )}
                   </div>
 
                 </CardContent>

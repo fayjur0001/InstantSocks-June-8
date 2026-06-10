@@ -4,6 +4,7 @@ import { AdditionalUserInformationModel } from "@/db/schema";
 import { PasswordResetRequestModel } from "@/db/schema";
 import { sendPasswordResetEmail } from "@/utils/mailer";
 import { Request, Response } from "express";
+import SiteOptions from "@/utils/site-options";
 import {
   setAuthCookie,
   clearAuthCookie,
@@ -225,6 +226,22 @@ export async function login(
         return res.status(400).json({
           success: false,
           message: "Invalid username or password",
+        });
+      }
+    }
+
+    // ── Maintenance mode check ────────────────────────────────────────────────
+    // admin/super admin সবসময় login করতে পারবে।
+    // general/support user — siteMode=maintenance হলে block করো।
+    const isAdminUser = user.role === "admin" || user.role === "super admin";
+    if (!isAdminUser) {
+      const siteMode = await SiteOptions.siteMode.get();
+      if (siteMode === "maintenance") {
+        const maintenanceText = await SiteOptions.maintenanceText.get();
+        return res.status(503).json({
+          success: false,
+          message: maintenanceText || "Site is under maintenance. Please try again later.",
+          reason: "maintenance",
         });
       }
     }

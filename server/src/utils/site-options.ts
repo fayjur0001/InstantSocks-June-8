@@ -30,6 +30,7 @@ export default class SiteOptions {
   static apiUser = mks("api-user");
   static apiKey = mks("api-key");
   static siteMode = mks("site-mode", "production");
+  static siteLogo = mks("site-logo");
   static notice = mks("notice");
   static maintenanceText = mks("maintenance-text", "Site is undergoing maintenance");
   static providerCallbackSecret = mks("provider-callback-secret");
