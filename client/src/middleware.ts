@@ -84,12 +84,13 @@ export async function middleware(request: NextRequest) {
 
     const role = jwtPayload?.role;
 
-    // support শুধু /admin/support এবং /admin/support/* এ ঢুকতে পারবে
+    // support শুধু /admin/support, /admin/support/* এবং /admin/profile এ ঢুকতে পারবে
     // বাকি /admin/* — user dashboard এ redirect
     if (role === "support") {
       const isSupportRoute =
         pathname === "/admin/support" ||
-        pathname.startsWith("/admin/support/");
+        pathname.startsWith("/admin/support/") ||
+        pathname === "/admin/profile";
       if (!isSupportRoute) {
         return NextResponse.redirect(new URL("/user/dashboard", request.url));
       }

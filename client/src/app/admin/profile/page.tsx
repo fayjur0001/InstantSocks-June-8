@@ -5,6 +5,7 @@ import Head from 'next/head'
 import { useEffect, useRef, useState } from 'react'
 import { Eye, EyeOff, Camera } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth } from '@/context/AuthContext'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,6 +27,46 @@ interface UserProfile {
   jabber: string
   aboutBio: string
   avatarUrl?: string
+}
+
+
+// ─── Password & PIN validation rules (registration page এর মতো) ──────────────
+
+const PASSWORD_RULES = [
+  { label: "At least 8 characters",          test: (v: string) => v.length >= 8 },
+  { label: "At least one uppercase letter",  test: (v: string) => /[A-Z]/.test(v) },
+  { label: "At least one lowercase letter",  test: (v: string) => /[a-z]/.test(v) },
+  { label: "At least one number",            test: (v: string) => /[0-9]/.test(v) },
+  { label: "At least one special character", test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+]
+
+const PIN_RULES = [
+  { label: "Exactly 6 digits", test: (v: string) => /^\d{6}$/.test(v) },
+  { label: "Numbers only",     test: (v: string) => /^\d*$/.test(v) },
+]
+
+function RuleChecklist({ rules, value, show }: {
+  rules: { label: string; test: (v: string) => boolean }[]
+  value: string
+  show: boolean
+}) {
+  if (!show) return null
+  return (
+    <ul className="mt-1 space-y-1 pl-0.5">
+      {rules.map((rule) => {
+        const passed = value.length > 0 && rule.test(value)
+        const failed = value.length > 0 && !rule.test(value)
+        return (
+          <li key={rule.label} className={`flex items-center gap-1.5 text-xs transition-colors ${
+            passed ? "text-c-green-tw-500" : failed ? "text-red-400" : "text-c-zinc-500"
+          }`}>
+            <span className="shrink-0 text-[10px]">{passed ? "✓" : "✕"}</span>
+            {rule.label}
+          </li>
+        )
+      })}
+    </ul>
+  )
 }
 
 const getApiErrorMessage = (error: unknown, fallback: string) => {
@@ -111,6 +152,7 @@ const InputWithVisibility = ({
 }
 
 const UserManagement: NextPage = () => {
+  const { refreshUser } = useAuth()
   const [user, setUser] = useState<UserProfile>({
     username: '',
     firstName: '',
@@ -127,6 +169,8 @@ const UserManagement: NextPage = () => {
   const [newPassword, setNewPassword] = useState('')
   const [oldSecretPin, setOldSecretPin] = useState('')
   const [newSecretPin, setNewSecretPin] = useState('')
+  const [newPasswordTouched, setNewPasswordTouched] = useState(false)
+  const [newPinTouched, setNewPinTouched] = useState(false)
 
   // Avatar upload state
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -187,6 +231,8 @@ const UserManagement: NextPage = () => {
     try {
       const result = await profileService.uploadAvatar(file)
       toast.success(result.message || 'Profile photo updated successfully.')
+      // HeaderNav এ avatar auto-update করার জন্য AuthContext refresh
+      await refreshUser()
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to upload photo.'))
       setAvatarPreview(user.avatarUrl)
@@ -215,14 +261,21 @@ const UserManagement: NextPage = () => {
   }
 
   const handlePasswordChange = async () => {
+    setNewPasswordTouched(true)
     if (!oldPassword || !newPassword) {
       toast.error('Please fill in both password fields.')
+      return
+    }
+    const pwFail = PASSWORD_RULES.find(r => !r.test(newPassword))
+    if (pwFail) {
+      toast.error(pwFail.label + '.')
       return
     }
     try {
       const result = await profileService.changePassword(oldPassword, newPassword)
       setOldPassword('')
       setNewPassword('')
+      setNewPasswordTouched(false)
       toast.success(result.message || 'Password changed successfully.')
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Password change failed.'))
@@ -230,14 +283,21 @@ const UserManagement: NextPage = () => {
   }
 
   const handlePinChange = async () => {
+    setNewPinTouched(true)
     if (!oldSecretPin || !newSecretPin) {
       toast.error('Please fill in both PIN fields.')
+      return
+    }
+    const pinFail = PIN_RULES.find(r => !r.test(newSecretPin))
+    if (pinFail) {
+      toast.error(pinFail.label + '.')
       return
     }
     try {
       const result = await profileService.changePin(oldSecretPin, newSecretPin)
       setOldSecretPin('')
       setNewSecretPin('')
+      setNewPinTouched(false)
       toast.success(result.message || 'PIN changed successfully.')
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'PIN change failed.'))
@@ -395,9 +455,10 @@ const UserManagement: NextPage = () => {
                       id="newPassword"
                       label="New Password"
                       value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
+                      onChange={(e) => { setNewPassword(e.target.value); setNewPasswordTouched(true) }}
                       placeholder="Enter new password"
                     />
+                    <RuleChecklist rules={PASSWORD_RULES} value={newPassword} show={newPasswordTouched} />
                     <Button
                       type="button"
                       onClick={handlePasswordChange}
@@ -424,10 +485,11 @@ const UserManagement: NextPage = () => {
                       id="newSecretPin"
                       label="New Secret Pin"
                       value={newSecretPin}
-                      onChange={(e) => setNewSecretPin(e.target.value)}
+                      onChange={(e) => { setNewSecretPin(e.target.value); setNewPinTouched(true) }}
                       placeholder="Enter new PIN"
                       maxLength={6}
                     />
+                    <RuleChecklist rules={PIN_RULES} value={newSecretPin} show={newPinTouched} />
                     <Button
                       type="button"
                       onClick={handlePinChange}

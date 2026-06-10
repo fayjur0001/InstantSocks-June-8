@@ -33,7 +33,7 @@ const HeaderNav = () => {
   const authUser = {
     name: user?.full_name || user?.username || "Admin",
     email: user?.email || "",
-    image: "/user.jpeg",
+    image: user?.avatar || "/user.jpeg",
     role: getRoleLabel(user?.role),
   };
 
