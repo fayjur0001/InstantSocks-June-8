@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { safeRedirect } from "@/lib/helpers";
+import { toast } from "sonner";
 
 function StaffLoginContent() {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,10 +39,10 @@ function StaffLoginContent() {
       const loginData = await login(identifier, password, pin);
 
       if (loginData.role === "admin" || loginData.role === "super admin") {
-        // ✅ FIX: safeRedirect — external URL reject করে
+        toast.success("Welcome back! You are logged in successfully.");
         router.push(safeRedirect(params.get("redirect"), "/admin/dashboard"));
       } else if (loginData.role === "support") {
-        // ✅ FIX: safeRedirect — external URL reject করে
+        toast.success("Welcome back! You are logged in successfully.");
         router.push(safeRedirect(params.get("redirect"), "/admin/support"));
       } else {
         // Normal user tried staff portal — reject

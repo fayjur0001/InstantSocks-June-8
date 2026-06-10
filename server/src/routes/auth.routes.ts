@@ -15,6 +15,7 @@ import {
   updateProfile,
   changePassword,
   changePin,
+  uploadAvatar,
 } from "@/controllers/auth.controller";
 
 import { requireAuth } from "@/middleware/auth.middleware";
@@ -28,10 +29,10 @@ const loginLimiter = rateLimit({
   message: "Too many login attempts. Please try again in 15 minutes.",
 });
 
-// Register: 5 attempts per hour per IP
+// Register: 10 attempts per hour per IP
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 10,
   message: "Too many registration attempts. Please try again later.",
 });
 
@@ -75,5 +76,11 @@ router.put("/profile", requireAuth(), updateProfile);
 // ── Password & PIN ───────────────────────────────
 router.post("/profile/change-password", requireAuth(), changePassword);
 router.post("/profile/change-pin", requireAuth(), changePin);
+
+// ── Avatar upload ────────────────────────────────
+// NOTE: এই route টা /profile/change-password ও /profile/change-pin এর
+// নিচে রাখা হয়েছে — Express route matching order মেনে চলতে।
+// Static path (avatar) আগে, wildcard পরে — কোনো conflict নেই।
+router.post("/profile/avatar", requireAuth(), uploadAvatar);
 
 export default router;

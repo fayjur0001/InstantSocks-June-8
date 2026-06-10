@@ -1,3 +1,5 @@
+// src/controllers/auth.controller.ts
+
 import { AdditionalUserInformationModel } from "@/db/schema";
 import { PasswordResetRequestModel } from "@/db/schema";
 import { sendPasswordResetEmail } from "@/utils/mailer";
@@ -20,6 +22,7 @@ import {
 } from "@/db/schema";
 
 import UnloggingError from "@/utils/unlogging-error";
+import { createNotification } from "@/controllers/notification.controller";
 
 import {
   and,
@@ -40,6 +43,21 @@ import crypto from "crypto";
 import Payload from "@/types/payload.type";
 
 import getBalance from "@/utils/get-balance";
+
+// ─── Shared Zod schemas ───────────────────────────────────────────────────────
+
+/**
+ * Strict password rule — registration ও changePassword দুটোতেই same rule।
+ */
+const strictPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function getBadge(role: string) {
   switch (role) {
@@ -62,19 +80,36 @@ export async function register(
   try {
     const { username, email, password, pin } = z.object({
       username: z.string().trim().min(1, "Username is required"),
-      email: z.string().trim().email("Invalid email address"),
-      password: z.string().min(8, "Password must be at least 8 characters"),
-      pin: z.string().regex(/^\d{4,6}$/, "PIN must be 4 to 6 digits"),
+      email:    z.string().trim().email("Invalid email address"),
+      // Doc 4: strict password validation
+      password: strictPasswordSchema,
+      // Doc 4: exactly 6 digits (consistent with changePin)
+      pin: z.string().regex(/^\d{6}$/, "PIN must be exactly 6 digits"),
     }).parse(req.body);
 
-    const existingUser = await db.query.UserModel.findFirst({
-      where: (m) => or(eq(m.username, username), eq(m.email, email))
-    });
+    // Doc 4: separate queries → distinct error messages per field
+    const [existingUsername, existingEmail] = await Promise.all([
+      db.query.UserModel.findFirst({
+        where: (m) => eq(m.username, username),
+        columns: { id: true },
+      }),
+      db.query.UserModel.findFirst({
+        where: (m) => eq(m.email, email),
+        columns: { id: true },
+      }),
+    ]);
 
-    if (existingUser) {
+    if (existingUsername) {
       return res.status(400).json({
         success: false,
         message: "Username already exists",
+      });
+    }
+
+    if (existingEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered",
       });
     }
 
@@ -83,22 +118,33 @@ export async function register(
       bcrypt.hash(pin, 10),
     ]);
 
-    // ✅ FIX: Race condition বন্ধ — COUNT query + INSERT একটা transaction এ।
-    // দুইটা concurrent request একসাথে "0 users" দেখে দুইজন super admin হতে পারবে না।
-    await db.transaction(async (tx) => {
+    // Doc 3: .returning({ id }) দিয়ে newUser.id capture করা হচ্ছে
+    // যাতে welcome notification পাঠানো যায়।
+    // Race condition বন্ধ — COUNT + INSERT একটা transaction এ।
+    const newUser = await db.transaction(async (tx) => {
       const [{ count }] = await tx
         .select({ count: sql<number>`count(*)::int` })
         .from(UserModel);
 
       const role = count === 0 ? "super admin" : "general";
 
-      await tx.insert(UserModel).values({
+      const [inserted] = await tx.insert(UserModel).values({
         username,
         email,
         password: hashedPassword,
-        pinCode: hashedPin,
+        pinCode:  hashedPin,
         role,
-      });
+      }).returning({ id: UserModel.id });
+
+      return inserted;
+    });
+
+    // Doc 3: welcome notification — registration সফল হলে user কে জানাও
+    await createNotification({
+      userId:  newUser.id,
+      type:    "welcome",
+      title:   "Account Created Successfully",
+      message: "Your account has been successfully created. Welcome to InstantSocks!",
     });
 
     return res.json({
@@ -146,7 +192,7 @@ export async function login(
     const user = await db.query.UserModel.findFirst({
       where: (m) => or(
         ilike(m.username, loginIdentifier),
-        ilike(m.email, loginIdentifier)
+        ilike(m.email,    loginIdentifier)
       ),
     });
 
@@ -184,34 +230,34 @@ export async function login(
     }
 
     if (user.banned) {
-  return res.status(403).json({
-    success: false,
-    message: "Your account has been banned.",
-    reason: "banned",
-  });
-}
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been banned.",
+        reason: "banned",
+      });
+    }
 
-// ✅ FIX: suspended user ও login করতে পারবে না
-if (user.bannedTill && user.bannedTill > new Date()) {
-  return res.status(403).json({
-    success: false,
-    message: `Your account is suspended until ${user.bannedTill.toUTCString()}.`,
-    reason: "suspended",
-    bannedTill: user.bannedTill,
-  });
-}
+    // suspended user ও login করতে পারবে না
+    if (user.bannedTill && user.bannedTill > new Date()) {
+      return res.status(403).json({
+        success: false,
+        message: `Your account is suspended until ${user.bannedTill.toUTCString()}.`,
+        reason: "suspended",
+        bannedTill: user.bannedTill,
+      });
+    }
 
     const deviceToken = crypto.randomBytes(32).toString("hex");
 
     await db.insert(UserDeviceModel).values({
       userId: user.id,
-      token: deviceToken,
+      token:  deviceToken,
     });
 
     const payload: Payload = {
-      id: user.id,
-      username: user.username,
-      role: user.role,
+      id:          user.id,
+      username:    user.username,
+      role:        user.role,
       deviceToken: deviceToken,
     };
 
@@ -260,7 +306,6 @@ export async function me(req: Request, res: Response) {
     const [user, additionalInfo] = await Promise.all([
       db.query.UserModel.findFirst({
         where: (m, { eq }) => eq(m.id, p.id),
-        // ✅ FIX: banned ও bannedTill এখন return হচ্ছে
         columns: { email: true, banned: true, bannedTill: true },
       }),
       db.query.AdditionalUserInformationModel.findFirst({
@@ -271,23 +316,22 @@ export async function me(req: Request, res: Response) {
     return res.json({
       success: true,
       user: {
-        id: p.id,
-        username: p.username,
-        badge: getBadge(p.role),
-        role: p.role,
+        id:            p.id,
+        username:      p.username,
+        badge:         getBadge(p.role),
+        role:          p.role,
         isShadowAdmin: p.isShadowAdmin ?? false,
-        email: user?.email || "",
-        // ✅ FIX: frontend জানতে পারবে banned/suspended কিনা
-        banned: user?.banned ?? false,
-        bannedTill: user?.bannedTill ?? null,
-        firstName: additionalInfo?.firstName || "",
-        nickName: additionalInfo?.nickName || "",
-        lastName: additionalInfo?.lastName || "",
-        website: additionalInfo?.website || "",
-        telegram: additionalInfo?.telegram || "",
-        jabber: additionalInfo?.jabber || "",
-        bio: additionalInfo?.bio || "",
-        avatar: additionalInfo?.profilePicture || "",
+        email:         user?.email     || "",
+        banned:        user?.banned    ?? false,
+        bannedTill:    user?.bannedTill ?? null,
+        firstName:     additionalInfo?.firstName || "",
+        nickName:      additionalInfo?.nickName  || "",
+        lastName:      additionalInfo?.lastName  || "",
+        website:       additionalInfo?.website   || "",
+        telegram:      additionalInfo?.telegram  || "",
+        jabber:        additionalInfo?.jabber    || "",
+        bio:           additionalInfo?.bio       || "",
+        avatar:        additionalInfo?.profilePicture || "",
       },
     });
   } catch {
@@ -319,9 +363,6 @@ export async function getNotificationCount(
   try {
     const { id: userId, role } = req.payload!;
 
-    // FIX: opened ticket count সরানো হয়েছে — unread messages query তে
-    // already open tickets ই count হয়, তাই দুটো যোগ করলে double-count হত।
-    // এখন শুধু: unseen ticket messages + unread notifications।
     const [unread, unreadNotif] = await Promise.all([
       db
         .select({ total: sql<number>`count(*)::int` })
@@ -341,7 +382,7 @@ export async function getNotificationCount(
           and(
             or(
               eq(TicketModel.agentId, userId),
-              eq(TicketModel.userId, userId),
+              eq(TicketModel.userId,  userId),
               ["admin", "super admin", "support"].includes(role)
                 ? isNull(TicketModel.agentId)
                 : undefined
@@ -352,7 +393,6 @@ export async function getNotificationCount(
         )
         .then((r) => r.at(0)?.total || 0),
 
-      // unread notification count
       db
         .select({ total: sql<number>`count(*)::int` })
         .from(NotificationModel)
@@ -380,15 +420,14 @@ export async function loginAs(
   res: Response
 ) {
   try {
-    // ✅ FIX: client "user_id" পাঠায়, server "id" expect করত — দুটোই accept করা হচ্ছে
     const id = z.coerce.number().int().min(1).parse(req.body.id ?? req.body.user_id);
 
     const user = await db
       .select({
-        id: UserModel.id,
-        role: UserModel.role,
-        username: UserModel.username,
-        banned: UserModel.banned,
+        id:        UserModel.id,
+        role:      UserModel.role,
+        username:  UserModel.username,
+        banned:    UserModel.banned,
         bannedTill: UserModel.bannedTill,
       })
       .from(UserModel)
@@ -403,14 +442,13 @@ export async function loginAs(
 
     if (!user) throw new UnloggingError("User not found.");
 
-    // Save the superadmin's current token so we can restore the session later
     const originalAdminToken = req.token!;
 
     setAuthCookie(res, {
       isShadowAdmin: true,
       originalAdminToken,
-      role: user.role,
-      id: user.id,
+      role:     user.role,
+      id:       user.id,
       username: user.username,
     });
 
@@ -445,7 +483,6 @@ export async function exitLoginAs(
     const adminPayload = getPayloadFromToken(payload.originalAdminToken);
 
     if (!adminPayload) {
-      // Original admin token is expired — clear everything and force re-login
       clearAuthCookie(res);
       return res.status(401).json({
         success: false,
@@ -453,7 +490,6 @@ export async function exitLoginAs(
       });
     }
 
-    // Restore the original superadmin cookie
     setAuthCookie(res, adminPayload);
 
     res.json({ success: true, role: adminPayload.role });
@@ -486,8 +522,8 @@ export async function forgotPassword(
     });
 
     if (user) {
-      const selector = crypto.randomBytes(20).toString("hex");
-      const rawToken = crypto.randomBytes(40).toString("hex");
+      const selector  = crypto.randomBytes(20).toString("hex");
+      const rawToken  = crypto.randomBytes(40).toString("hex");
       const hashedToken = await bcrypt.hash(rawToken, 10);
 
       await db
@@ -500,8 +536,8 @@ export async function forgotPassword(
         token: hashedToken,
       });
 
-      const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
-      const resetLink = `${clientUrl}/reset-password?selector=${selector}&token=${rawToken}`;
+      const clientUrl  = process.env.CLIENT_URL || "http://localhost:3000";
+      const resetLink  = `${clientUrl}/reset-password?selector=${selector}&token=${rawToken}`;
 
       try {
         await sendPasswordResetEmail(email, resetLink);
@@ -545,14 +581,13 @@ export async function resetPassword(
       });
     }
 
-    const resetRequest =
-      await db.query.PasswordResetRequestModel.findFirst({
-        where: (m, { eq, and, gt }) =>
-          and(
-            eq(m.selector, selector),
-            gt(m.createdAt, new Date(Date.now() - 60 * 60 * 1000))
-          ),
-      });
+    const resetRequest = await db.query.PasswordResetRequestModel.findFirst({
+      where: (m, { eq, and, gt }) =>
+        and(
+          eq(m.selector, selector),
+          gt(m.createdAt, new Date(Date.now() - 60 * 60 * 1000))
+        ),
+    });
 
     if (!resetRequest) {
       return res.status(400).json({
@@ -630,12 +665,12 @@ export async function getProfile(
       db.query.UserModel.findFirst({
         where: (m, { eq }) => eq(m.id, userId),
         columns: {
-          id: true,
+          id:       true,
           username: true,
-          email: true,
-          role: true,
+          email:    true,
+          role:     true,
           isOnline: true,
-          banned: true,
+          banned:   true,
           createdAt: true,
         },
       }),
@@ -654,20 +689,20 @@ export async function getProfile(
     return res.json({
       success: true,
       user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        isOnline: user.isOnline,
+        id:        user.id,
+        username:  user.username,
+        email:     user.email,
+        role:      user.role,
+        isOnline:  user.isOnline,
         createdAt: user.createdAt,
         firstName: additionalInfo?.firstName || "",
-        nickName: additionalInfo?.nickName || "",
-        lastName: additionalInfo?.lastName || "",
-        website: additionalInfo?.website || "",
-        telegram: additionalInfo?.telegram || "",
-        jabber: additionalInfo?.jabber || "",
-        bio: additionalInfo?.bio || "",
-        avatar: additionalInfo?.profilePicture || "",
+        nickName:  additionalInfo?.nickName  || "",
+        lastName:  additionalInfo?.lastName  || "",
+        website:   additionalInfo?.website   || "",
+        telegram:  additionalInfo?.telegram  || "",
+        jabber:    additionalInfo?.jabber    || "",
+        bio:       additionalInfo?.bio       || "",
+        avatar:    additionalInfo?.profilePicture || "",
       },
     });
   } catch (error) {
@@ -688,9 +723,9 @@ export async function updateProfile(
     const userId = req.payload!.id;
 
     const schema = z.object({
-      username: z
+      username:  z
         .string()
-        .min(3, "Username min 3 chars")
+        .min(3,  "Username min 3 chars")
         .max(30, "Username max 30 chars")
         .regex(/^[a-zA-Z0-9_]+$/, "Username: only letters, numbers, underscore")
         .optional(),
@@ -714,7 +749,6 @@ export async function updateProfile(
     const { username, firstName, lastName, nickName, website, telegram, jabber, bio } =
       parsed.data;
 
-    // Username change — unique check
     if (username) {
       const existing = await db.query.UserModel.findFirst({
         where: (m, { eq, and, ne }) =>
@@ -733,7 +767,6 @@ export async function updateProfile(
         .where(eq(UserModel.id, userId));
     }
 
-    // AdditionalUserInformation — upsert
     const additionalData = {
       ...(firstName !== undefined && { firstName }),
       ...(lastName  !== undefined && { lastName }),
@@ -745,11 +778,10 @@ export async function updateProfile(
     };
 
     if (Object.keys(additionalData).length > 0) {
-      const existingInfo =
-        await db.query.AdditionalUserInformationModel.findFirst({
-          where: (m, { eq }) => eq(m.userId, userId),
-          columns: { id: true },
-        });
+      const existingInfo = await db.query.AdditionalUserInformationModel.findFirst({
+        where: (m, { eq }) => eq(m.userId, userId),
+        columns: { id: true },
+      });
 
       if (existingInfo) {
         await db
@@ -782,9 +814,10 @@ export async function changePassword(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
 
+    // Doc 4: strict validation — registration এর সাথে consistent
     const { oldPassword, newPassword } = z.object({
       oldPassword: z.string().min(1, "Old password required"),
-      newPassword: z.string().min(8, "New password min 8 chars"),
+      newPassword: strictPasswordSchema,
     }).parse(req.body);
 
     const user = await db.query.UserModel.findFirst({
@@ -820,7 +853,9 @@ export async function changePin(req: Request, res: Response) {
 
     const { oldPin, newPin } = z.object({
       oldPin: z.string().optional(),
-      newPin: z.string().length(6, "PIN must be exactly 6 digits").regex(/^\d+$/, "PIN must be numeric"),
+      newPin: z.string()
+        .length(6, "PIN must be exactly 6 digits")
+        .regex(/^\d+$/, "PIN must be numeric"),
     }).parse(req.body);
 
     const user = await db.query.UserModel.findFirst({
@@ -832,7 +867,6 @@ export async function changePin(req: Request, res: Response) {
       return res.status(404).json({ success: false, message: "User not found." });
     }
 
-    // PIN already set → old pin verify
     if (user.pinCode) {
       if (!oldPin) {
         return res.status(400).json({ success: false, message: "Old PIN required." });
@@ -851,6 +885,63 @@ export async function changePin(req: Request, res: Response) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ success: false, message: error.errors[0]?.message });
     }
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
+// ── UPLOAD AVATAR ─────────────────────────────────────────────────────────────
+// POST /api/auth/profile/avatar
+// Client থেকে base64 data URL আসে (e.g. "data:image/jpeg;base64,/9j/...")
+// DB-তে AdditionalUserInformationModel.profilePicture তে store করা হয়।
+export async function uploadAvatar(req: Request, res: Response) {
+  try {
+    const userId = req.payload!.id;
+
+    const { avatar } = z.object({
+      avatar: z
+        .string()
+        .min(1, "Avatar is required")
+        .refine(
+          (v) => /^data:image\/(jpeg|png|webp|gif);base64,/.test(v),
+          "Invalid image format. Allowed: JPEG, PNG, WebP, GIF"
+        )
+        // ~5MB limit: base64 overhead ~1.37x → 7MB base64 ≈ 5MB actual
+        .refine(
+          (v) => v.length <= 7 * 1024 * 1024,
+          "Image is too large. Maximum size is 5MB."
+        ),
+    }).parse(req.body);
+
+    const existing = await db.query.AdditionalUserInformationModel.findFirst({
+      where: (m, { eq }) => eq(m.userId, userId),
+      columns: { id: true },
+    });
+
+    if (existing) {
+      await db
+        .update(AdditionalUserInformationModel)
+        .set({ profilePicture: avatar })
+        .where(eq(AdditionalUserInformationModel.userId, userId));
+    } else {
+      await db.insert(AdditionalUserInformationModel).values({
+        userId,
+        profilePicture: avatar,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Profile photo updated successfully.",
+      avatar,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: error.errors[0]?.message || "Invalid input.",
+      });
+    }
+    console.error("uploadAvatar error:", error);
     return res.status(500).json({ success: false, message: "Internal server error." });
   }
 }

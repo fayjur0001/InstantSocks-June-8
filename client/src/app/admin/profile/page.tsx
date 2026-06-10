@@ -2,8 +2,9 @@
 
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Eye, EyeOff, Camera } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,7 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { profileService } from '@/lib/profile.service'
 
-// 1. Define the User Profile Interface
 interface UserProfile {
   username: string
   firstName: string
@@ -30,7 +30,6 @@ interface UserProfile {
 
 const getApiErrorMessage = (error: unknown, fallback: string) => {
   if (!(error instanceof Error)) return fallback
-
   try {
     const parsed = JSON.parse(error.message)
     return parsed?.message || fallback
@@ -39,7 +38,6 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
   }
 }
 
-// Helper function to create an input field with a save icon
 const ProfileField = ({
   id,
   label,
@@ -69,7 +67,6 @@ const ProfileField = ({
   </div>
 )
 
-// Helper function for password/pin fields with visibility toggle
 const InputWithVisibility = ({
   id,
   label,
@@ -101,6 +98,7 @@ const InputWithVisibility = ({
         {...props}
       />
       <Button
+        type="button"
         size="icon"
         variant="ghost"
         className="absolute right-0 top-6 bottom-0 text-c-zinc-400 hover:text-white hover:bg-transparent px-3"
@@ -113,24 +111,27 @@ const InputWithVisibility = ({
 }
 
 const UserManagement: NextPage = () => {
-  // 2. Initialize State with data from the image
   const [user, setUser] = useState<UserProfile>({
-    username: 'Support',
-    firstName: 'Test First 2',
+    username: '',
+    firstName: '',
     nickName: '',
-    lastName: 'Test Last Name',
-    userEmail: 'support@repeatsms.com',
-    website: 'https://repeatsms.com/',
+    lastName: '',
+    userEmail: '',
+    website: '',
     telegram: '',
     jabber: '',
     aboutBio: '',
   })
 
-  // State for password and pin forms (empty as in image)
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [oldSecretPin, setOldSecretPin] = useState('')
   const [newSecretPin, setNewSecretPin] = useState('')
+
+  // Avatar upload state
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -152,9 +153,10 @@ const UserManagement: NextPage = () => {
           aboutBio: data.user.bio || '',
           avatarUrl: data.user.avatar || '',
         })
+        if (data.user.avatar) setAvatarPreview(data.user.avatar)
       } catch (error) {
         if (active) {
-          window.alert(getApiErrorMessage(error, 'Failed to load profile.'))
+          toast.error(getApiErrorMessage(error, 'Failed to load profile.'))
         }
       }
     }
@@ -170,6 +172,30 @@ const UserManagement: NextPage = () => {
     setUser((prev) => ({ ...prev, [field]: value }))
   }
 
+  // ── Avatar upload ────────────────────────────────────────────────────────────
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Client-side preview — immediate feedback
+    const reader = new FileReader()
+    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+
+    // Upload via profileService (base64 JSON)
+    setUploadingAvatar(true)
+    try {
+      const result = await profileService.uploadAvatar(file)
+      toast.success(result.message || 'Profile photo updated successfully.')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to upload photo.'))
+      setAvatarPreview(user.avatarUrl)
+    } finally {
+      setUploadingAvatar(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   const handleProfileUpdate = async () => {
     try {
       const result = await profileService.updateProfile({
@@ -182,31 +208,39 @@ const UserManagement: NextPage = () => {
         jabber: user.jabber,
         bio: user.aboutBio,
       })
-      window.alert(result.message || 'Profile updated successfully.')
+      toast.success(result.message || 'Profile updated successfully.')
     } catch (error) {
-      window.alert(getApiErrorMessage(error, 'Profile update failed.'))
+      toast.error(getApiErrorMessage(error, 'Profile update failed.'))
     }
   }
 
   const handlePasswordChange = async () => {
+    if (!oldPassword || !newPassword) {
+      toast.error('Please fill in both password fields.')
+      return
+    }
     try {
       const result = await profileService.changePassword(oldPassword, newPassword)
       setOldPassword('')
       setNewPassword('')
-      window.alert(result.message || 'Password changed successfully.')
+      toast.success(result.message || 'Password changed successfully.')
     } catch (error) {
-      window.alert(getApiErrorMessage(error, 'Password change failed.'))
+      toast.error(getApiErrorMessage(error, 'Password change failed.'))
     }
   }
 
   const handlePinChange = async () => {
+    if (!oldSecretPin || !newSecretPin) {
+      toast.error('Please fill in both PIN fields.')
+      return
+    }
     try {
       const result = await profileService.changePin(oldSecretPin, newSecretPin)
       setOldSecretPin('')
       setNewSecretPin('')
-      window.alert(result.message || 'PIN changed successfully.')
+      toast.success(result.message || 'PIN changed successfully.')
     } catch (error) {
-      window.alert(getApiErrorMessage(error, 'PIN change failed.'))
+      toast.error(getApiErrorMessage(error, 'PIN change failed.'))
     }
   }
 
@@ -215,6 +249,15 @@ const UserManagement: NextPage = () => {
       <Head>
         <title>User Management | Repsatsms</title>
       </Head>
+
+      {/* Hidden file input for avatar upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={handleAvatarFileChange}
+      />
 
       <div className=" rounded-[12px] bg-zinc-950 text-white p-2 lg:p-4">
         <div>
@@ -245,34 +288,14 @@ const UserManagement: NextPage = () => {
                   <CardTitle className="text-lg xl:text-xl text-white">Profile Information</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 xl:gap-4 px-3 xl:px-4">
-                  <ProfileField
-                    id="username"
-                    label="Username"
-                    value={user.username}
-                    onChange={(e) => handleInputChange('username', e.target.value)}
-                    placeholder="Enter username"
-                  />
-                  <ProfileField
-                    id="firstName"
-                    label="First Name"
-                    value={user.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    placeholder="Enter first name"
-                  />
-                  <ProfileField
-                    id="nickName"
-                    label="Nick Name"
-                    value={user.nickName}
-                    onChange={(e) => handleInputChange('nickName', e.target.value)}
-                    placeholder="Enter nick name"
-                  />
-                  <ProfileField
-                    id="lastName"
-                    label="Last Name"
-                    value={user.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    placeholder="Enter last name"
-                  />
+                  <ProfileField id="username" label="Username" value={user.username}
+                    onChange={(e) => handleInputChange('username', e.target.value)} placeholder="Enter username" />
+                  <ProfileField id="firstName" label="First Name" value={user.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)} placeholder="Enter first name" />
+                  <ProfileField id="nickName" label="Nick Name" value={user.nickName}
+                    onChange={(e) => handleInputChange('nickName', e.target.value)} placeholder="Enter nick name" />
+                  <ProfileField id="lastName" label="Last Name" value={user.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)} placeholder="Enter last name" />
                 </CardContent>
               </Card>
 
@@ -282,35 +305,14 @@ const UserManagement: NextPage = () => {
                   <CardTitle className="text-lg xl:text-xl text-white">Contact Information</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 xl:gap-4 px-3 xl:px-4">
-                  <ProfileField
-                    id="userEmail"
-                    label="User Email"
-                    type="email"
-                    value={user.userEmail}
-                    onChange={(e) => handleInputChange('userEmail', e.target.value)}
-                    placeholder="Enter email"
-                  />
-                  <ProfileField
-                    id="website"
-                    label="Website"
-                    value={user.website}
-                    onChange={(e) => handleInputChange('website', e.target.value)}
-                    placeholder="Enter website URL"
-                  />
-                  <ProfileField
-                    id="telegram"
-                    label="Telegram"
-                    value={user.telegram}
-                    onChange={(e) => handleInputChange('telegram', e.target.value)}
-                    placeholder="Enter Telegram username"
-                  />
-                  <ProfileField
-                    id="jabber"
-                    label="Jabber"
-                    value={user.jabber}
-                    onChange={(e) => handleInputChange('jabber', e.target.value)}
-                    placeholder="Enter Jabber ID"
-                  />
+                  <ProfileField id="userEmail" label="User Email" type="email" value={user.userEmail}
+                    onChange={(e) => handleInputChange('userEmail', e.target.value)} placeholder="Enter email" />
+                  <ProfileField id="website" label="Website" value={user.website}
+                    onChange={(e) => handleInputChange('website', e.target.value)} placeholder="Enter website URL" />
+                  <ProfileField id="telegram" label="Telegram" value={user.telegram}
+                    onChange={(e) => handleInputChange('telegram', e.target.value)} placeholder="Enter Telegram username" />
+                  <ProfileField id="jabber" label="Jabber" value={user.jabber}
+                    onChange={(e) => handleInputChange('jabber', e.target.value)} placeholder="Enter Jabber ID" />
                 </CardContent>
               </Card>
 
@@ -344,10 +346,11 @@ const UserManagement: NextPage = () => {
                   <CardTitle className="text-lg xl:text-xl text-white">Account Management</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 xl:space-y-4 px-3 xl:px-4">
+
                   {/* Avatar Section */}
                   <div className="flex flex-col items-center gap-4 text-center">
                     <Avatar className="w-28 h-28 border-4 border-c-zinc-700 bg-c-zinc-800 rounded-lg">
-                      <AvatarImage src={user.avatarUrl} alt={user.firstName} />
+                      <AvatarImage src={avatarPreview} alt={user.firstName} />
                       <AvatarFallback className="bg-c-zinc-800 text-c-zinc-500 rounded-lg">
                         <svg
                           className="w-20 h-20"
@@ -359,17 +362,20 @@ const UserManagement: NextPage = () => {
                             fillRule="evenodd"
                             d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
                             clipRule="evenodd"
-                          ></path>
+                          />
                         </svg>
                       </AvatarFallback>
                     </Avatar>
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
-                      className="gap-2 border-c-zinc-700 bg-c-zinc-800 hover:bg-c-zinc-700 text-white hover:text-white w-full transition-colors"
+                      disabled={uploadingAvatar}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="gap-2 border-c-zinc-700 bg-c-zinc-800 hover:bg-c-zinc-700 text-white hover:text-white w-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <Camera className="h-4 w-4" />
-                      Upload Photo
+                      {uploadingAvatar ? 'Uploading…' : 'Upload Photo'}
                     </Button>
                   </div>
 
@@ -392,7 +398,11 @@ const UserManagement: NextPage = () => {
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
                     />
-                    <Button onClick={handlePasswordChange} className="w-full bg-c-green-tw-600 hover:bg-c-green-tw-700 text-white">
+                    <Button
+                      type="button"
+                      onClick={handlePasswordChange}
+                      className="w-full bg-c-green-tw-600 hover:bg-c-green-tw-700 text-white"
+                    >
                       Change Password
                     </Button>
                   </div>
@@ -418,7 +428,11 @@ const UserManagement: NextPage = () => {
                       placeholder="Enter new PIN"
                       maxLength={6}
                     />
-                    <Button onClick={handlePinChange} className="w-full bg-c-green-tw-600 hover:bg-c-green-tw-700 text-white">
+                    <Button
+                      type="button"
+                      onClick={handlePinChange}
+                      className="w-full bg-c-green-tw-600 hover:bg-c-green-tw-700 text-white"
+                    >
                       Change Pin
                     </Button>
                   </div>

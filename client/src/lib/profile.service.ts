@@ -276,3 +276,89 @@ export const adminProxyApi = {
     return apiFetch(`/api/admin/proxy/all?${q.toString()}`);
   },
 };
+
+// ─── Profile Service ───────────────────────────────────────────────────────────
+
+export interface ProfileData {
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+    isOnline: boolean;
+    createdAt: string;
+    firstName: string;
+    nickName: string;
+    lastName: string;
+    website: string;
+    telegram: string;
+    jabber: string;
+    bio: string;
+    avatar: string;
+  };
+}
+
+export interface ProfileUpdatePayload {
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  nickName?: string;
+  website?: string;
+  telegram?: string;
+  jabber?: string;
+  bio?: string;
+}
+
+export const profileService = {
+  getProfile: (): Promise<ProfileData> =>
+    apiFetch("/api/auth/profile"),
+
+  updateProfile: (payload: ProfileUpdatePayload): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  changePassword: (
+    oldPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/auth/profile/change-password", {
+      method: "POST",
+      body: JSON.stringify({ oldPassword, newPassword }),
+    }),
+
+  changePin: (
+    oldPin: string,
+    newPin: string
+  ): Promise<{ success: boolean; message: string }> =>
+    apiFetch("/api/auth/profile/change-pin", {
+      method: "POST",
+      body: JSON.stringify({ oldPin, newPin }),
+    }),
+
+  /**
+   * POST /api/auth/profile/avatar
+   * File → base64 convert করে JSON body হিসেবে পাঠায়।
+   * Server multipart parse করে না — JSON body expect করে।
+   */
+  uploadAvatar: (file: File): Promise<{ success: boolean; message: string; avatar: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target?.result as string;
+        try {
+          const result = await apiFetch("/api/auth/profile/avatar", {
+            method: "POST",
+            body: JSON.stringify({ avatar: base64 }),
+          });
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(new Error("Failed to read file."));
+      reader.readAsDataURL(file);
+    });
+  },
+};

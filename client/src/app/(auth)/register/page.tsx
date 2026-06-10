@@ -11,10 +11,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { authApi } from "@/lib/api"
+import { authApi } from "@/lib/api";
+import { toast } from "sonner";
 
 interface RegisterPageProps {
   searchParams?: { [key: string]: string | string[] | undefined };
+}
+
+function validatePassword(pw: string): string {
+  if (!pw) return "";
+  if (pw.length < 8) return "Password must be at least 8 characters.";
+  if (!/[A-Z]/.test(pw)) return "Must contain at least one uppercase letter.";
+  if (!/[a-z]/.test(pw)) return "Must contain at least one lowercase letter.";
+  if (!/[0-9]/.test(pw)) return "Must contain at least one number.";
+  if (!/[^A-Za-z0-9]/.test(pw)) return "Must contain at least one special character.";
+  return "";
+}
+
+function validatePin(p: string): string {
+  if (!p) return "";
+  if (!/^\d{6}$/.test(p)) return "PIN must be exactly 6 digits.";
+  return "";
 }
 
 export default function RegisterPage({ searchParams }: RegisterPageProps) {
@@ -28,42 +45,72 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
   const [pin, setPin] = useState<string>("");
   const [agreed, setAgreed] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+  const [submitError, setSubmitError] = useState<string>("");
+
+  // Per-field blur errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const router = useRouter();
   const currentYear = new Date().getFullYear();
 
+  const handleBlur = (field: string, value: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    let error = "";
+    if (field === "username") error = value.trim() ? "" : "Username is required.";
+    if (field === "email") error = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "" : "Enter a valid email address.";
+    if (field === "password") error = validatePassword(value);
+    if (field === "confirmPassword") error = value === password ? "" : "Passwords do not match.";
+    if (field === "pin") error = validatePin(value);
+    setFieldErrors((prev) => ({ ...prev, [field]: error }));
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setSubmitError("");
 
-    if (!username || !email || !password || !confirmPassword || !pin) {
-      setError("Please fill in all fields.");
-      return;
+    // Touch all fields so errors show
+    const allFields = ["username", "email", "password", "confirmPassword", "pin"];
+    const values: Record<string, string> = { username, email, password, confirmPassword, pin };
+    const newErrors: Record<string, string> = {};
+
+    for (const field of allFields) {
+      let error = "";
+      if (field === "username") error = values.username.trim() ? "" : "Username is required.";
+      if (field === "email") error = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email) ? "" : "Enter a valid email address.";
+      if (field === "password") error = validatePassword(values.password);
+      if (field === "confirmPassword") error = values.confirmPassword === password ? "" : "Passwords do not match.";
+      if (field === "pin") error = validatePin(values.pin);
+      newErrors[field] = error;
     }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
+
+    setFieldErrors(newErrors);
+    setTouched({ username: true, email: true, password: true, confirmPassword: true, pin: true });
+
+    const hasErrors = Object.values(newErrors).some((e) => e !== "");
+    if (hasErrors) return;
+
     if (!agreed) {
-      setError("Please agree to the Terms of Service and Privacy Policy.");
+      setSubmitError("Please agree to the Terms of Service and Privacy Policy.");
       return;
     }
 
     setLoading(true);
     try {
       await authApi.register({ username, email, password, pin });
-      router.push("/login");
+      toast.success("Your account has been successfully created!", {
+        description: "Redirecting you to login...",
+        duration: 3000,
+      });
+      setTimeout(() => {
+        router.push("/login");
+      }, 1000);
     } catch (err: unknown) {
       const msg =
         err instanceof Error
           ? err.message
           : "Registration failed. Please try again.";
-      setError(msg);
+      setSubmitError(msg);
     } finally {
       setLoading(false);
     }
@@ -71,9 +118,8 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
 
   return (
     <main className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-[#09090b] selection:bg-c-green-400/30">
-      {/* Left COLUMN - Light/Image Showcase Area */}
-      <section className="hidden lg:flex w-full lg:w-[50%]  bg-zinc-100 flex-col justify-between relative overflow-hidden">
-        {/* Background Decorative Elements */}
+      {/* Left COLUMN */}
+      <section className="hidden lg:flex w-full lg:w-[50%] bg-zinc-100 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/auth-bg.png')] bg-cover bg-center opacity-30 mix-blend-multiply" />
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-c-orange-500/20 via-transparent to-transparent rounded-full blur-[100px] -translate-y-1/4 translate-x-1/4" />
 
@@ -93,7 +139,6 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
           </p>
         </div>
 
-        {/* Floating App Mockup */}
         <div className="flex-1 w-full flex items-center justify-center relative z-10 my-3 lg:my-6">
           <div className="relative w-full max-w-4xl aspect-[16/10]">
             <Image
@@ -112,17 +157,12 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
         </footer>
       </section>
 
-      {/* Right COLUMN - Dark Form Area with Glow */}
-      <section className="relative w-full lg:w-[50%]  min-h-screen flex flex-col text-zinc-100 pb-10 lg:pb-0 z-10 overflow-hidden">
-        {/* Subtle Background Glow */}
+      {/* Right COLUMN */}
+      <section className="relative w-full lg:w-[50%] min-h-screen flex flex-col text-zinc-100 pb-10 lg:pb-0 z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-c-green-400/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 -translate-x-1/4" />
 
-        {/* Header */}
         <header className="relative flex justify-between items-center p-3 lg:p-6 w-full z-20">
-          <Link
-            href="https://instantsocks.com"
-            className="hover:opacity-80 transition-opacity"
-          >
+          <Link href="https://instantsocks.com" className="hover:opacity-80 transition-opacity">
             <Image
               src="/logo.webp"
               alt="InstantSocks Logo"
@@ -142,7 +182,6 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
           </Link>
         </header>
 
-        {/* Form Card */}
         <div className="relative flex-1 flex flex-col justify-center items-center px-3 lg:px-6 w-full max-w-[700px] mx-auto z-20">
           <div className="bg-[#121214] border border-white/10 p-4 lg:p-6 rounded-2xl shadow-2xl w-full backdrop-blur-xl">
             <div className="mb-8">
@@ -160,19 +199,17 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
               </p>
             </div>
 
-            {error && (
+            {/* Submit-level error (server errors: username taken, etc.) */}
+            {submitError && (
               <div className="mb-5 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                {error}
+                {submitError}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* User Name */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="username"
-                  className="text-xs font-semibold text-zinc-400 uppercase tracking-wider"
-                >
+              {/* Username */}
+              <div className="space-y-1.5">
+                <Label htmlFor="username" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                   Username
                 </Label>
                 <div className="relative flex items-center">
@@ -182,17 +219,18 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                     placeholder="johndoe"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="pl-12 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 focus-visible:border-c-green-400 text-white h-12 rounded-xl transition-all"
+                    onBlur={() => handleBlur("username", username)}
+                    className={`pl-12 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 focus-visible:border-c-green-400 text-white h-12 rounded-xl transition-all ${touched.username && fieldErrors.username ? "border-red-500/50" : ""}`}
                   />
                 </div>
+                {touched.username && fieldErrors.username && (
+                  <p className="text-xs text-red-400 pl-1">{fieldErrors.username}</p>
+                )}
               </div>
 
               {/* Email */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="text-xs font-semibold text-zinc-400 uppercase tracking-wider"
-                >
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                   Email Address
                 </Label>
                 <div className="relative flex items-center">
@@ -203,19 +241,20 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-12 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 focus-visible:border-c-green-400 text-white h-12 rounded-xl transition-all"
+                    onBlur={() => handleBlur("email", email)}
+                    className={`pl-12 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 focus-visible:border-c-green-400 text-white h-12 rounded-xl transition-all ${touched.email && fieldErrors.email ? "border-red-500/50" : ""}`}
                   />
                 </div>
+                {touched.email && fieldErrors.email && (
+                  <p className="text-xs text-red-400 pl-1">{fieldErrors.email}</p>
+                )}
               </div>
 
               {/* Password Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {/* Password */}
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="text-xs font-semibold text-zinc-400 uppercase tracking-wider"
-                  >
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                     Password
                   </Label>
                   <div className="relative flex items-center">
@@ -226,7 +265,8 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-11 pr-10 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 text-white h-12 rounded-xl"
+                      onBlur={() => handleBlur("password", password)}
+                      className={`pl-11 pr-10 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 text-white h-12 rounded-xl ${touched.password && fieldErrors.password ? "border-red-500/50" : ""}`}
                     />
                     <button
                       type="button"
@@ -236,14 +276,14 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  {touched.password && fieldErrors.password && (
+                    <p className="text-xs text-red-400 pl-1">{fieldErrors.password}</p>
+                  )}
                 </div>
 
                 {/* Confirm Password */}
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="confirmPassword"
-                    className="text-xs font-semibold text-zinc-400 uppercase tracking-wider"
-                  >
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                     Confirm
                   </Label>
                   <div className="relative flex items-center">
@@ -254,43 +294,42 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                       placeholder="••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-11 pr-10 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 text-white h-12 rounded-xl"
+                      onBlur={() => handleBlur("confirmPassword", confirmPassword)}
+                      className={`pl-11 pr-10 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 text-white h-12 rounded-xl ${touched.confirmPassword && fieldErrors.confirmPassword ? "border-red-500/50" : ""}`}
                     />
                     <button
                       type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 text-zinc-500 hover:text-zinc-300"
                     >
-                      {showConfirmPassword ? (
-                        <EyeOff size={16} />
-                      ) : (
-                        <Eye size={16} />
-                      )}
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  {touched.confirmPassword && fieldErrors.confirmPassword && (
+                    <p className="text-xs text-red-400 pl-1">{fieldErrors.confirmPassword}</p>
+                  )}
                 </div>
               </div>
 
               {/* Pin Code */}
-              <div className="space-y-2 pt-1">
-                <Label
-                  htmlFor="pin"
-                  className="text-xs font-semibold text-zinc-400 uppercase tracking-wider"
-                >
+              <div className="space-y-1.5 pt-1">
+                <Label htmlFor="pin" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                   Secret Pin Code
                 </Label>
                 <div className="relative flex items-center">
                   <KeyRound className="absolute left-4 w-5 h-5 text-zinc-500" />
                   <Input
                     id="pin"
-                    placeholder="Create a secure 4-6 digit pin"
+                    placeholder="Create a 6-digit pin"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
-                    className="pl-12 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 text-white h-12 rounded-xl"
+                    onBlur={() => handleBlur("pin", pin)}
+                    className={`pl-12 bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-c-green-400 text-white h-12 rounded-xl ${touched.pin && fieldErrors.pin ? "border-red-500/50" : ""}`}
                   />
                 </div>
+                {touched.pin && fieldErrors.pin && (
+                  <p className="text-xs text-red-400 pl-1">{fieldErrors.pin}</p>
+                )}
               </div>
 
               {/* Actions */}

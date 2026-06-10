@@ -39,7 +39,18 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <AuthProvider>{children}</AuthProvider>
         {/* ADDED: Toaster for toast notifications — replaces window.alert() */}
-        <Toaster position="top-right" richColors theme="dark" />
+        <Toaster
+          position="bottom-right"
+          richColors
+          theme="dark"
+          toastOptions={{
+            style: {
+              fontSize: "15px",
+              padding: "16px 20px",
+              minWidth: "320px",
+            },
+          }}
+        />
       </body>
     </html>
   );

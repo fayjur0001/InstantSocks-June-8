@@ -14,7 +14,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { profileService } from '@/lib/profile.service'
-import { apiFetch } from '@/lib/api'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CHANGE_LOCKOUT_MS = 24 * 60 * 60 * 1000 // 24 hours in ms
@@ -231,33 +230,15 @@ const UserManagement: NextPage = () => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Client-side preview
+    // Client-side preview — immediate feedback
     const reader = new FileReader()
     reader.onload = (ev) => setAvatarPreview(ev.target?.result as string)
     reader.readAsDataURL(file)
 
-    // Upload to server
+    // Upload to server via profileService (base64 JSON — no multipart needed)
     setUploadingAvatar(true)
     try {
-      const formData = new FormData()
-      formData.append('avatar', file)
-
-      // apiFetch sets Content-Type: application/json by default — we need
-      // multipart/form-data here so we call fetch directly.
-      const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const res = await fetch(`${BASE}/api/auth/profile/avatar`, {
-        method: 'POST',
-        credentials: 'include',
-        cache: 'no-store',
-        body: formData,
-      })
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData?.message || 'Avatar upload failed.')
-      }
-
-      const result = await res.json()
+      const result = await profileService.uploadAvatar(file)
       toast.success(result.message || 'Profile photo updated successfully.')
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to upload photo.'))
@@ -269,6 +250,7 @@ const UserManagement: NextPage = () => {
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
+
 
   // ── Profile update ───────────────────────────────────────────────────────────
   const handleProfileUpdate = async () => {

@@ -35,7 +35,8 @@ export async function apiFetch(path: string, options?: RequestInit) {
       const errData = await res.json();
       throw new Error(errData?.message || "Something went wrong. Please try again.");
     } catch (jsonErr) {
-      if (jsonErr instanceof Error && jsonErr.message !== "Something went wrong. Please try again.") {
+      // Only replace the error if JSON parsing itself failed (not an Error we just threw)
+      if (jsonErr instanceof SyntaxError) {
         throw new Error("Something went wrong. Please try again.");
       }
       throw jsonErr;
