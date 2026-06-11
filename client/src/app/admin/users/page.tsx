@@ -613,6 +613,7 @@ const OneTimeRentTable = () => {
               <SelectContent className="bg-c-bg-700 border-c-slate-700 text-c-slate-200">
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="support">Support</SelectItem>
                 <SelectItem value="general">General</SelectItem>
               </SelectContent>
             </Select>
