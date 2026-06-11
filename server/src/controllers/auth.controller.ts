@@ -29,6 +29,7 @@ import {
   and,
   eq,
   ilike,
+  isNotNull,
   isNull,
   notInArray,
   or,
@@ -378,11 +379,21 @@ export async function getNotificationCount(
   res: Response
 ) {
   try {
-    const { id: userId, role } = req.payload!;
+    const { id: userId } = req.payload!;
 
     const [unread, unreadNotif] = await Promise.all([
+      // Bell badge এ শুধু দেখাবে:
+      //   (a) নিজে ticket owner — অন্য কেউ reply করেছে, নিজে দেখেনি
+      //   (b) নিজে assigned agent — ticket owner বা অন্য কেউ reply করেছে, নিজে দেখেনি
+      //
+      // Unclaimed tickets (isNull agentId) bell এ count করা ঠিক না —
+      // support user role পেলেই সব unclaimed ticket count এ ঢুকত, যেগুলো
+      // সে কখনো দেখেনি → false badge।
+      // Unclaimed tickets support dashboard এ আলাদাভাবে দেখানো হয়।
+      //
+      // DISTINCT ticket id — একটা ticket এ একাধিক unseen message থাকলেও count = 1।
       db
-        .select({ total: sql<number>`count(*)::int` })
+        .select({ total: sql<number>`count(distinct ${TicketModel.id})::int` })
         .from(TicketModel)
         .leftJoin(
           TicketMessageModel,
@@ -398,13 +409,11 @@ export async function getNotificationCount(
         .where(
           and(
             or(
-              eq(TicketModel.agentId, userId),
-              eq(TicketModel.userId,  userId),
-              ["admin", "super admin", "support"].includes(role)
-                ? isNull(TicketModel.agentId)
-                : undefined
+              eq(TicketModel.agentId, userId),   // নিজে assigned agent
+              eq(TicketModel.userId,  userId),   // নিজের ticket (owner)
             ),
             isNull(TicketMessageSeenByModel.id),
+            isNotNull(TicketMessageModel.id),
             eq(TicketModel.status, "opened")
           )
         )

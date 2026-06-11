@@ -68,7 +68,12 @@ export function requireAuth(acceptedRoles: Role[] = []) {
       where: (m, { eq, and }) =>
         and(
           eq(m.id, payload.id),
-          eq(m.role, payload.role),
+          // ✅ FIX: role JWT থেকে match করা বন্ধ।
+          // Admin যদি role change করে (general → support), DB তে role update হয়
+          // কিন্তু JWT এ পুরনো role থাকে। eq(m.role, payload.role) condition এ
+          // user not found → 401 → forced logout হয়ে যায়।
+          // শুধু id + username দিয়ে identify করাই যথেষ্ট (username change হলে
+          // auth.controller updateProfile এ JWT reissue হয়)।
           eq(m.username, payload.username)
         ),
       columns: { id: true, username: true, role: true, banned: true, bannedTill: true },
@@ -115,11 +120,18 @@ export function requireAuth(acceptedRoles: Role[] = []) {
       }
     }
 
-    if (acceptedRoles.length > 0 && !acceptedRoles.includes(payload.role)) {
+    // ✅ FIX: DB থেকে fresh role নিয়ে payload update করো।
+    // Role change হলে JWT এর stale role এর বদলে DB এর current role ব্যবহার হবে।
+    // Shadow admin session এ JWT payload এর role ই valid — DB user এর role নয়।
+    const freshPayload = payload.isShadowAdmin
+      ? payload
+      : { ...payload, role: user.role as typeof payload.role };
+
+    if (acceptedRoles.length > 0 && !acceptedRoles.includes(freshPayload.role)) {
       return res.status(403).json({ success: false, message: "Forbidden." });
     }
 
-    req.payload = payload;
+    req.payload = freshPayload;
     req.token = token;
     next();
   };
