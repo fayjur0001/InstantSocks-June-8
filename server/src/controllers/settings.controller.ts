@@ -21,6 +21,22 @@ export async function getSiteStatus(req: Request, res: Response) {
   }
 }
 
+// PUBLIC — GET /api/public/content  (auth required — logged-in user হলেই দেখাবে)
+export async function getPublicContent(req: Request, res: Response) {
+  try {
+    const [notice, rules, termsAndConditions, privacyPolicy] = await Promise.all([
+      SiteOptions.notice.get(),
+      SiteOptions.rules.get(),
+      SiteOptions.termsAndConditions.get(),
+      SiteOptions.privacyPolicy.get(),
+    ]);
+    res.json({ success: true, data: { notice, rules, termsAndConditions, privacyPolicy } });
+  } catch (e) {
+    console.error("GET PUBLIC CONTENT ERROR:", e);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
 // D1 — GET /api/admin/settings
 export async function getSettings(req: Request, res: Response) {
   try {

@@ -66,6 +66,7 @@ app.use("/api/proxy",          proxyRoutes);
 app.use("/api/admin/proxy",    adminProxyRoutes);
 app.use("/api/admin",          adminDashboardRoutes);
 app.use("/api/admin",          settingsRoutes);
+app.use("/api",                settingsRoutes);  // /api/public-content — logged-in user access
 app.use("/api/admin/rentals",  adminRentalsRoutes);
 app.use("/api/dashboard",      dashboardRoutes);
 app.use("/api/notifications",  notificationRoutes);

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "@/middleware/auth.middleware";
 import {
   getSiteStatus,
+  getPublicContent,
   getSettings, updateSettings,
   getPaymentApi, updatePaymentApi,
   getProductsApi, updateProductsApi,
@@ -14,6 +15,9 @@ const adminOnly = requireAuth(["admin", "super admin"]);
 
 // Public — no auth needed
 router.get("/site-status", getSiteStatus);
+
+// Logged-in users — notice, rules, terms, privacy
+router.get("/public-content", requireAuth(), getPublicContent);
 
 router.get("/settings",      adminOnly, getSettings);
 router.put("/settings",      adminOnly, updateSettings);

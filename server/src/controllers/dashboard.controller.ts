@@ -7,6 +7,25 @@ import {
 } from "@/db/schema";
 import getBalance from "@/utils/get-balance";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
+import SiteOptions from "@/utils/site-options";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/dashboard/content  — logged-in user (notice, rules, terms, privacy)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getDashboardContent(_req: Request, res: Response) {
+  try {
+    const [notice, rules, termsAndConditions, privacyPolicy] = await Promise.all([
+      SiteOptions.notice.get(),
+      SiteOptions.rules.get(),
+      SiteOptions.termsAndConditions.get(),
+      SiteOptions.privacyPolicy.get(),
+    ]);
+    res.json({ success: true, data: { notice, rules, termsAndConditions, privacyPolicy } });
+  } catch (e) {
+    console.error("GET DASHBOARD CONTENT ERROR:", e);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
 
 // ─── Helper: period string → Date cutoff ─────────────────────────────────────
 function getChartPeriodStart(period: string): Date {

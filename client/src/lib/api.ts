@@ -203,3 +203,18 @@ export const adminSettingsApi = {
       body: JSON.stringify(payload),
     }),
 };
+
+// ─── Public Content (logged-in users) ────────────────────────────────────────
+
+export interface PublicContentData {
+  notice:             string;
+  rules:              string;
+  termsAndConditions: string;
+  privacyPolicy:      string;
+}
+
+export const publicApi = {
+  /** GET /api/dashboard/content — notice, rules, terms, privacy for dashboard */
+  getContent: (): Promise<{ success: boolean; data: PublicContentData }> =>
+    apiFetch("/api/dashboard/content"),
+};
