@@ -80,22 +80,6 @@ const HeaderNav = () => {
 
   return (
     <>
-      {/* Impersonation banner — শুধু shadow admin session এ দেখাবে */}
-      {user?.isShadowAdmin && (
-        <div className="w-full bg-yellow-500 text-black text-sm px-4 py-2 flex items-center justify-between">
-          <span>
-            👁 Viewing as <strong>{user.username}</strong> — you are acting on behalf of this user
-          </span>
-          <button
-            onClick={handleExitLoginAs}
-            disabled={exitingLoginAs}
-            className="ml-4 bg-black text-white text-xs font-semibold px-3 py-1 rounded hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {exitingLoginAs ? "Exiting..." : "← Back to Admin"}
-          </button>
-        </div>
-      )}
-
       <header className="sticky top-0 z-50 flex justify-between h-17 shrink-0 items-center gap-2 border-b border-white/10 bg-black px-4">
         <div className="flex items-center gap-2">
           <a href="https://acc.instantsocks.com" target="_blank" rel="noopener noreferrer">
@@ -112,15 +96,29 @@ const HeaderNav = () => {
 
         <Nav />
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-4">
-            <NotificationDropdown />
-          </div>
+        <div className="flex items-center gap-3">
+          {/* Back to Admin — Nav ও Notification এর মাঝে */}
+          {user?.isShadowAdmin && (
+            <button
+              onClick={handleExitLoginAs}
+              disabled={exitingLoginAs}
+              title={`Viewing as ${user.username} — click to return to admin`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold hover:bg-amber-500/20 hover:border-amber-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exitingLoginAs ? (
+                <span className="w-3 h-3 rounded-full border border-amber-400/40 border-t-amber-400 animate-spin" />
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="shrink-0">
+                  <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+              {exitingLoginAs ? "Exiting…" : "Admin"}
+            </button>
+          )}
 
-          <div className="flex items-center gap-4">
-            <Wallete />
-            <AdminUserDropdown user={authUser} handleLogout={handleLogout} />
-          </div>
+          <NotificationDropdown />
+          <Wallete />
+          <AdminUserDropdown user={authUser} handleLogout={handleLogout} />
         </div>
       </header>
     </>
