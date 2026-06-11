@@ -62,13 +62,13 @@ export interface UserData {
   lastLoginIp: string;
 }
 
-// "suspended" filter option বাদ — শুধু all / online / banned
+// "suspended" filter option সহ — all / online / banned / suspended
 export interface FilterState {
   username: string;
   email: string;
   role: string;
   dateRange: DateRange | undefined;
-  status: "all" | "online" | "banned";
+  status: "all" | "online" | "banned" | "suspended";
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -246,16 +246,22 @@ const OneTimeRentTable = () => {
     setBanModalOpen(false);
     setBanTarget(null);
 
-    // Filter active থাকলে (online বা all) — row-টা সাথে সাথে
-    // status update করো; "banned" filter-এ থাকলে row remove করো না,
-    // কারণ সে এখন banned হয়ে গেছে তাই filter-এ থাকবে।
-    // "online" filter active থাকলে সে আর online না — row সরিয়ে দাও।
+    // Filter active থাকলে optimistic update:
+    // "online" filter → row সরাও (user আর online নেই)
+    // "banned" filter → 7-day ban করলে row সরাও (সে এখন suspended, banned filter-এ থাকবে না)
+    // "suspended" filter → permanent ban করলে row সরাও (সে এখন banned, suspended filter-এ থাকবে না)
+    // "all" বা matching filter → status update করো
     const activeStatus = appliedRef.current.status;
     if (activeStatus === "online") {
-      // "online" filter-এ এই user আর থাকবে না — remove করো
+      setUsers((prev) => prev.filter((u) => u.id !== target.id));
+    } else if (activeStatus === "banned" && currentBanType === "7days") {
+      // "banned" filter-এ ছিল, 7-day ban করলে status "suspended" — এই filter থেকে বেরিয়ে যাবে
+      setUsers((prev) => prev.filter((u) => u.id !== target.id));
+    } else if (activeStatus === "suspended" && currentBanType === "permanent") {
+      // "suspended" filter-এ ছিল, permanent ban করলে status "banned" — এই filter থেকে বেরিয়ে যাবে
       setUsers((prev) => prev.filter((u) => u.id !== target.id));
     } else {
-      // "all" বা "banned" filter — status update করো
+      // "all" বা matching filter (banned→banned, suspended→suspended) — status update করো
       optimisticUpdate(target.id, { status: newStatus });
     }
 
@@ -271,8 +277,8 @@ const OneTimeRentTable = () => {
   const handleUnban = async (user: UserData) => {
     const activeStatus = appliedRef.current.status;
 
-    // "banned" filter active থাকলে — unban করলে সে list থেকে সরে যাবে
-    if (activeStatus === "banned") {
+    // "banned" বা "suspended" filter active থাকলে — unban করলে সে list থেকে সরে যাবে
+    if (activeStatus === "banned" || activeStatus === "suspended") {
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
     } else {
       // "all" বা "online" filter — status offline করো
@@ -536,7 +542,7 @@ const OneTimeRentTable = () => {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Ban User for 7 Days</p>
+                    <p>Suspend User for 7 Days</p>
                   </TooltipContent>
                 </Tooltip>
               </>
@@ -658,7 +664,7 @@ const OneTimeRentTable = () => {
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
-            {/* Status filter — "suspended" বাদ */}
+            {/* Status filter — all / online / banned / suspended */}
             <RadioGroup
               value={draftFilters.status}
               onValueChange={(val: FilterState["status"]) => {
@@ -679,6 +685,10 @@ const OneTimeRentTable = () => {
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="banned" id="r-banned" className="border-c-orange-500 text-c-orange-500" />
                 <Label htmlFor="r-banned" className="cursor-pointer">Banned</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="suspended" id="r-suspended" className="border-c-orange-500 text-c-orange-500" />
+                <Label htmlFor="r-suspended" className="cursor-pointer">Suspended</Label>
               </div>
             </RadioGroup>
 

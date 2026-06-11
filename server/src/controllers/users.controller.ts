@@ -171,8 +171,15 @@ export async function banUser(req: Request, res: Response) {
       return;
     }
 
+    // FIX: permanent ban → banned=true AND bannedTill=null (clear old suspension)
+    //      7-day ban    → bannedTill=7days AND banned=false (clear old permanent ban)
+    // This keeps DB state consistent and matches login checks in auth.controller + auth.middleware
     await db.update(UserModel)
-      .set(forSevenDays ? { bannedTill: sql`now() + '7 days'::interval` } : { banned: true })
+      .set(
+        forSevenDays
+          ? { bannedTill: sql`now() + '7 days'::interval`, banned: false }
+          : { banned: true, bannedTill: null }
+      )
       .where(eq(UserModel.id, id));
 
     await pusher({ page: "/admin-area/users", to: "admin" });
