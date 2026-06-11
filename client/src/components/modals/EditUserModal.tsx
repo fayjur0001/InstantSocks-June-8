@@ -17,19 +17,52 @@ interface EditUserModalProps {
 }
 
 export function EditUserModal({ user, open, onOpenChange, onSave }: EditUserModalProps) {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername]   = useState("");
+  const [email, setEmail]         = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]         = useState("");
 
   useEffect(() => {
     if (open) {
       setUsername(user?.username || "");
       setEmail(user?.email || "");
+      setIsLoading(false);
+      setError("");
     }
   }, [open, user]);
 
   const handleSave = async () => {
-    await onSave?.({ username, email });
-    onOpenChange(false);
+    setError("");
+
+    if (!username.trim()) {
+      setError("Username cannot be empty.");
+      return;
+    }
+    if (!email.trim()) {
+      setError("Email cannot be empty.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await onSave?.({ username: username.trim(), email: email.trim() });
+      // Only close on success — if onSave throws, we stay open and show the error
+      onOpenChange(false);
+    } catch (err: unknown) {
+      // Extract the server error message (e.g. "Username is already taken.")
+      let msg = "Failed to update user. Please try again.";
+      if (err instanceof Error) {
+        try {
+          const parsed = JSON.parse(err.message);
+          if (parsed?.message) msg = parsed.message;
+        } catch {
+          if (err.message) msg = err.message;
+        }
+      }
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -40,31 +73,50 @@ export function EditUserModal({ user, open, onOpenChange, onSave }: EditUserModa
             Edit <span className="text-c-emerald-400">{user?.username}</span>
           </DialogTitle>
         </DialogHeader>
+
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="username">Username</Label>
-            <Input 
-              id="username" 
+            <Label htmlFor="edit-username">Username</Label>
+            <Input
+              id="edit-username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="bg-c-bg-750 border-c-slate-700" 
+              onChange={(e) => { setUsername(e.target.value); setError(""); }}
+              className="bg-c-bg-750 border-c-slate-700"
+              disabled={isLoading}
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
+            <Label htmlFor="edit-email">Email</Label>
+            <Input
+              id="edit-email"
+              type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-c-bg-750 border-c-slate-700" 
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
+              className="bg-c-bg-750 border-c-slate-700"
+              disabled={isLoading}
             />
           </div>
+
+          {/* Inline error — shown inside modal, not as toast */}
+          {error && (
+            <p className="text-xs text-c-rose-400 -mt-1">{error}</p>
+          )}
         </div>
+
         <DialogFooter className="gap-2">
-          <Button className="bg-c-emerald-500 hover:bg-c-emerald-600" onClick={handleSave}>
-            Save
+          <Button
+            className="bg-c-emerald-500 hover:bg-c-emerald-600 min-w-[80px]"
+            onClick={handleSave}
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving…" : "Save"}
           </Button>
-          <Button variant="destructive" className="bg-c-orange-600" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="destructive"
+            className="bg-c-orange-600 hover:bg-c-orange-700 min-w-[80px]"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
         </DialogFooter>

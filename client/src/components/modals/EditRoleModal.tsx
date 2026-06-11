@@ -26,23 +26,36 @@ interface RoleModalProps {
 }
 
 export function EditRoleModal({ user, open, onOpenChange, onSave }: RoleModalProps) {
-  // FIXED: state now stores the actual API role values ("general" | "support" | "admin")
-  // instead of mixing "moderator" display label with "support" API value
-  const [role, setRole] = useState<"general" | "support" | "admin">("general");
+  const [role, setRole]           = useState<"general" | "support" | "admin">("general");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]         = useState("");
 
   useEffect(() => {
     if (open && user?.role) {
       const current = user.role.toLowerCase();
-      // Map any known role to a valid API value; fall back to "general"
-      if (current === "admin") setRole("admin");
+      if (current === "admin")        setRole("admin");
       else if (current === "support") setRole("support");
-      else setRole("general");
+      else                            setRole("general");
+      setIsLoading(false);
+      setError("");
     }
   }, [open, user]);
 
   const handleSave = async () => {
-    await onSave?.(role);
+    setError("");
+    setIsLoading(true);
+
+    // Optimistic close — modal বন্ধ করে দাও, API background-এ চলুক
+    // (role change-এ agent serial assign হওয়ার কারণে backend একটু slow)
     onOpenChange(false);
+
+    try {
+      await onSave?.(role);
+    } catch {
+      // onSave already handles toast.error — nothing extra needed here
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,10 +68,12 @@ export function EditRoleModal({ user, open, onOpenChange, onSave }: RoleModalPro
             Role
           </DialogTitle>
         </DialogHeader>
+
         <div className="py-4">
           <Select
             value={role}
-            onValueChange={(val) => setRole(val as typeof role)}
+            onValueChange={(val) => { setRole(val as typeof role); setError(""); }}
+            disabled={isLoading}
           >
             <SelectTrigger className="bg-c-bg-750 border-c-slate-700 w-full">
               <SelectValue placeholder="Select Role" />
@@ -69,18 +84,25 @@ export function EditRoleModal({ user, open, onOpenChange, onSave }: RoleModalPro
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>
+
+          {error && (
+            <p className="text-xs text-c-rose-400 mt-2">{error}</p>
+          )}
         </div>
+
         <DialogFooter className="gap-2">
           <Button
             className="bg-c-emerald-500 hover:bg-c-emerald-600 text-white min-w-[80px]"
             onClick={handleSave}
+            disabled={isLoading}
           >
-            Save
+            {isLoading ? "Saving…" : "Save"}
           </Button>
           <Button
             variant="destructive"
             className="bg-c-orange-600 hover:bg-c-orange-700 min-w-[80px]"
             onClick={() => onOpenChange(false)}
+            disabled={isLoading}
           >
             Cancel
           </Button>

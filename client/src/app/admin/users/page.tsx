@@ -62,15 +62,18 @@ export interface UserData {
   lastLoginIp: string;
 }
 
+// "suspended" filter option বাদ — শুধু all / online / banned
 export interface FilterState {
   username: string;
   email: string;
   role: string;
   dateRange: DateRange | undefined;
-  status: "all" | "online" | "banned" | "suspended";
+  status: "all" | "online" | "banned";
 }
 
 const ITEMS_PER_PAGE = 10;
+// Input debounce — 400ms পরে API call, keystroke-এ না
+const DEBOUNCE_MS = 400;
 
 const getApiErrorMessage = (error: unknown, fallback: string) => {
   if (!(error instanceof Error)) return fallback;
@@ -115,7 +118,17 @@ const OneTimeRentTable = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [filters, setFilters] = useState<FilterState>({
+  // draftFilters — input-এ যা type করা হচ্ছে (UI state, debounce হওয়ার আগে)
+  const [draftFilters, setDraftFilters] = useState<FilterState>({
+    username: "",
+    email: "",
+    role: "all",
+    dateRange: undefined,
+    status: "all",
+  });
+
+  // appliedFilters — এটা দিয়ে actual API call হয়
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     username: "",
     email: "",
     role: "all",
@@ -124,24 +137,44 @@ const OneTimeRentTable = () => {
   });
 
   // Refs so loadUsers always reads latest values without stale closures
-  const filtersRef = useRef(filters);
+  const appliedRef = useRef(appliedFilters);
   const pageRef = useRef(page);
-  useEffect(() => { filtersRef.current = filters; }, [filters]);
+  useEffect(() => { appliedRef.current = appliedFilters; }, [appliedFilters]);
   useEffect(() => { pageRef.current = page; }, [page]);
 
-  const handleResetFilters = () => {
+  // Debounce: username/email typing শেষ হলে appliedFilters update হবে
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const applyDebounced = useCallback((next: FilterState) => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setPage(1);
+      setAppliedFilters(next);
+    }, DEBOUNCE_MS);
+  }, []);
+
+  // role/status/date select করলে immediately apply (debounce নেই)
+  const applyImmediate = useCallback((next: FilterState) => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     setPage(1);
-    setFilters({
+    setAppliedFilters(next);
+  }, []);
+
+  const handleResetFilters = () => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    const empty: FilterState = {
       username: "",
       email: "",
       role: "all",
       dateRange: undefined,
       status: "all",
-    });
+    };
+    setPage(1);
+    setDraftFilters(empty);
+    setAppliedFilters(empty);
   };
 
   const loadUsers = useCallback(async (overridePage?: number, overrideFilters?: FilterState) => {
-    const currentFilters = overrideFilters ?? filtersRef.current;
+    const currentFilters = overrideFilters ?? appliedRef.current;
     const currentPage = overridePage ?? pageRef.current;
 
     setIsLoading(true);
@@ -166,14 +199,13 @@ const OneTimeRentTable = () => {
     }
   }, []);
 
-  // Fetch whenever filters or page change
+  // appliedFilters বা page বদলালেই API call
   useEffect(() => {
-    loadUsers(page, filters);
+    loadUsers(page, appliedFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, page]);
+  }, [appliedFilters, page]);
 
   // Patch a single user in local state immediately — no refetch needed.
-  // The optimistic update IS the UI truth until the user navigates/filters again.
   const optimisticUpdate = (userId: string, patch: Partial<UserData>) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, ...patch } : u))
@@ -207,34 +239,50 @@ const OneTimeRentTable = () => {
       return;
     }
     const target = banTarget;
+    const currentBanType = banType;
+    const newStatus = currentBanType === "7days" ? "suspended" : "banned";
+
+    // Modal আগেই বন্ধ করো
     setBanModalOpen(false);
     setBanTarget(null);
 
+    // Filter active থাকলে (online বা all) — row-টা সাথে সাথে
+    // status update করো; "banned" filter-এ থাকলে row remove করো না,
+    // কারণ সে এখন banned হয়ে গেছে তাই filter-এ থাকবে।
+    // "online" filter active থাকলে সে আর online না — row সরিয়ে দাও।
+    const activeStatus = appliedRef.current.status;
+    if (activeStatus === "online") {
+      // "online" filter-এ এই user আর থাকবে না — remove করো
+      setUsers((prev) => prev.filter((u) => u.id !== target.id));
+    } else {
+      // "all" বা "banned" filter — status update করো
+      optimisticUpdate(target.id, { status: newStatus });
+    }
+
     try {
-      await adminUsersService.banUser(target.id, banType === "7days");
-      // Optimistic update — immediately reflect ban in UI without any refetch
-      optimisticUpdate(target.id, {
-        status: banType === "7days" ? "suspended" : "banned",
-      });
-      toast.success("User banned successfully.");
+      await adminUsersService.banUser(target.id, currentBanType === "7days");
+      toast.success(`${target.username} banned successfully.`);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to ban user."));
-      // On error, reload to restore true server state
       loadUsers();
     }
   };
 
   const handleUnban = async (user: UserData) => {
-    // Optimistic update first — immediately swap ban icon to ban buttons in UI
-    optimisticUpdate(user.id, { status: "offline" });
+    const activeStatus = appliedRef.current.status;
+
+    // "banned" filter active থাকলে — unban করলে সে list থেকে সরে যাবে
+    if (activeStatus === "banned") {
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } else {
+      // "all" বা "online" filter — status offline করো
+      optimisticUpdate(user.id, { status: "offline" });
+    }
 
     try {
       await adminUsersService.unbanUser(user.id);
       toast.success(`${user.username} has been unbanned.`);
-      // No loadUsers() here — optimistic update is the source of truth.
-      // True server state loads on next filter/page change.
     } catch (error) {
-      // On error, revert by reloading true server state
       toast.error(getApiErrorMessage(error, "Failed to unban user."));
       loadUsers();
     }
@@ -242,48 +290,33 @@ const OneTimeRentTable = () => {
 
   const handleRoleSave = async (role: "general" | "support" | "admin") => {
     if (!selectedUser) return;
-    try {
-      await adminUsersService.changeRole(selectedUser.id, role);
-      optimisticUpdate(selectedUser.id, { role });
-      toast.success("User role updated successfully.");
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to update user role."));
-      loadUsers();
-    }
+    await adminUsersService.changeRole(selectedUser.id, role);
+    optimisticUpdate(selectedUser.id, { role });
+    toast.success("User role updated successfully.");
   };
 
   const handleUserSave = async (payload: { username: string; email: string }) => {
     if (!selectedUser) return;
-    try {
-      await adminUsersService.updateUser(
-        selectedUser.id,
-        payload.username,
-        payload.email
-      );
-      optimisticUpdate(selectedUser.id, payload);
-      toast.success("User updated successfully.");
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to update user."));
-      loadUsers();
-    }
+    // error re-throw — EditUserModal নিজেই catch করে inline দেখাবে
+    await adminUsersService.updateUser(
+      selectedUser.id,
+      payload.username,
+      payload.email
+    );
+    optimisticUpdate(selectedUser.id, payload);
+    toast.success("User updated successfully.");
   };
 
   const handlePasswordSave = async (password: string) => {
     if (!selectedUser) return;
-    try {
-      await adminUsersService.changePassword(selectedUser.id, password);
-      toast.success("Password updated successfully.");
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Failed to update password."));
-    }
+    // error re-throw — EditPasswordModal নিজেই catch করে inline দেখাবে
+    await adminUsersService.changePassword(selectedUser.id, password);
+    toast.success("Password updated successfully.");
   };
 
   const handleLoginAs = async (user: UserData) => {
     try {
-      // ✅ FIX: AuthContext.loginAs use করা হচ্ছে — এটা নিজেই user+balance+notifications fresh fetch করে
       await loginAs(user.id);
-      // Full replace keeps /admin/users out of history after impersonation.
-      // Browser Back will stay in the shadow user area.
       window.location.replace("/user/dashboard");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Failed to login as user."));
@@ -332,15 +365,19 @@ const OneTimeRentTable = () => {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
-        const isOnline = row.original.status === "online";
+        const status = row.original.status;
+        const isOnline = status === "online";
+        const isBanned = status === "banned";
+        const isSuspended = status === "suspended";
         return (
           <div className="flex items-center w-full">
             <div
               className={cn(
                 "w-3 h-3 rounded-full ml-4",
-                isOnline
-                  ? "bg-c-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-                  : "bg-c-slate-600"
+                isOnline    && "bg-c-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]",
+                isBanned    && "bg-c-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]",
+                isSuspended && "bg-c-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.5)]",
+                !isOnline && !isBanned && !isSuspended && "bg-c-slate-600"
               )}
             />
           </div>
@@ -531,31 +568,37 @@ const OneTimeRentTable = () => {
       <div className="bg-c-bg-700 border border-c-slate-800 rounded-xl p-5 shadow-sm">
         <div className="flex flex-col space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Username — debounced */}
             <Input
               placeholder="Username..."
-              value={filters.username}
+              value={draftFilters.username}
               onChange={(e) => {
-                setPage(1);
-                setFilters({ ...filters, username: e.target.value });
+                const next = { ...draftFilters, username: e.target.value };
+                setDraftFilters(next);
+                applyDebounced(next);
               }}
               className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 placeholder:text-c-slate-500"
             />
 
+            {/* Email — debounced */}
             <Input
               placeholder="Email address..."
-              value={filters.email}
+              value={draftFilters.email}
               onChange={(e) => {
-                setPage(1);
-                setFilters({ ...filters, email: e.target.value });
+                const next = { ...draftFilters, email: e.target.value };
+                setDraftFilters(next);
+                applyDebounced(next);
               }}
               className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 placeholder:text-c-slate-500"
             />
 
+            {/* Role — immediate */}
             <Select
-              value={filters.role}
+              value={draftFilters.role}
               onValueChange={(val) => {
-                setPage(1);
-                setFilters({ ...filters, role: val });
+                const next = { ...draftFilters, role: val };
+                setDraftFilters(next);
+                applyImmediate(next);
               }}
             >
               <SelectTrigger className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 w-full">
@@ -568,24 +611,25 @@ const OneTimeRentTable = () => {
               </SelectContent>
             </Select>
 
+            {/* Date range — immediate */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal bg-c-bg-800 border-c-slate-700 hover:bg-c-bg-700 hover:text-c-slate-200",
-                    !filters.dateRange && "text-c-slate-500"
+                    !draftFilters.dateRange && "text-c-slate-500"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {filters.dateRange?.from ? (
-                    filters.dateRange.to ? (
+                  {draftFilters.dateRange?.from ? (
+                    draftFilters.dateRange.to ? (
                       <>
-                        {format(filters.dateRange.from, "LLL dd, y")} -{" "}
-                        {format(filters.dateRange.to, "LLL dd, y")}
+                        {format(draftFilters.dateRange.from, "LLL dd, y")} -{" "}
+                        {format(draftFilters.dateRange.to, "LLL dd, y")}
                       </>
                     ) : (
-                      format(filters.dateRange.from, "LLL dd, y")
+                      format(draftFilters.dateRange.from, "LLL dd, y")
                     )
                   ) : (
                     <span>All Time</span>
@@ -599,11 +643,13 @@ const OneTimeRentTable = () => {
                 <Calendar
                   initialFocus
                   mode="range"
-                  defaultMonth={filters.dateRange?.from}
-                  selected={filters.dateRange}
-                  onSelect={(range) =>
-                    setFilters({ ...filters, dateRange: range })
-                  }
+                  defaultMonth={draftFilters.dateRange?.from}
+                  selected={draftFilters.dateRange}
+                  onSelect={(range) => {
+                    const next = { ...draftFilters, dateRange: range };
+                    setDraftFilters(next);
+                    applyImmediate(next);
+                  }}
                   numberOfMonths={2}
                   className="text-c-slate-200"
                 />
@@ -612,11 +658,13 @@ const OneTimeRentTable = () => {
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
+            {/* Status filter — "suspended" বাদ */}
             <RadioGroup
-              value={filters.status}
+              value={draftFilters.status}
               onValueChange={(val: FilterState["status"]) => {
-                setPage(1);
-                setFilters({ ...filters, status: val });
+                const next = { ...draftFilters, status: val };
+                setDraftFilters(next);
+                applyImmediate(next);
               }}
               className="flex flex-wrap items-center space-x-4 text-c-slate-300"
             >
@@ -632,17 +680,14 @@ const OneTimeRentTable = () => {
                 <RadioGroupItem value="banned" id="r-banned" className="border-c-orange-500 text-c-orange-500" />
                 <Label htmlFor="r-banned" className="cursor-pointer">Banned</Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="suspended" id="r-suspended" className="border-c-orange-500 text-c-orange-500" />
-                <Label htmlFor="r-suspended" className="cursor-pointer">Suspended</Label>
-              </div>
             </RadioGroup>
 
             <div className="flex items-center space-x-3 w-full md:w-auto">
               <Button
                 onClick={() => {
+                  if (debounceTimer.current) clearTimeout(debounceTimer.current);
                   setPage(1);
-                  loadUsers(1, filters);
+                  setAppliedFilters({ ...draftFilters });
                 }}
                 className="flex-1 md:flex-none bg-c-emerald-500 hover:bg-c-emerald-600 text-white shadow-sm"
               >
