@@ -270,12 +270,12 @@ export async function getMessages(req: Request, res: Response) {
     }
 
     // প্রতিটা message-এর sender info আলাদাভাবে fetch করো
-    // যাতে multiple agent এর message সঠিক AGT-ID দেখায়
+    // যাতে multiple agent এর message সঠিক label দেখায়
     const senderIds = [...new Set(messages.map((m) => m.userId))];
     const senders = senderIds.length > 0
       ? await db.query.UserModel.findMany({
           where: (u, { inArray }) => inArray(u.id, senderIds),
-          columns: { id: true, agentSerial: true, role: true },
+          columns: { id: true, agentSerial: true, role: true, username: true },
         })
       : [];
     const senderMap = new Map(senders.map((s) => [s.id, s]));
@@ -289,7 +289,11 @@ export async function getMessages(req: Request, res: Response) {
           ? seenRecords.some((s) => s.messageId === msg.id && s.userId === otherUserId)
           : false,
         senderInfo: isStaffSender
-          ? { agentSerial: sender?.agentSerial ?? null }
+          ? {
+              agentSerial: sender?.agentSerial ?? null,
+              role: sender?.role ?? null,
+              username: sender?.username ?? null,
+            }
           : null,
       };
     });

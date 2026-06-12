@@ -89,8 +89,6 @@ const CreateTicketModal = ({
               <SelectContent className="bg-zinc-950 border-c-slate-800 text-c-slate-300">
                 <SelectItem value="general" className="focus:bg-c-slate-800 focus:text-white">General</SelectItem>
                 <SelectItem value="proxies-issues" className="focus:bg-c-slate-800 focus:text-white">Proxies Issues</SelectItem>
-                <SelectItem value="number-sms-issues" className="focus:bg-c-slate-800 focus:text-white">Number/SMS Issues</SelectItem>
-                <SelectItem value="devices-issues" className="focus:bg-c-slate-800 focus:text-white">Devices Issues</SelectItem>
                 <SelectItem value="payment-billing" className="focus:bg-c-slate-800 focus:text-white">Payment/Billing</SelectItem>
                 <SelectItem value="technical" className="focus:bg-c-slate-800 focus:text-white">Technical</SelectItem>
                 <SelectItem value="feedback" className="focus:bg-c-slate-800 focus:text-white">Feedback</SelectItem>

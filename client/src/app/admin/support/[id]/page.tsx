@@ -92,12 +92,25 @@ export default function AdminSupportChatPage() {
     if (!trimmed || sending) return;
     setSending(true);
     setMessageInput("");
+    // Optimistic: message তাৎক্ষণিক দেখাও
+    const tempId = Date.now();
+    const optimisticMsg: TicketMessage = {
+      id: tempId,
+      ticketId,
+      userId: user!.id,
+      message: trimmed,
+      createdAt: new Date().toISOString(),
+      seenByOther: false,
+      senderInfo: null,
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
     try {
       await supportApi.sendMessage(ticketId, trimmed);
       fetchData();
     } catch {
       toast.error("Failed to send message.");
       setMessageInput(trimmed);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
       setSending(false);
     }
@@ -108,27 +121,42 @@ export default function AdminSupportChatPage() {
   };
 
   const handleClose = async () => {
+    // Optimistic: status তাৎক্ষণিক বদলাও
+    setTicket((prev) => prev ? { ...prev, status: "closed" } : prev);
     try {
       await supportApi.closeTicket(ticketId);
       toast.success("Ticket closed.");
       fetchData();
-    } catch { toast.error("Failed to close ticket."); }
+    } catch {
+      toast.error("Failed to close ticket.");
+      fetchData(); // revert
+    }
   };
 
   const handleReopen = async () => {
+    // Optimistic: status তাৎক্ষণিক বদলাও
+    setTicket((prev) => prev ? { ...prev, status: "opened" } : prev);
     try {
       await supportApi.reopenTicket(ticketId);
       toast.success("Ticket reopened.");
       fetchData();
-    } catch { toast.error("Failed to reopen ticket."); }
+    } catch {
+      toast.error("Failed to reopen ticket.");
+      fetchData(); // revert
+    }
   };
 
   const handleClaim = async () => {
+    // Optimistic: agentId সেট করো
+    setTicket((prev) => prev ? { ...prev, agentId: user!.id } : prev);
     try {
       await supportApi.claimTicket(ticketId);
       toast.success("Ticket claimed!");
       fetchData();
-    } catch { toast.error("Failed to claim ticket."); }
+    } catch {
+      toast.error("Failed to claim ticket.");
+      fetchData(); // revert
+    }
   };
 
   const handleEditStart = (msg: TicketMessage) => {
@@ -255,11 +283,10 @@ export default function AdminSupportChatPage() {
         {messages.map((msg) => {
           const isOwn = String(msg.userId) === String(user?.id);
           const isStaffMsg = msg.senderInfo !== null && msg.senderInfo !== undefined;
-          const msgAgentSerial = msg.senderInfo?.agentSerial;
           const senderLabel = isStaffMsg
-            ? (msgAgentSerial !== undefined && msgAgentSerial !== null
-                ? `AGT-${String(msgAgentSerial).padStart(3, "0")}`
-                : "Support Agent")
+            ? (msg.senderInfo!.role === "super admin"
+                ? "Superadmin"
+                : msg.senderInfo!.username ?? "Support Agent")
             : "User";
           const isEditing = editingId === msg.id;
 

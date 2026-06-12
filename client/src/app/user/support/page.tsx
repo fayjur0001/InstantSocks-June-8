@@ -23,8 +23,6 @@ interface SupportTicketRow {
 const CATEGORY_LABELS: Record<string, string> = {
   "general": "General",
   "proxies-issues": "Proxies Issues",
-  "number-sms-issues": "Number/SMS",
-  "devices-issues": "Devices Issues",
   "payment-billing": "Payment/Billing",
   "technical": "Technical",
   "feedback": "Feedback",

@@ -21,7 +21,6 @@ interface SupportTicketRow {
   subject: string;
   status: "In Progress" | "Completed" | "Open";
   tab: "unclaimed" | "mine" | "other";
-  agentInfo: { agentSerial: number | null; username: string } | null;
   isClosed: boolean;
 }
 
@@ -34,8 +33,6 @@ function toUiStatus(ticket: Ticket): "In Progress" | "Completed" | "Open" {
 const CATEGORY_LABELS: Record<string, string> = {
   "general": "General",
   "proxies-issues": "Proxies Issues",
-  "number-sms-issues": "Number/SMS",
-  "devices-issues": "Devices Issues",
   "payment-billing": "Payment/Billing",
   "technical": "Technical",
   "feedback": "Feedback",
@@ -80,7 +77,6 @@ export default function AdminSupportPage() {
           subject: t.subject,
           status: toUiStatus(t),
           tab: activeTab,
-          agentInfo: (t as any).agentInfo ?? null,
           isClosed: t.status === "closed",
         }))
       );
@@ -187,27 +183,16 @@ export default function AdminSupportPage() {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => {
-        const { agentInfo } = row.original;
-        const agentLabel = agentInfo?.agentSerial !== undefined && agentInfo?.agentSerial !== null
-          ? `AGT-${String(agentInfo.agentSerial).padStart(3, "0")}`
-          : null;
-        return (
-          <div className="flex flex-col gap-1">
-            <Badge
-              variant="outline"
-              className={`rounded-full px-4 py-0.5 border font-medium shadow-none w-fit ${
-                statusStyles[row.original.status]
-              }`}
-            >
-              {row.original.status}
-            </Badge>
-            {agentLabel && (
-              <span className="text-[11px] text-c-slate-500 ml-1">{agentLabel}</span>
-            )}
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className={`rounded-full px-4 py-0.5 border font-medium shadow-none w-fit ${
+            statusStyles[row.original.status]
+          }`}
+        >
+          {row.original.status}
+        </Badge>
+      ),
     },
     {
       accessorKey: "action",

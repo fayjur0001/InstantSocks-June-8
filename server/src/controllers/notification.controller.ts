@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import db from "@/db";
 import { NotificationModel } from "@/db/schema";
-import { and, desc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+
+const NOTIFICATION_LIMIT = 50;
 
 // ─── Helper: filter → date range ─────────────────────────────────────────────
 function getFilterRange(filter: string): { from?: Date; to?: Date } {
@@ -51,7 +53,7 @@ export async function getNotifications(req: Request, res: Response) {
       .from(NotificationModel)
       .where(and(...conditions))
       .orderBy(desc(NotificationModel.createdAt))
-      .limit(100);
+      .limit(NOTIFICATION_LIMIT);
 
     res.json({ success: true, data: notifications });
   } catch (e) {
@@ -130,6 +132,31 @@ export async function createNotification({
 }) {
   try {
     await db.insert(NotificationModel).values({ userId, type, title, message });
+
+    // 50+ হলে সবচেয়ে পুরনোগুলো কেটে ফেলো
+    const count = await db
+      .select({ total: sql<number>`count(*)` })
+      .from(NotificationModel)
+      .where(eq(NotificationModel.userId, userId))
+      .then((r) => Number(r[0]?.total ?? 0));
+
+    if (count > NOTIFICATION_LIMIT) {
+      // সবচেয়ে পুরনো (count - NOTIFICATION_LIMIT) টা বের করো
+      const excess = count - NOTIFICATION_LIMIT;
+      const oldest = await db
+        .select({ id: NotificationModel.id })
+        .from(NotificationModel)
+        .where(eq(NotificationModel.userId, userId))
+        .orderBy(asc(NotificationModel.createdAt))
+        .limit(excess);
+
+      if (oldest.length > 0) {
+        const ids = oldest.map((r) => r.id);
+        await db
+          .delete(NotificationModel)
+          .where(inArray(NotificationModel.id, ids));
+      }
+    }
   } catch (e) {
     console.error("CREATE NOTIFICATION ERROR:", e);
   }
