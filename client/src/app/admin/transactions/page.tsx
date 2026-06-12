@@ -15,16 +15,29 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Search, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 import { AddBalanceModal } from "@/components/modals/AddBalanceModal";
 import TransactionsTable from "@/components/admin/pages/transactions/TransactionsTable";
 
 export default function TransactionsDashboard() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeSearch, setActiveSearch] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Bug 1 Fix: আলাদা আলাদা state — একটা input পরিবর্তন করলে অন্যটা change হবে না
+  const [txIdInput, setTxIdInput] = useState("");
+  const [usernameInput, setUsernameInput] = useState("");
+
+  // Bug 2 Fix: wallet filter-এর জন্য state
+  const [walletFilter, setWalletFilter] = useState("all");
+
+  // Bug 3 Fix: dateRange state আগেই ছিল, এখন props-এ পাস হবে
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Bug 6 Fix: Search button click-এ active filters set হবে
+  const [activeTxId, setActiveTxId] = useState("");
+  const [activeUsername, setActiveUsername] = useState("");
+  const [activeWallet, setActiveWallet] = useState("all");
+  const [activeDateRange, setActiveDateRange] = useState<DateRange | undefined>(undefined);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const tabTriggerClass =
@@ -36,6 +49,25 @@ export default function TransactionsDashboard() {
   ];
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
+
+  const handleSearch = () => {
+    setActiveTxId(txIdInput);
+    setActiveUsername(usernameInput);
+    setActiveWallet(walletFilter);
+    setActiveDateRange(dateRange);
+  };
+
+  const handleReset = () => {
+    setTxIdInput("");
+    setUsernameInput("");
+    setWalletFilter("all");
+    setDateRange(undefined);
+    setCalendarOpen(false);
+    setActiveTxId("");
+    setActiveUsername("");
+    setActiveWallet("all");
+    setActiveDateRange(undefined);
+  };
 
   return (
     <div className="w-full rounded-[12px] bg-c-bg-850 p-3 lg:p-6 space-y-6">
@@ -73,21 +105,23 @@ export default function TransactionsDashboard() {
           <div className="flex flex-col space-y-4">
             {/* Top Row: Inputs & Selects */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Bug 1 Fix: আলাদা value ও onChange */}
               <Input
                 placeholder="TXID"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={txIdInput}
+                onChange={(e) => setTxIdInput(e.target.value)}
                 className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 placeholder:text-c-slate-500 focus-visible:ring-c-emerald-500/50"
               />
 
               <Input
                 placeholder="Username"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
                 className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 placeholder:text-c-slate-500 focus-visible:ring-c-emerald-500/50"
               />
 
-              <Select defaultValue="all">
+              {/* Bug 2 Fix: walletFilter state-এ bind করা */}
+              <Select value={walletFilter} onValueChange={setWalletFilter}>
                 <SelectTrigger className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 w-full focus:ring-c-emerald-500/50">
                   <SelectValue placeholder="Wallet Name/All" />
                 </SelectTrigger>
@@ -101,14 +135,12 @@ export default function TransactionsDashboard() {
                 </SelectContent>
               </Select>
 
-              <Popover>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal bg-c-bg-800 border-c-slate-700 hover:bg-c-bg-700 hover:text-c-slate-200",
-                      !dateRange && "text-c-slate-500"
-                    )}
+                    onClick={() => setCalendarOpen(true)}
+                    className="w-full justify-start text-left font-normal bg-c-bg-800 border-c-slate-700 text-c-slate-200 hover:bg-c-bg-700 hover:text-c-slate-200"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {dateRange?.from ? (
@@ -128,13 +160,18 @@ export default function TransactionsDashboard() {
                 <PopoverContent
                   className="w-auto p-0 bg-c-bg-700 border-c-slate-700"
                   align="start"
+                  sideOffset={4}
                 >
                   <Calendar
                     initialFocus
                     mode="range"
                     defaultMonth={dateRange?.from}
                     selected={dateRange}
-                    onSelect={setDateRange}
+                    onSelect={(range) => {
+                      setDateRange(range);
+                      // to date select হলে calendar বন্ধ করো
+                      if (range?.to) setCalendarOpen(false);
+                    }}
                     numberOfMonths={2}
                     className="text-c-slate-200"
                   />
@@ -146,7 +183,7 @@ export default function TransactionsDashboard() {
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button
                 className="bg-c-emerald-500 hover:bg-c-emerald-600 text-white px-6 shadow-sm"
-                onClick={() => setActiveSearch(searchQuery)}
+                onClick={handleSearch}
               >
                 <Search className="w-4 h-4 mr-2" />
                 Search
@@ -154,11 +191,7 @@ export default function TransactionsDashboard() {
               <Button
                 variant="destructive"
                 className="bg-c-rose-500/10 text-c-rose-500 hover:bg-c-rose-500/20 border border-c-rose-500/20 shadow-none px-6"
-                onClick={() => {
-                  setSearchQuery("");
-                  setActiveSearch("");
-                  setDateRange(undefined);
-                }}
+                onClick={handleReset}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Reset
@@ -172,7 +205,10 @@ export default function TransactionsDashboard() {
           <TabsContent value="all" className="mt-0 outline-none">
             <TransactionsTable
               key={`all-${refreshKey}`}
-              searchQuery={activeSearch}
+              txIdQuery={activeTxId}
+              usernameQuery={activeUsername}
+              walletFilter={activeWallet}
+              dateRange={activeDateRange}
               showDelete={false}
               filter="all"
               onRefresh={handleRefresh}
@@ -182,7 +218,10 @@ export default function TransactionsDashboard() {
           <TabsContent value="transactions" className="mt-0 outline-none">
             <TransactionsTable
               key={`tx-${refreshKey}`}
-              searchQuery={activeSearch}
+              txIdQuery={activeTxId}
+              usernameQuery={activeUsername}
+              walletFilter={activeWallet}
+              dateRange={activeDateRange}
               showDelete={false}
               filter="transaction"
               onRefresh={handleRefresh}
@@ -192,7 +231,10 @@ export default function TransactionsDashboard() {
           <TabsContent value="manual-top-up" className="mt-0 outline-none">
             <TransactionsTable
               key={`manual-${refreshKey}`}
-              searchQuery={activeSearch}
+              txIdQuery={activeTxId}
+              usernameQuery={activeUsername}
+              walletFilter={activeWallet}
+              dateRange={activeDateRange}
               showDelete={true}
               filter="manual"
               onRefresh={handleRefresh}

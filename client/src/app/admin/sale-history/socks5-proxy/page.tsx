@@ -46,7 +46,7 @@ function toDisplay(r: RentalItem): ProxyDisplay {
     zip: r.zip,
     port: r.port,
     type: r.type,
-    note: r.note || "-",
+    note: (r.note && !r.note.startsWith("nsocks_history_id:")) ? r.note : "-",
     status: isExpired ? "Expired" : "Active",
     bought: new Date(r.createdAt).toLocaleString(),
     price: `$ ${r.price.toFixed(2)}`,

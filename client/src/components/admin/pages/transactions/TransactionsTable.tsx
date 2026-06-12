@@ -7,10 +7,12 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Copy } from "lucide-react";
 import { EditTransactionModal } from "@/components/modals/EditTransactionModal";
 import { adminTopupApi, AdminTopupTransaction } from "@/lib/topup.service";
+import type { DateRange } from "react-day-picker";
 
 export interface TransactionRecord {
   id: string;
   date: string;
+  rawDate: Date;
   username: string;
   wallet: string;
   walletAddress: string;
@@ -23,7 +25,13 @@ export interface TransactionRecord {
 }
 
 interface TransactionsTableProps {
-  searchQuery?: string;
+  // Bug 1 Fix: searchQuery সরিয়ে আলাদা props
+  txIdQuery?: string;
+  usernameQuery?: string;
+  // Bug 2 Fix: wallet filter prop
+  walletFilter?: string;
+  // Bug 3 Fix: dateRange prop
+  dateRange?: DateRange;
   showDelete?: boolean;
   filter?: "all" | "transaction" | "manual";
   onRefresh?: () => void;
@@ -41,6 +49,7 @@ function mapToRecord(tx: AdminTopupTransaction): TransactionRecord {
     id: String(tx.id),
     rawId: tx.id,
     date: new Date(tx.date).toLocaleString(),
+    rawDate: new Date(tx.date),
     username: tx.username ?? "-",
     wallet: tx.wallet,
     walletAddress: tx.walletAddress,
@@ -53,7 +62,14 @@ function mapToRecord(tx: AdminTopupTransaction): TransactionRecord {
 }
 
 export default function TransactionsTable({
-  searchQuery, showDelete = false, filter = "all", onRefresh, maxItems,
+  txIdQuery = "",
+  usernameQuery = "",
+  walletFilter = "all",
+  dateRange,
+  showDelete = false,
+  filter = "all",
+  onRefresh,
+  maxItems,
 }: TransactionsTableProps) {
   const [page, setPage] = useState(1);
   const [transactionToEdit, setTransactionToEdit] = useState<TransactionRecord | null>(null);
@@ -96,17 +112,43 @@ export default function TransactionsTable({
 
   const filteredData = useMemo(() => {
     let data = allRecords;
+
+    // Tab filter
     if (filter === "transaction") data = data.filter((r) => r.type === "transaction");
     if (filter === "manual") data = data.filter((r) => r.type === "manual");
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+
+    // Bug 1 Fix: TXID ও username আলাদাভাবে filter
+    if (txIdQuery) {
+      const q = txIdQuery.toLowerCase();
+      data = data.filter((item) => item.txId.toLowerCase().includes(q));
+    }
+    if (usernameQuery) {
+      const q = usernameQuery.toLowerCase();
+      data = data.filter((item) => item.username.toLowerCase().includes(q));
+    }
+
+    // Bug 2 Fix: wallet filter
+    if (walletFilter && walletFilter !== "all") {
       data = data.filter(
-        (item) => item.username.toLowerCase().includes(q) || item.txId.toLowerCase().includes(q)
+        (item) => item.wallet.toLowerCase() === walletFilter.toLowerCase()
       );
     }
+
+    // Bug 3 Fix: date range filter
+    if (dateRange?.from) {
+      const from = new Date(dateRange.from);
+      from.setHours(0, 0, 0, 0);
+      data = data.filter((item) => item.rawDate >= from);
+    }
+    if (dateRange?.to) {
+      const to = new Date(dateRange.to);
+      to.setHours(23, 59, 59, 999);
+      data = data.filter((item) => item.rawDate <= to);
+    }
+
     if (maxItems) data = data.slice(0, maxItems);
     return data;
-  }, [allRecords, searchQuery, filter, maxItems]);
+  }, [allRecords, txIdQuery, usernameQuery, walletFilter, dateRange, filter, maxItems]);
 
   const copyToClipboard = (text: string) => navigator.clipboard.writeText(text);
 
