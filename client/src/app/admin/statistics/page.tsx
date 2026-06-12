@@ -37,7 +37,12 @@ export default function MainDashboard() {
       color: "text-c-orange-500",
     },
     {
-      title: "Proxy Balance",
+      title: "NSocks Balance",
+      value: statsLoading ? null : `$ ${(stats?.nsocksBalance ?? 0).toFixed(2)}`,
+      color: "text-c-orange-500",
+    },
+    {
+      title: "Total Sales",
       value: statsLoading ? null : `$ ${(stats?.proxyBalance ?? 0).toFixed(2)}`,
       color: "text-c-orange-500",
     },

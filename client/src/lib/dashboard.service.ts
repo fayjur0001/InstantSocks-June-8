@@ -21,6 +21,7 @@ export interface AdminDashboardStats {
   totalRevenue:        number;
   activeSocks5Rentals: number;
   proxyBalance:        number;
+  nsocksBalance:       number;
 }
 
 export interface ChartDataPoint {

@@ -8,6 +8,7 @@ import {
 import getBalance from "@/utils/get-balance";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import SiteOptions from "@/utils/site-options";
+import { nsocksGetBalance } from "@/utils/nsocks.adapter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/dashboard/content  — logged-in user (notice, rules, terms, privacy)
@@ -89,7 +90,9 @@ export async function getUserDashboardStats(req: Request, res: Response) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getAdminDashboardStats(_req: Request, res: Response) {
   try {
-    const [totalRow, onlineRow, bannedRow, pendingCntRow, revenueRow, socks5Row, proxyBalanceRow] =
+    const apiKey = await SiteOptions.socks5ProxyAPIKey.get();
+
+    const [totalRow, onlineRow, bannedRow, pendingCntRow, revenueRow, socks5Row, proxyBalanceRow, nsocksBalance] =
       await Promise.all([
         db.select({ c: sql<number>`count(*)::int` }).from(UserModel),
         db.select({ c: sql<number>`count(*)::int` }).from(UserModel).where(eq(UserModel.isOnline, true)),
@@ -102,6 +105,8 @@ export async function getAdminDashboardStats(_req: Request, res: Response) {
         // Proxy Balance — website শুরু থেকে সব proxy sell এর sum
         db.select({ total: sql<number>`coalesce(sum(${Socks5ProxyTransactionModel.price}), 0)::real` })
           .from(Socks5ProxyTransactionModel),
+        // NSocks Balance — NSocks API থেকে real-time balance; API key না থাকলে বা fail করলে 0
+        apiKey ? nsocksGetBalance(apiKey).catch(() => 0) : Promise.resolve(0),
       ]);
 
     res.json({
@@ -114,6 +119,7 @@ export async function getAdminDashboardStats(_req: Request, res: Response) {
         totalRevenue:         Number((revenueRow[0]?.total ?? 0).toFixed(2)),
         activeSocks5Rentals:  socks5Row[0]?.c ?? 0,
         proxyBalance:         Number((proxyBalanceRow[0]?.total ?? 0).toFixed(2)),
+        nsocksBalance:        Number(((nsocksBalance as number) ?? 0).toFixed(2)),
       },
     });
   } catch (e) {
