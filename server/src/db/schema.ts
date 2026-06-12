@@ -251,6 +251,26 @@ export const SMSPVALongTermRentModel = pgTable("sms_pva_long_term_rents", {
   ...timestamps,
 });
 
+// ─── Discount Tiers ───────────────────────────────────────────────────────────
+// Admin-configurable badge tiers.
+// Badge is derived at runtime by summing approved top-ups for a user and
+// finding which tier their total falls into — no column needed on `users`.
+// Discount is applied at add-to-cart time so the saved cart price is final.
+export const DiscountTierModel = pgTable("discount_tiers", {
+  id:        serial("id").primaryKey().notNull(),
+  // e.g. "Basic" | "Bronze" | "Silver" | "Gold" | "Diamond"
+  tier:      varchar("tier", { length: 32 }).notNull().unique(),
+  // inclusive lower bound (USD). Basic = 0, never changes.
+  minSpend:  real("min_spend").notNull(),
+  // inclusive upper bound (USD). NULL means "unlimited" (Diamond tier).
+  maxSpend:  real("max_spend"),
+  // discount percentage applied to purchase price. 0 = no discount.
+  discount:  real("discount").notNull().default(0),
+  // display order in admin UI (Basic=1 … Diamond=5)
+  sortOrder: integer("sort_order").notNull(),
+  ...timestamps,
+});
+
 // ─── Notifications ────────────────────────────────────────────────────────────
 export const NotificationModel = pgTable("notifications", {
   id:        serial("id").primaryKey().notNull(),

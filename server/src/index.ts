@@ -21,6 +21,7 @@ import adminProxyRoutes      from "@/routes/admin-proxy.routes";
 import dashboardRoutes       from "@/routes/dashboard.routes";
 import adminDashboardRoutes  from "@/routes/admin-dashboard.routes";
 import notificationRoutes    from "@/routes/notification.routes";
+import discountRoutes        from "@/routes/discount.routes";
 // ✅ FIX: getSiteStatus সরাসরি import — /api/site-status এ আলাদা register করার জন্য
 import { getSiteStatus }     from "@/controllers/settings.controller";
 
@@ -70,6 +71,7 @@ app.use("/api",                settingsRoutes);  // /api/public-content — logg
 app.use("/api/admin/rentals",  adminRentalsRoutes);
 app.use("/api/dashboard",      dashboardRoutes);
 app.use("/api/notifications",  notificationRoutes);
+app.use("/api/admin/discount", discountRoutes);
 
 // ─────────────────────────────────────────────────────────────────────────────
 app.use(notFound);

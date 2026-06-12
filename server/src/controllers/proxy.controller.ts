@@ -11,6 +11,7 @@ import { eq, desc, and, inArray, sql, ne } from "drizzle-orm";
 import { z } from "zod";
 import getBalance from "@/utils/get-balance";
 import SiteOptions from "@/utils/site-options";
+import { getUserBadge, applyDiscount } from "@/utils/discount.util";
 import { createNotification } from "@/controllers/notification.controller";
 import pusher from "@/utils/pusher";
 import {
@@ -211,9 +212,14 @@ export async function addToCart(req: Request, res: Response) {
         .json({ success: false, message: "Proxy already in cart." });
     }
 
+
+    // User-এর badge tier অনুযায়ী discount apply করো
+    const { discountPct } = await getUserBadge(userId);
+    const discountedPrice = applyDiscount(price, discountPct);
+
     const [item] = await db
       .insert(Socks5ProxyCartModel)
-      .values({ userId, proxyId, price, originalPrice })
+      .values({ userId, proxyId, price: discountedPrice, originalPrice })
       .returning();
 
     return res.status(201).json({ success: true, item });
