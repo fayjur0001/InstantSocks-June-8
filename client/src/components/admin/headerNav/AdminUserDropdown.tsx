@@ -201,7 +201,8 @@ import {
   Users,
   Settings,
   User,
-  LifeBuoy
+  LifeBuoy,
+  Tag,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -234,6 +235,7 @@ const MENU_GROUPS = [
       { name: "All Transactions", href: "/admin/transactions", icon: Receipt },
       { name: "Sales History", href: "/admin/sale-history/socks5-proxy", icon: ShoppingCart },
       { name: "All Users", href: "/admin/users", icon: Users },
+      { name: "Discount", href: "/admin/discount", icon: Tag },
     ],
   },
   {
