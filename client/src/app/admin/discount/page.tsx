@@ -101,13 +101,13 @@ function BadgePill({ tier }: { tier: BadgeTier }) {
 interface EditDraft { maxSpend: string; discount: string; }
 
 interface TierCardProps {
-  cfg:          DiscountTier;
-  isEditing:    boolean;
-  draft:        EditDraft;
-  onEditStart:  () => void;
-  onDraftChange:(field: keyof EditDraft, value: string) => void;
-  onSave:       () => void;
-  onCancel:     () => void;
+  cfg:           DiscountTier;
+  isEditing:     boolean;
+  draft:         EditDraft;
+  onEditStart:   () => void;
+  onDraftChange: (field: keyof EditDraft, value: string) => void;
+  onSave:        () => void;
+  onCancel:      () => void;
 }
 
 function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, onCancel }: TierCardProps) {
@@ -117,15 +117,51 @@ function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, o
 
   return (
     <div className={`relative rounded-xl border ${s.border} ${s.bg} ${s.glow} p-4 flex flex-col gap-3 backdrop-blur-sm transition-all duration-200`}>
+
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xl leading-none">{s.icon}</span>
           <span className={`text-sm font-bold ${s.text}`}>{cfg.tier}</span>
         </div>
-        <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${cfg.discount === 0 ? "bg-c-slate-800 text-c-slate-500 border border-c-slate-700" : s.badge}`}>
-          {cfg.discount === 0 ? "No Discount" : `${cfg.discount}% OFF`}
-        </span>
+
+        <div className="flex items-center gap-1.5">
+          {/* Discount badge OR edit mode discount input */}
+          {isEditing ? (
+            <div className="flex items-center gap-1">
+              <Input
+                className={`h-6 w-[60px] bg-c-bg-800 ${s.inputBorder} border text-[11px] font-bold text-center text-c-slate-200 px-1 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-full`}
+                value={draft.discount}
+                onChange={(e) => onDraftChange("discount", e.target.value)}
+                placeholder="%"
+                type="number"
+                min={0}
+                max={100}
+              />
+              <span className="text-[11px] text-c-slate-400 font-bold">%</span>
+            </div>
+          ) : (
+            <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${cfg.discount === 0 ? "bg-c-slate-800 text-c-slate-500 border border-c-slate-700" : s.badge}`}>
+              {cfg.discount === 0 ? "No Discount" : `${cfg.discount}% OFF`}
+            </span>
+          )}
+
+          {/* Edit / Save / Cancel buttons */}
+          {isEditing ? (
+            <div className="flex items-center gap-1 shrink-0">
+              <button onClick={onSave} className="flex items-center justify-center w-6 h-6 rounded-md bg-c-emerald-700/30 hover:bg-c-emerald-700/60 border border-c-emerald-600/40 transition-colors" title="Save">
+                <Check className="w-3 h-3 text-c-emerald-400" />
+              </button>
+              <button onClick={onCancel} className="flex items-center justify-center w-6 h-6 rounded-md bg-c-rose-500/10 hover:bg-c-rose-500/25 border border-c-rose-500/20 transition-colors" title="Cancel">
+                <X className="w-3 h-3 text-c-rose-400" />
+              </button>
+            </div>
+          ) : (
+            <button onClick={onEditStart} className="flex items-center justify-center w-6 h-6 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition-colors shrink-0" title="Edit tier">
+              <Pencil className="w-3 h-3 text-c-slate-400" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="h-px w-full bg-white/5" />
@@ -160,36 +196,13 @@ function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, o
           <ShieldCheck className="w-3 h-3 text-c-slate-500 shrink-0" />
           <span className="text-[11px] text-c-slate-500 font-medium uppercase tracking-wide">Purchase Discount</span>
         </div>
-        <div className="flex items-center justify-between gap-2">
-          {isEditing ? (
-            <div className="flex items-center gap-1.5">
-              <Input
-                className={`h-7 w-[60px] bg-c-bg-800 ${s.inputBorder} border text-[12px] font-bold text-c-slate-200 px-2 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-md`}
-                value={draft.discount} onChange={(e) => onDraftChange("discount", e.target.value)} placeholder="0" type="number" min={0} max={100}
-              />
-              <span className="text-[12px] text-c-slate-400 font-semibold">% on each purchase</span>
-            </div>
-          ) : (
-            <span className={`text-[13px] font-semibold ${s.text}`}>
-              {cfg.discount === 0 ? "None" : `${cfg.discount}% on each purchase`}
-            </span>
-          )}
-          {isEditing ? (
-            <div className="flex items-center gap-1 shrink-0">
-              <button onClick={onSave} className="flex items-center justify-center w-6 h-6 rounded-md bg-c-emerald-700/30 hover:bg-c-emerald-700/60 border border-c-emerald-600/40 transition-colors" title="Save">
-                <Check className="w-3 h-3 text-c-emerald-400" />
-              </button>
-              <button onClick={onCancel} className="flex items-center justify-center w-6 h-6 rounded-md bg-c-rose-500/10 hover:bg-c-rose-500/25 border border-c-rose-500/20 transition-colors" title="Cancel">
-                <X className="w-3 h-3 text-c-rose-400" />
-              </button>
-            </div>
-          ) : (
-            <button onClick={onEditStart} className="flex items-center justify-center w-6 h-6 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition-colors shrink-0" title="Edit tier">
-              <Pencil className="w-3 h-3 text-c-slate-400" />
-            </button>
-          )}
-        </div>
+        <span className={`text-[13px] font-semibold ${s.text}`}>
+          {isEditing
+            ? draft.discount ? `${draft.discount}% on each purchase` : "None"
+            : cfg.discount === 0 ? "None" : `${cfg.discount}% on each purchase`}
+        </span>
       </div>
+
     </div>
   );
 }
@@ -199,16 +212,16 @@ function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, o
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function AdminDiscountPage() {
   // ── Tiers state ──────────────────────────────────────────────────────────────
-  const [tiers,       setTiers]       = useState<DiscountTier[]>([]);
-  const [tiersLoading,setTiersLoading]= useState(true);
-  const [editingTier, setEditingTier] = useState<BadgeTier | null>(null);
-  const [saving,      setSaving]      = useState(false);
-  const [draft,       setDraft]       = useState<EditDraft>({ maxSpend: "", discount: "" });
+  const [tiers,        setTiers]        = useState<DiscountTier[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(true);
+  const [editingTier,  setEditingTier]  = useState<BadgeTier | null>(null);
+  const [saving,       setSaving]       = useState(false);
+  const [draft,        setDraft]        = useState<EditDraft>({ maxSpend: "", discount: "" });
 
   // ── Users state ───────────────────────────────────────────────────────────────
-  const [users,        setUsers]        = useState<DiscountUser[]>([]);
-  const [usersLoading, setUsersLoading] = useState(true);
-  const [totalPage,    setTotalPage]    = useState(1);
+  const [users,          setUsers]          = useState<DiscountUser[]>([]);
+  const [usersLoading,   setUsersLoading]   = useState(true);
+  const [totalPage,      setTotalPage]      = useState(1);
   const [searchUsername, setSearchUsername] = useState("");
   const [searchBadge,    setSearchBadge]    = useState<string>("all");
   const [page,           setPage]           = useState(1);
@@ -222,7 +235,7 @@ export default function AdminDiscountPage() {
   }, []);
 
   // ── Fetch users whenever filters/page change ──────────────────────────────────
-  useEffect(() => {
+  const fetchUsers = useCallback(() => {
     setUsersLoading(true);
     discountService
       .getUsers({ page, limit: 10, username: searchUsername || undefined, badge: searchBadge })
@@ -233,6 +246,10 @@ export default function AdminDiscountPage() {
       .catch(() => toast.error("Failed to load users."))
       .finally(() => setUsersLoading(false));
   }, [page, searchUsername, searchBadge]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   // ── Tier edit handlers ────────────────────────────────────────────────────────
   const handleEditStart = useCallback((cfg: DiscountTier) => {
@@ -296,13 +313,14 @@ export default function AdminDiscountPage() {
         discount: discountVal,
       });
       toast.success(`${tier} tier updated`);
+      fetchUsers();
     } catch (err: any) {
       toast.error(err?.message || "Failed to save tier.");
       setTiers(prev); // rollback
     } finally {
       setSaving(false);
     }
-  }, [draft, tiers]);
+  }, [draft, tiers, fetchUsers]);
 
   const handleCancel = useCallback(() => setEditingTier(null), []);
 
@@ -334,6 +352,15 @@ export default function AdminDiscountPage() {
       cell: ({ row }) => (
         <span className="text-c-emerald-400 font-semibold text-[13px]">
           ${row.original.totalTopUp.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "totalSpend",
+      header: "TOTAL SPEND",
+      cell: ({ row }) => (
+        <span className="text-c-cyan-400 font-semibold text-[13px]">
+          ${row.original.totalSpend.toLocaleString("en-US", { minimumFractionDigits: 2 })}
         </span>
       ),
     },

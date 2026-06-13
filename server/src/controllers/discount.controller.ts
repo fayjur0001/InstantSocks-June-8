@@ -142,6 +142,35 @@ export async function getDiscountUsers(req: Request, res: Response) {
       topUpRows.map((r) => [r.userId, r.total]),
     );
 
+    // ── Step 2b: Bulk totalSpend sum (সব purchase table মিলিয়ে) ─────────────
+    // Rejected status গুলো বাদ — বাকি সব count করা হয়
+    const spendRows = await db.execute<{ user_id: number; total: number }>(
+      sql`
+        SELECT user_id, coalesce(sum(price), 0)::real AS total
+        FROM (
+          SELECT user_id, price FROM socks5_proxy_transactions
+          UNION ALL
+          SELECT user_id, price FROM rented_proxies
+          UNION ALL
+          SELECT user_id, price FROM device_transactions
+          UNION ALL
+          SELECT user_id, price FROM one_time_rents    WHERE status <> 'Rejected'
+          UNION ALL
+          SELECT user_id, price FROM long_term_rents   WHERE status <> 'Rejected'
+          UNION ALL
+          SELECT user_id, price FROM sms_pva_one_time_rents WHERE status <> 'Rejected'
+          UNION ALL
+          SELECT user_id, price FROM sms_pva_long_term_rents WHERE status <> 'Rejected'
+        ) AS all_purchases
+        WHERE user_id = ANY(${sql.raw(`ARRAY[${userIds.join(",")}]::int[]`)})
+        GROUP BY user_id
+      `
+    );
+
+    const spendMap = new Map<number, number>(
+      spendRows.rows.map((r) => [r.user_id, r.total]),
+    );
+
     // ── Step 3: Tier config আনো ───────────────────────────────────────────────
     const tiers = await db
       .select()
@@ -165,11 +194,13 @@ export async function getDiscountUsers(req: Request, res: Response) {
     const enriched = allUsers
       .map((u) => {
         const totalTopUp = topUpMap.get(u.id) ?? 0;
+        const totalSpend = spendMap.get(u.id) ?? 0;
         return {
           id:         u.id,
           userId:     `#${u.id}`,
           username:   u.username,
           totalTopUp,
+          totalSpend,
           badge:      calcBadge(totalTopUp),
         };
       })

@@ -18,6 +18,7 @@ export interface DiscountUser {
   userId:      string;
   username:    string;
   totalTopUp:  number;
+  totalSpend:  number;
   badge:       BadgeTier;
 }
 
