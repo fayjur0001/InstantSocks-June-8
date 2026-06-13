@@ -40,7 +40,14 @@ export async function getPublicContent(req: Request, res: Response) {
 // D1 — GET /api/admin/settings
 export async function getSettings(req: Request, res: Response) {
   try {
-    const [hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd, rules, termsAndConditions, privacyPolicy] = await Promise.all([
+    const [
+      hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd,
+      rules, termsAndConditions, privacyPolicy,
+      // authInfo
+      authCopyrightText, authSignInText, authSignUpText, authPasswordResetText, authHomeUrl,
+      // topUp
+      topUpCryptoText, topUpBlankCurrencyText, topUpGeneratedCurrencyText, topUpCautionText, topUpPopUpText,
+    ] = await Promise.all([
       SiteOptions.hostUrl.get(),
       SiteOptions.siteMode.get(),
       SiteOptions.notice.get(),
@@ -50,8 +57,40 @@ export async function getSettings(req: Request, res: Response) {
       SiteOptions.rules.get(),
       SiteOptions.termsAndConditions.get(),
       SiteOptions.privacyPolicy.get(),
+      // authInfo
+      SiteOptions.authInfo.copyrightText.get(),
+      SiteOptions.authInfo.signInText.get(),
+      SiteOptions.authInfo.signUpText.get(),
+      SiteOptions.authInfo.passwordResetText.get(),
+      SiteOptions.authInfo.homeUrl.get(),
+      // topUp
+      SiteOptions.topUp.cryptoText.get(),
+      SiteOptions.topUp.blankCurrencyText.get(),
+      SiteOptions.topUp.generatedCurrencyText.get(),
+      SiteOptions.topUp.cautionText.get(),
+      SiteOptions.topUp.popUpText.get(),
     ]);
-    res.json({ success: true, data: { hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd, rules, termsAndConditions, privacyPolicy } });
+    res.json({
+      success: true,
+      data: {
+        hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd,
+        rules, termsAndConditions, privacyPolicy,
+        authInfo: {
+          copyrightText: authCopyrightText,
+          signInText: authSignInText,
+          signUpText: authSignUpText,
+          passwordResetText: authPasswordResetText,
+          homeUrl: authHomeUrl,
+        },
+        topUp: {
+          cryptoText: topUpCryptoText,
+          blankCurrencyText: topUpBlankCurrencyText,
+          generatedCurrencyText: topUpGeneratedCurrencyText,
+          cautionText: topUpCautionText,
+          popUpText: topUpPopUpText,
+        },
+      },
+    });
   } catch (e) {
     console.error("GET SETTINGS ERROR:", e);
     res.status(500).json({ success: false, message: "Internal server error." });
@@ -61,7 +100,11 @@ export async function getSettings(req: Request, res: Response) {
 // D1 — PUT /api/admin/settings
 export async function updateSettings(req: Request, res: Response) {
   try {
-    const { hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd, rules, termsAndConditions, privacyPolicy } = req.body;
+    const {
+      hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd,
+      rules, termsAndConditions, privacyPolicy,
+      authInfo, topUp,
+    } = req.body;
 
     // siteLogo validation — base64 data URL অথবা null/empty
     if (siteLogo !== undefined && siteLogo !== null && siteLogo !== "") {
@@ -91,6 +134,18 @@ export async function updateSettings(req: Request, res: Response) {
       rules !== undefined && SiteOptions.rules.set(rules),
       termsAndConditions !== undefined && SiteOptions.termsAndConditions.set(termsAndConditions),
       privacyPolicy !== undefined && SiteOptions.privacyPolicy.set(privacyPolicy),
+      // authInfo
+      authInfo?.copyrightText !== undefined && SiteOptions.authInfo.copyrightText.set(authInfo.copyrightText),
+      authInfo?.signInText !== undefined && SiteOptions.authInfo.signInText.set(authInfo.signInText),
+      authInfo?.signUpText !== undefined && SiteOptions.authInfo.signUpText.set(authInfo.signUpText),
+      authInfo?.passwordResetText !== undefined && SiteOptions.authInfo.passwordResetText.set(authInfo.passwordResetText),
+      authInfo?.homeUrl !== undefined && SiteOptions.authInfo.homeUrl.set(authInfo.homeUrl),
+      // topUp
+      topUp?.cryptoText !== undefined && SiteOptions.topUp.cryptoText.set(topUp.cryptoText),
+      topUp?.blankCurrencyText !== undefined && SiteOptions.topUp.blankCurrencyText.set(topUp.blankCurrencyText),
+      topUp?.generatedCurrencyText !== undefined && SiteOptions.topUp.generatedCurrencyText.set(topUp.generatedCurrencyText),
+      topUp?.cautionText !== undefined && SiteOptions.topUp.cautionText.set(topUp.cautionText),
+      topUp?.popUpText !== undefined && SiteOptions.topUp.popUpText.set(topUp.popUpText),
     ]);
     res.json({ success: true, message: "Settings updated" });
   } catch (e) {
@@ -244,6 +299,27 @@ export async function updateCallback(req: Request, res: Response) {
     res.json({ success: true, message: "Callback config updated" });
   } catch (e) {
     console.error("UPDATE CALLBACK ERROR:", e);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
+// PUBLIC — GET /api/auth-info  (no auth — used by login/register/etc pages)
+export async function getAuthInfo(req: Request, res: Response) {
+  try {
+    const [copyrightText, signInText, signUpText, passwordResetText, homeUrl, siteLogo] = await Promise.all([
+      SiteOptions.authInfo.copyrightText.get(),
+      SiteOptions.authInfo.signInText.get(),
+      SiteOptions.authInfo.signUpText.get(),
+      SiteOptions.authInfo.passwordResetText.get(),
+      SiteOptions.authInfo.homeUrl.get(),
+      SiteOptions.siteLogo.get(),
+    ]);
+    res.json({
+      success: true,
+      data: { copyrightText, signInText, signUpText, passwordResetText, homeUrl, siteLogo },
+    });
+  } catch (e) {
+    console.error("GET AUTH INFO ERROR:", e);
     res.status(500).json({ success: false, message: "Internal server error." });
   }
 }

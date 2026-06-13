@@ -190,6 +190,20 @@ export default function SettingsPage() {
             hours,
           },
           siteLogo: data.siteLogo || null,
+          authInfo: {
+            copyrightText: data.authInfo?.copyrightText || prev.authInfo.copyrightText,
+            signInText: data.authInfo?.signInText || prev.authInfo.signInText,
+            signUpText: data.authInfo?.signUpText || prev.authInfo.signUpText,
+            passwordResetText: data.authInfo?.passwordResetText || prev.authInfo.passwordResetText,
+            homeUrl: data.authInfo?.homeUrl || prev.authInfo.homeUrl,
+          },
+          topUp: {
+            cryptoText: data.topUp?.cryptoText || prev.topUp.cryptoText,
+            blankCurrencyText: data.topUp?.blankCurrencyText || prev.topUp.blankCurrencyText,
+            generatedCurrencyText: data.topUp?.generatedCurrencyText || prev.topUp.generatedCurrencyText,
+            cautionText: data.topUp?.cautionText || prev.topUp.cautionText,
+            popUpText: data.topUp?.popUpText || prev.topUp.popUpText,
+          },
         }));
       })
       .catch((err) => console.error("Failed to load settings:", err))
@@ -214,6 +228,8 @@ export default function SettingsPage() {
       rules: settings.rules,
       termsAndConditions: settings.termsAndConditions,
       privacyPolicy: settings.privacyPolicy,
+      authInfo: settings.authInfo,
+      topUp: settings.topUp,
     })
       .then(() => console.log("Settings saved"))
       .catch((err) => console.error("Failed to save settings:", err))

@@ -161,6 +161,20 @@ export interface AdminSettingsData {
   rules?: string;
   termsAndConditions?: string;
   privacyPolicy?: string;
+  authInfo?: {
+    copyrightText?: string;
+    signInText?: string;
+    signUpText?: string;
+    passwordResetText?: string;
+    homeUrl?: string;
+  };
+  topUp?: {
+    cryptoText?: string;
+    blankCurrencyText?: string;
+    generatedCurrencyText?: string;
+    cautionText?: string;
+    popUpText?: string;
+  };
 }
 
 export interface PaymentApiProviderData {
@@ -174,6 +188,24 @@ export interface PaymentApiUpdatePayload {
   blockonomics?: PaymentApiProviderData;
   currentMethod?: string;
 }
+
+// ─── Public Auth Info (no auth required — used by login/register pages) ───────
+
+export interface PublicAuthInfo {
+  copyrightText: string;
+  signInText: string;
+  signUpText: string;
+  passwordResetText: string;
+  homeUrl: string;
+  siteLogo: string | null;
+}
+
+export const authInfoApi = {
+  get: (): Promise<{ success: boolean; data: PublicAuthInfo }> =>
+    apiFetch("/api/auth-info"),
+};
+
+// ─── Admin Settings ───────────────────────────────────────────────────────────
 
 export const adminSettingsApi = {
   getSettings: (): Promise<{ data: AdminSettingsData }> =>

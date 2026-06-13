@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Home, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authApi } from "@/lib/api";
+import { authApi, authInfoApi, PublicAuthInfo } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState<boolean>(false);
@@ -15,6 +15,11 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const currentYear = new Date().getFullYear();
+  const [authInfo, setAuthInfo] = useState<PublicAuthInfo | null>(null);
+
+  useEffect(() => {
+    authInfoApi.get().then(({ data }) => setAuthInfo(data)).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -72,7 +77,9 @@ export default function ForgotPasswordPage() {
         </div>
 
         <footer className="relative z-10 w-full text-center text-sm font-medium text-zinc-500 pb-6">
-          &copy; {currentYear} InstantSocks. All Rights Reserved.
+          {authInfo?.copyrightText
+            ? authInfo.copyrightText.replace("${year}", String(currentYear))
+            : `© ${currentYear} InstantSocks. All Rights Reserved.`}
         </footer>
       </section>
       {/* Right COLUMN - Dark Form Area with Glow */}
@@ -83,11 +90,11 @@ export default function ForgotPasswordPage() {
         {/* Header */}
         <header className="relative flex justify-between items-center p-3 lg:p-6 w-full z-20">
           <Link
-            href="https://instantsocks.com"
+            href={authInfo?.homeUrl || "https://instantsocks.com"}
             className="hover:opacity-80 transition-opacity"
           >
             <Image
-              src="/logo.webp"
+              src={authInfo?.siteLogo || "/logo.webp"}
               alt="InstantSocks Logo"
               width={160}
               height={56}
@@ -97,7 +104,7 @@ export default function ForgotPasswordPage() {
             />
           </Link>
           <Link
-            href="https://instantsocks.com"
+            href={authInfo?.homeUrl || "https://instantsocks.com"}
             className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/5 transition-all"
           >
             <Home className="w-4 h-4 text-c-orange-500" />
@@ -116,9 +123,7 @@ export default function ForgotPasswordPage() {
                     Forgot your password?
                   </h1>
                   <p className="text-zinc-400 text-sm leading-relaxed">
-                    No worries — it happens to the best of us. Enter the email
-                    address linked to your account and we&apos;ll send you a
-                    secure reset link right away.
+                    {authInfo?.passwordResetText || "No worries — it happens to the best of us. Enter the email address linked to your account and we'll send you a secure reset link right away."}
                   </p>
                 </div>
 

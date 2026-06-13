@@ -8,7 +8,7 @@ import { Home, Eye, EyeOff, Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authApi } from "@/lib/api";
+import { authApi, authInfoApi, PublicAuthInfo } from "@/lib/api";
 
 interface ResetPasswordPageProps {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -28,6 +28,12 @@ function ResetPasswordPageContent({
   const params = useSearchParams();
   const router = useRouter();
   const currentYear = new Date().getFullYear();
+  const [authInfo, setAuthInfo] = useState<PublicAuthInfo | null>(null);
+
+  useEffect(() => {
+    authInfoApi.get().then(({ data }) => setAuthInfo(data)).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ✅ FIX Bug 7: token URL এ রাখলে browser history/logs এ থাকে
   // প্রথমবার URL থেকে পড়ে sessionStorage এ সরিয়ে URL clean করো
@@ -160,7 +166,9 @@ function ResetPasswordPageContent({
         </div>
 
         <footer className="relative z-10 w-full text-center text-sm font-medium text-zinc-500 pb-6">
-          &copy; {currentYear} InstantSocks. All Rights Reserved.
+          {authInfo?.copyrightText
+            ? authInfo.copyrightText.replace("${year}", String(currentYear))
+            : `© ${currentYear} InstantSocks. All Rights Reserved.`}
         </footer>
       </section>
 
@@ -169,9 +177,9 @@ function ResetPasswordPageContent({
         <div className="absolute top-0 left-0 w-full h-[500px] bg-c-green-400/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 -translate-x-1/4" />
 
         <header className="relative flex justify-between items-center p-3 lg:p-6 w-full z-20">
-          <Link href="https://instantsocks.com" className="hover:opacity-80 transition-opacity">
+          <Link href={authInfo?.homeUrl || "https://instantsocks.com"} className="hover:opacity-80 transition-opacity">
             <Image
-              src="/logo.webp"
+              src={authInfo?.siteLogo || "/logo.webp"}
               alt="InstantSocks Logo"
               width={160}
               height={56}
@@ -181,7 +189,7 @@ function ResetPasswordPageContent({
             />
           </Link>
           <Link
-            href="https://instantsocks.com"
+            href={authInfo?.homeUrl || "https://instantsocks.com"}
             className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/5 transition-all"
           >
             <Home className="w-4 h-4 text-c-orange-500" />

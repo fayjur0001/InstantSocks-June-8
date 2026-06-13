@@ -1,7 +1,27 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { authInfoApi } from "@/lib/api";
+
 const CopyRightArea = () => {
+  const currentYear = new Date().getFullYear();
+  const [copyrightText, setCopyrightText] = useState<string | null>(null);
+
+  useEffect(() => {
+    authInfoApi.get()
+      .then(({ data }) => {
+        if (data.copyrightText) setCopyrightText(data.copyrightText);
+      })
+      .catch(() => {});
+  }, []);
+
+  const displayText = copyrightText
+    ? copyrightText.replace('${year}', String(currentYear))
+    : `© ${currentYear} - Present, InstantSocks.`;
+
   return (
     <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-1 text-center text-c-gray-400 text-sm py-3 absolute bottom-0 left-1/2 transform -translate-x-1/2">
-      <p className="text-center text-white/30">© 2025 - Present, InstantSocks.</p>
+      <p className="text-center text-white/30">{displayText}</p>
       <p className="flex items-center gap-1">
         <a
           href="https://instantsocks.com/terms-conditions/"
