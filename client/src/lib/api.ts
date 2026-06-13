@@ -218,3 +218,8 @@ export const publicApi = {
   getContent: (): Promise<{ success: boolean; data: PublicContentData }> =>
     apiFetch("/api/dashboard/content"),
 };
+
+export const publicSettingsApi = {
+  getSiteInfo: (): Promise<{ success: boolean; hostUrl: string }> =>
+    apiFetch("/api/site-info"),
+};

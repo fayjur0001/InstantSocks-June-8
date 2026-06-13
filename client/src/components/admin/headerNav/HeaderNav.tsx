@@ -16,12 +16,12 @@ function getRoleLabel(role?: string): string {
     case "super admin": return "Administrator";
     case "admin":       return "Admin";
     case "support":     return "Support";
-    default:            return "Basic User";
+    default:            return "Staff";
   }
 }
 
 const HeaderNav = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, hostUrl } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -31,16 +31,16 @@ const HeaderNav = () => {
   };
 
   const authUser = {
-    name: user?.full_name || user?.username || "Admin",
+    name:  user?.full_name || user?.username || "User",
     email: user?.email || "",
     image: user?.avatar || "/user.jpeg",
-    role: getRoleLabel(user?.role),
+    role:  getRoleLabel(user?.role),
   };
 
   return (
     <header className="sticky top-0 z-50 flex justify-between h-17 shrink-0 items-center gap-2 border-b border-white/10 bg-black px-4">
       <div className="flex items-center gap-2">
-        <a href="https://acc.instantsocks.com" target="_blank" rel="noopener noreferrer">
+        <a href={hostUrl || "https://instantsocks.com/"} target="_blank" rel="noopener noreferrer"> {/* ← fix */}
           <Image
             src="/logo.webp"
             alt="logo"

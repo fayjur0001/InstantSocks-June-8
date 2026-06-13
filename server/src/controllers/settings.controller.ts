@@ -247,3 +247,13 @@ export async function updateCallback(req: Request, res: Response) {
     res.status(500).json({ success: false, message: "Internal server error." });
   }
 }
+
+// PUBLIC — GET /api/site-info
+export async function getSiteInfo(req: Request, res: Response) {
+  try {
+    const hostUrl = await SiteOptions.hostUrl.get();
+    res.json({ success: true, hostUrl: hostUrl || "https://instantsocks.com" });
+  } catch {
+    res.json({ success: true, hostUrl: "https://instantsocks.com" });
+  }
+}

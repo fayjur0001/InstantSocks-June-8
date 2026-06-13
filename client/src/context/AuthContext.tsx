@@ -11,6 +11,8 @@ import React, {
 } from "react";
 import { authApi, apiFetch, type LoginResponse } from "@/lib/api";
 
+const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AuthUser {
@@ -25,8 +27,7 @@ export interface AuthUser {
   isShadowAdmin?: boolean;
   banned?: boolean;
   bannedTill?: string | null;
-  // ─── Profile fields ───────────────────────────────────────────────────────
-  avatar?: string;       // me() থেকে আসে — additionalInfo.profilePicture
+  avatar?: string;
   firstName?: string;
   nickName?: string;
   lastName?: string;
@@ -42,6 +43,7 @@ interface AuthState {
   user: AuthUser | null;
   balance: number;
   notificationsCount: number;
+  hostUrl: string;
   loading: boolean;
 }
 
@@ -59,13 +61,27 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// ─── Helper: site-info fetch ──────────────────────────────────────────────────
+
+async function fetchHostUrl(): Promise<string> {
+  try {
+    const res = await fetch(`${BASE}/api/site-info`, { cache: "no-store" });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data?.hostUrl || "";
+  } catch {
+    return "";
+  }
+}
+
 // ─── Helper: fetch all auth data at once ─────────────────────────────────────
 
 async function fetchAllAuthData(): Promise<Omit<AuthState, "loading">> {
-  const [meData, balanceData, notifData] = await Promise.allSettled([
+  const [meData, balanceData, notifData, hostUrlData] = await Promise.allSettled([
     authApi.me(),
     authApi.balance(),
     authApi.notificationsCount(),
+    fetchHostUrl(),
   ]);
 
   return {
@@ -81,6 +97,10 @@ async function fetchAllAuthData(): Promise<Omit<AuthState, "loading">> {
       notifData.status === "fulfilled"
         ? notifData.value?.count ?? 0
         : 0,
+    hostUrl:
+      hostUrlData.status === "fulfilled"
+        ? hostUrlData.value ?? ""
+        : "",
   };
 }
 
@@ -91,14 +111,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user: null,
     balance: 0,
     notificationsCount: 0,
+    hostUrl: "",      // ← add
     loading: true,
   });
 
   const refreshUser = useCallback(async () => {
     try {
       const data = await authApi.me();
-      // me() response: { user: { avatar, firstName, ... } }
-      // spread করে সব field ঠিকঠাক map হচ্ছে
       setState((prev) => ({ ...prev, user: data?.user ?? data }));
     } catch {
       setState((prev) => ({ ...prev, user: null }));
@@ -109,18 +128,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await authApi.balance();
       setState((prev) => ({ ...prev, balance: data?.balance ?? 0 }));
-    } catch {
-      // silently fail
-    }
+    } catch {}
   }, []);
 
   const refreshNotifications = useCallback(async () => {
     try {
       const data = await authApi.notificationsCount();
       setState((prev) => ({ ...prev, notificationsCount: data?.count ?? 0 }));
-    } catch {
-      // silently fail
-    }
+    } catch {}
   }, []);
 
   // Bootstrap on mount
@@ -131,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await fetchAllAuthData();
         setState({ ...data, loading: false });
       } catch {
-        setState({ user: null, balance: 0, notificationsCount: 0, loading: false });
+        setState({ user: null, balance: 0, notificationsCount: 0, hostUrl: "", loading: false });
       }
     })();
   }, []);
@@ -147,12 +162,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    setState({ user: null, balance: 0, notificationsCount: 0, loading: false });
+    setState({ user: null, balance: 0, notificationsCount: 0, hostUrl: "", loading: false });
     try {
       await authApi.logout();
-    } catch {
-      // silently ignore
-    }
+    } catch {}
   }, []);
 
   const loginAs = useCallback(async (userId: string) => {
@@ -169,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       exitData = await apiFetch("/api/auth/exit-login-as", { method: "POST" });
     } catch {
-      setState({ user: null, balance: 0, notificationsCount: 0, loading: false });
+      setState({ user: null, balance: 0, notificationsCount: 0, hostUrl: "", loading: false });
       return null;
     }
     return { role: exitData?.role ?? "" };

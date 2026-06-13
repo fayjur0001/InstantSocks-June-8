@@ -61,17 +61,49 @@ const strictPasswordSchema = z
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function getBadge(role: string) {
-  switch (role) {
-    case "super admin":
-      return "Super Admin";
-    case "admin":
-      return "Admin";
-    case "support":
-      return "Support";
-    default:
-      return "Basic User";
+import { DiscountTierModel } from "@/db/schema";
+import { asc } from "drizzle-orm";
+import { AddedFundModel } from "@/db/schema";
+
+async function getUserBadge(userId: number, role: string): Promise<string> {
+  // admin/support/super admin এর জন্য role-based label
+  if (role === "super admin") return "Super Admin";
+  if (role === "admin") return "Admin";
+  if (role === "support") return "Support";
+
+  // general user — total approved top-up দিয়ে badge calculate
+  const [topUpRow] = await db
+    .select({
+      total: sql<number>`coalesce(sum(${AddedFundModel.amount}), 0)::real`,
+    })
+    .from(AddedFundModel)
+    .where(
+      and(
+        eq(AddedFundModel.userId, userId),
+        eq(AddedFundModel.status, "approved"),
+      ),
+    );
+
+  const totalTopUp = topUpRow?.total ?? 0;
+
+  const tiers = await db
+    .select()
+    .from(DiscountTierModel)
+    .orderBy(asc(DiscountTierModel.sortOrder));
+
+  if (tiers.length === 0) return "Basic";
+
+  let matched = tiers[0];
+  for (const t of tiers) {
+    if (
+      totalTopUp >= t.minSpend &&
+      (t.maxSpend === null || totalTopUp <= t.maxSpend)
+    ) {
+      matched = t;
+      break;
+    }
   }
+  return matched.tier;
 }
 
 // ── REGISTER ─────────────────────────────────────────────────────
@@ -321,7 +353,7 @@ export async function me(req: Request, res: Response) {
   try {
     const p = req.payload!;
 
-    const [user, additionalInfo] = await Promise.all([
+    const [user, additionalInfo, badge] = await Promise.all([
       db.query.UserModel.findFirst({
         where: (m, { eq }) => eq(m.id, p.id),
         columns: { email: true, banned: true, bannedTill: true },
@@ -329,6 +361,7 @@ export async function me(req: Request, res: Response) {
       db.query.AdditionalUserInformationModel.findFirst({
         where: (m, { eq }) => eq(m.userId, p.id),
       }),
+      getUserBadge(p.id, p.role), // ← async badge calculation
     ]);
 
     return res.json({
@@ -336,7 +369,7 @@ export async function me(req: Request, res: Response) {
       user: {
         id:            p.id,
         username:      p.username,
-        badge:         getBadge(p.role),
+        badge,                      // ← calculated badge
         role:          p.role,
         isShadowAdmin: p.isShadowAdmin ?? false,
         email:         user?.email     || "",

@@ -12,17 +12,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-function getRoleLabel(role?: string): string {
+function getRoleLabel(role?: string, badge?: string): string {
   switch (role) {
     case "super admin": return "Administrator";
     case "admin":       return "Admin";
     case "support":     return "Support";
-    default:            return "Basic User";
+    default:            return badge || "Basic User";
   }
 }
 
 const HeaderNav = () => {
-  const { user, logout, exitLoginAs } = useAuth();
+  const { user, logout, exitLoginAs, hostUrl } = useAuth(); // ← hostUrl add
   const router = useRouter();
   const [exitingLoginAs, setExitingLoginAs] = useState(false);
 
@@ -32,36 +32,19 @@ const HeaderNav = () => {
     router.push("/login");
   };
 
-  // ✅ FIX: exitLoginAs এখন { role } return করে — state confirmed হওয়ার পর।
-  // পুরনো version: await exitLoginAs() → router.push() — এই দুইয়ের মাঝে
-  // React setState flush হওয়ার আগেই navigate হত, admin/layout stale
-  // isShadowAdmin:true দেখে আবার /user/dashboard এ ফেলে দিত।
-  //
-  // নতুন version: role return হওয়া মানে fetchAllAuthData() সম্পূর্ণ এবং
-  // setState() call হয়েছে। এরপর navigate করলে admin/layout সঠিক
-  // (isShadowAdmin:false) state পাবে।
   const handleExitLoginAs = async () => {
-    if (exitingLoginAs) return; // double-click guard
+    if (exitingLoginAs) return;
     setExitingLoginAs(true);
     try {
       const result = await exitLoginAs();
-
       if (!result) {
-        // Server error — exitLoginAs already cleared state
         router.replace("/login/instants");
         return;
       }
-
       const { role } = result;
-
-      // Admin/super admin/support হলে admin panel এ, অন্যথায় login এ
       if (role === "admin" || role === "super admin" || role === "support") {
-        // ✅ FIX: router.replace — /user/dashboard admin-এর history-তে থাকবে না।
-        // Back button চাপলে /user/dashboard এ ফিরে যাওয়া সম্ভব হবে না।
-        // /admin/users হলো admin-এর user management page.
         window.location.replace("/admin/users");
       } else {
-        // Unexpected — role restore হয়নি, safe fallback
         router.replace("/login/instants");
       }
     } catch {
@@ -72,17 +55,18 @@ const HeaderNav = () => {
   };
 
   const authUser = {
-  name: user?.full_name || user?.username || "User",
-  email: user?.email || "",
-  image: user?.avatar || "/user.jpeg",  // avatar থাকলে দেখাও, না থাকলে default
-  role: getRoleLabel(user?.role),
-};
+    name:  user?.full_name || user?.username || "User",
+    email: user?.email || "",
+    image: user?.avatar || "/user.jpeg",
+    role:  getRoleLabel(user?.role, user?.badge),
+    badge: user?.badge || "Basic",
+  };
 
   return (
     <>
       <header className="sticky top-0 z-50 flex justify-between h-17 shrink-0 items-center gap-2 border-b border-white/10 bg-black px-4">
         <div className="flex items-center gap-2">
-          <a href="https://acc.instantsocks.com" target="_blank" rel="noopener noreferrer">
+          <a href={hostUrl || "https://instantsocks.com/"} target="_blank" rel="noopener noreferrer"> {/* ← fix */}
             <Image
               src="/logo.webp"
               alt="logo"
@@ -97,7 +81,6 @@ const HeaderNav = () => {
         <Nav />
 
         <div className="flex items-center gap-3">
-          {/* Back to Admin — Nav ও Notification এর মাঝে */}
           {user?.isShadowAdmin && (
             <button
               onClick={handleExitLoginAs}
