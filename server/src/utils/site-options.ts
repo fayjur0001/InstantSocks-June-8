@@ -40,7 +40,7 @@ export default class SiteOptions {
   static providerCallbackSecret = mks("provider-callback-secret");
   
   static authInfo = {
-    copyrightText: mks("auth-copyright-text", "© 2014-${year} RepeatSMS. All Rights Reserved"),
+    copyrightText: mks("auth-copyright-text", "© 2014-${year} InstantSocks. All Rights Reserved"),
     signInText: mks("auth-sign-in-text", "Access your account with your secure login"),
     signUpText: mks("auth-sign-up-text", "We're excited to have you onboard, let's get started!"),
     passwordResetText: mks("auth-password-reset-text", "Lost your password? No problem. Just enter your email below."),

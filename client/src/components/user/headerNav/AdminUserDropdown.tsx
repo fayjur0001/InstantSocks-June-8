@@ -97,7 +97,7 @@ const AdminUserDropdown = ({ user, handleLogout }: AdminUserDropdownProps) => {
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="font-bold text-white text-base leading-tight">{user?.name}</span>
-              <span className="text-c-gray-400 text-[8.4px]">{user?.email}</span>
+              <span className="text-c-gray-400 text-[12px]">{user?.email}</span>
             </div>
           </div>
 
