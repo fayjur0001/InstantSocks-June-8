@@ -45,7 +45,7 @@ function StaffLoginContent() {
         toast.success("Welcome back! You are logged in successfully.");
         router.push(safeRedirect(params.get("redirect"), "/admin/support"));
       } else {
-        // Normal user tried staff portal — reject
+        
         setError("Access denied. This portal is for staff only.");
       }
     } catch (err: unknown) {
@@ -59,7 +59,7 @@ function StaffLoginContent() {
 
   return (
     <main className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-[#09090b] selection:bg-c-green-400/30">
-      {/* Left column */}
+      {}
       <section className="hidden lg:flex w-full lg:w-[50%] bg-zinc-100 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/auth-bg.png')] bg-cover bg-center opacity-30 mix-blend-multiply" />
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-c-orange-500/20 via-transparent to-transparent rounded-full blur-[100px] -translate-y-1/4 translate-x-1/4" />
@@ -95,7 +95,7 @@ function StaffLoginContent() {
         </footer>
       </section>
 
-      {/* Right column */}
+      {}
       <section className="relative w-full lg:w-[50%] min-h-screen flex flex-col text-zinc-100 pb-10 lg:pb-0 z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-c-green-400/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 -translate-x-1/4" />
 

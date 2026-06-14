@@ -1,11 +1,10 @@
-/**
- * dashboard.service.ts
- * Module J — Dashboard & Statistics এর সব API call এখানে।
- */
+
+
+
 
 import { apiFetch } from "@/lib/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 
 export interface UserDashboardStats {
   balance:      number;
@@ -29,8 +28,8 @@ export interface ChartDataPoint {
   turnover:      number;
   deposit:       number;
   value:         number;
-  name?:         string;   // Top Users tab এ username
-  proxyLocation?: string;  // Proxy tab tooltip এ
+  name?:         string;   
+  proxyLocation?: string;  
 }
 
 export interface SummaryBox {
@@ -53,7 +52,7 @@ export type StatTab           = "proxy" | "transactions";
 export type StatPeriod        = "7d" | "1m" | "3m";
 export type StatSummaryPeriod = "today" | "3days" | "weekly" | "monthly";
 
-// ─── Proxy Transaction ────────────────────────────────────────────────────────
+
 
 export interface ProxyTransaction {
   id:       number;
@@ -77,21 +76,20 @@ export interface ProxyTransactionsResponse {
   totalPages:   number;
 }
 
-// ─── API calls ────────────────────────────────────────────────────────────────
+
 
 export const dashboardApi = {
-  /** GET /api/dashboard/stats — user নিজের balance/spend/pending */
+  
   getUserStats: (): Promise<{ success: boolean; data: UserDashboardStats }> =>
     apiFetch("/api/dashboard/stats"),
 
-  /** GET /api/admin/dashboard — admin platform stats */
+  
   getAdminStats: (): Promise<{ success: boolean; data: AdminDashboardStats }> =>
     apiFetch("/api/admin/dashboard"),
 
-  /**
-   * GET /api/admin/statistics
-   * Chart data (period দিয়ে) + summary boxes (summaryPeriod দিয়ে) একসাথে আনে।
-   */
+  
+
+
   getStatistics: (
     tab:           StatTab,
     period:        StatPeriod,
@@ -101,10 +99,9 @@ export const dashboardApi = {
       `/api/admin/statistics?tab=${tab}&period=${period}&summaryPeriod=${summaryPeriod}`,
     ),
 
-  /**
-   * GET /api/admin/statistics/top-users
-   * "Top Users" chart tab এর জন্য username-annotated chart data।
-   */
+  
+
+
   getTopUsers: (
     tab:    StatTab,
     period: StatPeriod,
@@ -113,10 +110,9 @@ export const dashboardApi = {
       `/api/admin/statistics/top-users?tab=${tab}&period=${period}`,
     ),
 
-  /**
-   * GET /api/admin/statistics/summary
-   * শুধু summary boxes — period dropdown change হলে শুধু এই call হবে।
-   */
+  
+
+
   getSummaryBoxes: (
     tab:           StatTab,
     summaryPeriod: StatSummaryPeriod,
@@ -124,10 +120,9 @@ export const dashboardApi = {
     apiFetch(
       `/api/admin/statistics/summary?tab=${tab}&summaryPeriod=${summaryPeriod}`,
     ),
-  /**
-   * GET /api/admin/statistics/proxy-transactions
-   * Paginated list of all Socks5 proxy transactions (admin).
-   */
+  
+
+
   getProxyTransactions: (
     page:   number,
     limit:  number,

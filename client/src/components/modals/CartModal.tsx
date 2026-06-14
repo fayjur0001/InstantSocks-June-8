@@ -1,8 +1,7 @@
 import { toFlagEmoji } from "@/lib/helpers";
 import { ShoppingCart, Trash2, X, Loader2 } from "lucide-react";
 
-// ProxyItem type — CartModal শুধু display করে,
-// তাই full type import না করে inline define করলাম।
+
 interface CartProxyItem {
   id: string;
   ip: string;
@@ -20,7 +19,7 @@ interface CartModalProps {
   onBuyOne: (proxy: CartProxyItem) => void;
   onBuyAll: () => void;
   onEmpty: () => void;
-  isLoading?: boolean; // buy loading state
+  isLoading?: boolean; 
 }
 
 function CartModal({
@@ -43,7 +42,7 @@ function CartModal({
         className="bg-c-bg-850 border border-c-slate-700/60 rounded-2xl w-full max-w-2xl mx-4 shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between px-6 py-4 border-b border-c-slate-800/80">
           <h2 className="text-c-slate-200 font-semibold text-[15px]">Cart</h2>
           <button
@@ -54,7 +53,7 @@ function CartModal({
           </button>
         </div>
 
-        {/* Table */}
+        {}
         <div className="px-6 py-4 min-h-[120px]">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2 text-c-slate-600">
@@ -112,7 +111,7 @@ function CartModal({
           )}
         </div>
 
-        {/* Footer */}
+        {}
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-c-slate-800/80">
           <button
             onClick={onClose}

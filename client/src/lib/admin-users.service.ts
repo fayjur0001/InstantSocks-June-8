@@ -9,7 +9,7 @@ export interface AdminUserApiItem {
   isOnline: boolean;
   banned: boolean;
   bannedTill: string | null;
-  // ✅ FIX Bug 2: server থেকে আসা real balance fields
+  
   currentBalance: number;
   totalTopUp: number;
 }
@@ -39,7 +39,7 @@ const toQueryString = (params: GetAdminUsersParams) => {
   const query = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
-    // Skip empty strings, undefined, and "all" values — let backend return everything
+    
     if (value === undefined || value === "" || value === "all") return;
     query.set(key, String(value));
   });

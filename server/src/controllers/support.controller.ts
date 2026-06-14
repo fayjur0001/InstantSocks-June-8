@@ -44,7 +44,7 @@ export async function deleteMessage(req: Request, res: Response) {
     if (!existing) { res.status(404).json({ success: false, message: "Message not found." }); return; }
     if (existing.userId !== userId) { res.status(403).json({ success: false, message: "Access denied." }); return; }
 
-    // FK constraint: seen_by records আগে delete করতে হবে, তারপর message
+    
     await db.delete(TicketMessageSeenByModel).where(eq(TicketMessageSeenByModel.messageId, messageId));
     await db.delete(TicketMessageModel).where(eq(TicketMessageModel.id, messageId));
 
@@ -61,13 +61,13 @@ export async function deleteMessage(req: Request, res: Response) {
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
 }
 
-// ─── Helper: ticket list এ agentInfo যোগ করো ─────────────────────────────────
+
 async function enrichTicketsWithAgent(tickets: any[]) {
-  // agentId আছে এমন unique agent IDs বের করো
+  
   const agentIds = [...new Set(tickets.map((t) => t.agentId).filter(Boolean))] as number[];
   if (agentIds.length === 0) return tickets.map((t) => ({ ...t, agentInfo: null }));
 
-  // একটা bulk query তে সব agent info আনো
+  
   const agents = await db.query.UserModel.findMany({
     where: (u, { inArray }) => inArray(u.id, agentIds),
     columns: { id: true, username: true, agentSerial: true },
@@ -89,13 +89,13 @@ export async function getMyTickets(req: Request, res: Response) {
 
     let rawTickets;
     if (isStaff) {
-      // Agent/Admin: নিজে যে টিকেটগুলো handle করছে (agentId = self)
+      
       rawTickets = await db.query.TicketModel.findMany({
         where: (m, { eq }) => eq(m.agentId, requesterId),
         orderBy: (m, { desc }) => desc(m.updatedAt),
       });
     } else {
-      // Regular user: নিজে যে টিকেটগুলো তৈরি করেছে (userId = self)
+      
       rawTickets = await db.query.TicketModel.findMany({
         where: (m, { eq }) => eq(m.userId, requesterId),
         orderBy: (m, { desc }) => desc(m.updatedAt),
@@ -109,7 +109,7 @@ export async function getMyTickets(req: Request, res: Response) {
 
 export async function getOtherTickets(_req: Request, res: Response) {
   try {
-    // All Tickets: agentId আছে এমন টিকেট (In Progress + Completed), unclaimed বাদ
+    
     const rawTickets = await db.query.TicketModel.findMany({
       where: (m, { isNotNull }) => isNotNull(m.agentId),
       orderBy: (m, { desc }) => desc(m.updatedAt),
@@ -121,7 +121,7 @@ export async function getOtherTickets(_req: Request, res: Response) {
 
 export async function getUnclaimedTickets(_req: Request, res: Response) {
   try {
-    // Unclaimed: agentId নেই এবং opened status
+    
     const rawTickets = await db.query.TicketModel.findMany({
       where: (m, { isNull, and, eq }) => and(isNull(m.agentId), eq(m.status, "opened")),
       orderBy: (m, { desc }) => desc(m.updatedAt),
@@ -131,9 +131,7 @@ export async function getUnclaimedTickets(_req: Request, res: Response) {
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
 }
 
-// ─── Ownership helper ─────────────────────────────────────────────────────────
-// Ticket টা fetch করে এবং check করে যে requester হয় ticket owner অথবা assigned agent।
-// Staff/admin role হলে সব ticket access পাবে।
+
 async function fetchTicketWithAccess(ticketId: number, requesterId: number, requesterRole: string) {
   const ticket = await db.query.TicketModel.findFirst({ where: (m, { eq }) => eq(m.id, ticketId) });
   if (!ticket) return { ticket: null, forbidden: false };
@@ -155,7 +153,7 @@ export async function getTicket(req: Request, res: Response) {
     if (forbidden) { res.status(403).json({ success: false, message: "Access denied." }); return; }
     if (!ticket) { res.status(404).json({ success: false, message: "Ticket not found." }); return; }
 
-    // Agent info যোগ করো — agentSerial + username
+    
     let agentInfo: { agentSerial: number | null; username: string } | null = null;
     if (ticket.agentId) {
       const agent = await db.query.UserModel.findFirst({
@@ -208,26 +206,26 @@ export async function sendMessage(req: Request, res: Response) {
     const [msg] = await db.insert(TicketMessageModel).values({ ticketId, userId, message }).returning();
     await db.insert(TicketMessageSeenByModel).values({ messageId: msg.id, userId });
 
-    // Ticket updatedAt update করো এবং staff reply এ agentId সবসময় current replier-এ update করো
+    
     const isStaff = req.payload!.role === "admin" || req.payload!.role === "super admin" || req.payload!.role === "support";
     const updateFields: Record<string, any> = { updatedAt: new Date() };
     if (isStaff) {
-      // যেকোনো staff reply-এ agentId update — message-এর উপরে সঠিক agent ID দেখাবে
+      
       updateFields.agentId = userId;
     }
     await db.update(TicketModel).set(updateFields).where(eq(TicketModel.id, ticketId));
 
     const page = `/support/${ticketId}`;
     const notifies: Promise<void>[] = [pusher({ page, to: `user-${ticket.userId}` })];
-    // আগের agent (যদি ভিন্ন কেউ হয়) কে notify করো
+    
     if (ticket.agentId && ticket.agentId !== userId && ticket.agentId !== ticket.userId) {
       notifies.push(pusher({ page, to: `user-${ticket.agentId}` }));
     }
-    // Current replier কে notify করো
+    
     if (isStaff && userId !== ticket.userId) {
       notifies.push(pusher({ page, to: `user-${userId}` }));
     }
-    // Staff ও admin channel এ notify করো যাতে their ticket list refresh হয়
+    
     notifies.push(pusher({ page: "/support/other-tickets", to: "admin" }));
     notifies.push(pusher({ page: "/support/my-tickets", to: "staff" }));
     await Promise.all(notifies);
@@ -248,7 +246,7 @@ export async function getMessages(req: Request, res: Response) {
       orderBy: (m, { asc }) => asc(m.createdAt),
     });
 
-    // Seen records fetch করো
+    
     const messageIds = messages.map((m) => m.id);
     const seenRecords = messageIds.length > 0
       ? await db.query.TicketMessageSeenByModel.findMany({
@@ -256,7 +254,7 @@ export async function getMessages(req: Request, res: Response) {
         })
       : [];
 
-    // নিজে না-দেখা অন্যের messages গুলো seen mark করো
+    
     const otherUserId = ticket.userId === userId ? ticket.agentId : ticket.userId;
     const unseenIds = messages
       .filter((msg) => msg.userId !== userId && !seenRecords.some((s) => s.messageId === msg.id && s.userId === userId))
@@ -269,8 +267,8 @@ export async function getMessages(req: Request, res: Response) {
       unseenIds.forEach((mid) => seenRecords.push({ id: 0, messageId: mid, userId, createdAt: new Date(), updatedAt: new Date() }));
     }
 
-    // প্রতিটা message-এর sender info আলাদাভাবে fetch করো
-    // যাতে multiple agent এর message সঠিক label দেখায়
+    
+    
     const senderIds = [...new Set(messages.map((m) => m.userId))];
     const senders = senderIds.length > 0
       ? await db.query.UserModel.findMany({
@@ -332,7 +330,7 @@ export async function reopenTicket(req: Request, res: Response) {
 
     const prevAgentId = ticket.agentId;
 
-    // Reopen করা agent-এর ID set করো — এই agent এখন ticket handle করবে
+    
     await db.update(TicketModel)
       .set({ status: "opened", agentId: requesterId })
       .where(eq(TicketModel.id, ticketId));
@@ -353,7 +351,7 @@ export async function reopenTicket(req: Request, res: Response) {
   } catch { res.status(500).json({ success: false, message: "Internal server error." }); }
 }
 
-// Converted from: claim.action.ts
+
 export async function claimTicket(req: Request, res: Response) {
   try {
     const agentId = req.payload!.id;
@@ -383,7 +381,7 @@ export async function deleteTicket(req: Request, res: Response) {
     const ticket = await db.query.TicketModel.findFirst({ where: (m, { eq }) => eq(m.id, ticketId) });
     if (!ticket) { res.status(404).json({ success: false, message: "Ticket not found." }); return; }
 
-    // Ticket এর সব messages এর seen records delete করো
+    
     const msgs = await db.query.TicketMessageModel.findMany({
       where: (m, { eq }) => eq(m.ticketId, ticketId),
       columns: { id: true },

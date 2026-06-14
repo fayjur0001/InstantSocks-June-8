@@ -159,8 +159,8 @@ export function DeviceOrderApproveModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-c-bg-600 border-c-slate-700 text-c-slate-200 sm:max-w-[450px]">
-        {/* key={order?.id} remounts ApproveModalContent entirely when the order
-            changes, so useState initializes fresh — no useEffect or useMemo needed */}
+        {
+}
         <ApproveModalContent
           key={order?.id}
           order={order}

@@ -8,7 +8,7 @@ const Wallete = () => {
 
   return (
     <div className="hidden h-11 w-fit items-center gap-3 rounded-[8px] border border-white/10 bg-white/5 px-2.5 py-1 lg:flex">
-      {/* Wallet Icon and Balance */}
+      {}
       <div className="flex items-center gap-1.5">
         <Wallet className="h-3.75 w-3.75 text-white/80" strokeWidth={2.5} />
         <span className="text-[14px] leading-none font-medium text-white">
@@ -16,7 +16,7 @@ const Wallete = () => {
         </span>
       </div>
 
-      {/* Deposit Action */}
+      {}
       <Link href={"/user/deposit"}>
         <Button
           variant="ghost"

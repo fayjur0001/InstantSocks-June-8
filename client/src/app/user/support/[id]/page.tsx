@@ -53,7 +53,7 @@ export default function UserSupportChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Pusher real-time
+  
   useEffect(() => {
     if (!user) return;
     const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY;
@@ -83,7 +83,7 @@ export default function UserSupportChatPage() {
     if (!trimmed || sending) return;
     setSending(true);
     setMessageInput("");
-    // Optimistic: message তাৎক্ষণিক দেখাও
+    
     const tempId = Date.now();
     const optimisticMsg: TicketMessage = {
       id: tempId,
@@ -112,7 +112,7 @@ export default function UserSupportChatPage() {
   };
 
   const handleReopen = async () => {
-    // Optimistic: status তাৎক্ষণিক বদলাও
+    
     setTicket((prev) => prev ? { ...prev, status: "opened" } : prev);
     try {
       await supportApi.reopenTicket(ticketId);
@@ -120,7 +120,7 @@ export default function UserSupportChatPage() {
       fetchData();
     } catch {
       toast.error("Failed to reopen ticket.");
-      fetchData(); // revert
+      fetchData(); 
     }
   };
 
@@ -145,7 +145,7 @@ export default function UserSupportChatPage() {
 
   return (
     <div className="relative overflow-hidden gap-0 bg-black rounded-[12px] h-full">
-      {/* Header Section */}
+      {}
       <div className="p-8 pb-6 relative">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
@@ -171,7 +171,7 @@ export default function UserSupportChatPage() {
         </div>
       </div>
 
-      {/* Chat Body Section */}
+      {}
       <div className="px-8 py-4 h-[370px] sm:h-[420px] lg:h-[450px] mb-[72px] lg:mb-[97px] overflow-y-auto space-y-6 flex flex-col">
         {messages.length === 0 && (
           <p className="text-c-slate-500 text-sm text-center mt-8">No messages yet.</p>
@@ -214,7 +214,7 @@ export default function UserSupportChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Footer / Input Section */}
+      {}
       <div className="p-3 lg:p-6 flex gap-3 items-center absolute bottom-0 left-0 w-full bg-c-bg-900/90 backdrop-blur-sm border-t border-c-slate-800">
         <div className="relative flex-1">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-c-slate-500 cursor-pointer hover:text-c-slate-300">

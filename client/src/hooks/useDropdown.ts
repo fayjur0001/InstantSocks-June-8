@@ -4,7 +4,7 @@ const useDropdown = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Handle Click Outside
+  
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (

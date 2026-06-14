@@ -74,7 +74,7 @@ export default function UserSupportPage() {
     fetchTickets();
   }, [fetchTickets]);
 
-  // Pusher real-time revalidation — agent reply বা ticket status change হলে list refresh
+  
   useEffect(() => {
     if (!user) return;
     const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY;
@@ -170,7 +170,7 @@ export default function UserSupportPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-4 p-4 bg-black rounded-2xl">
-        {/* Header inside the card */}
+        {}
         <div className="flex justify-between items-start mb-6">
           <div className="space-y-1">
             <h3 className="font-bold text-white/90">Support Tickets</h3>
@@ -184,7 +184,7 @@ export default function UserSupportPage() {
           </Button>
         </div>
 
-        {/* Inner Table Container */}
+        {}
         <div className="space-y-4">
           <h4 className="font-bold text-white/90 text-sm ml-1">All Tickets</h4>
           <div className="rounded-xl overflow-hidden border border-c-slate-800">
@@ -203,7 +203,7 @@ export default function UserSupportPage() {
           </div>
         </div>
 
-        {/* Create Ticket Modal */}
+        {}
         <CreateTicketModal
           isCreateTicketOpen={isCreateTicketOpen}
           setIsCreateTicketOpen={setIsCreateTicketOpen}

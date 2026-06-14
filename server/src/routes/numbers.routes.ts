@@ -6,7 +6,7 @@ const router = Router();
 router.use(requireAuth());
 
 router.get("/services", getServices);
-router.post("/rent/otr", rentOneTime);   // ← নতুন
+router.post("/rent/otr", rentOneTime);   
 router.post("/rent/ltr", rentLongTerm);
 
 export default router;

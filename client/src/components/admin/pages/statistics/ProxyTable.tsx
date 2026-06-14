@@ -7,7 +7,7 @@ import { dashboardApi, ProxyTransaction } from "@/lib/dashboard.service";
 
 const ITEMS_PER_PAGE = 20;
 
-// Country code → flag emoji
+
 function flagEmoji(countryCode: string): string {
   const code = countryCode.toUpperCase().slice(0, 2);
   if (!/^[A-Z]{2}$/.test(code)) return "🌐";
@@ -57,7 +57,7 @@ export default function ProxyTable() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Search: debounce 400ms
+  
   useEffect(() => {
     const t = setTimeout(() => {
       setPage(1);
@@ -143,7 +143,7 @@ export default function ProxyTable() {
 
   return (
     <div className="space-y-4">
-      {/* Search bar */}
+      {}
       <div className="flex items-center gap-3">
         <input
           type="text"

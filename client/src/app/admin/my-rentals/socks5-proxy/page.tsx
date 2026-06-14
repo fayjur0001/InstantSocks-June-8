@@ -11,16 +11,16 @@ import { proxyApi, type RentalItem } from "@/lib/proxy.service";
 import { toFlagEmoji } from "@/lib/helpers";
 import { toast } from "sonner";
 
-// ─── Display type ─────────────────────────────────────────────────────────────
+
 interface ProxyDisplay {
   id: string;
   ip: string;
-  proxyPort: string;       // NSocks proxy port (e.g. 33494)
+  proxyPort: string;       
   country: string;
   state: string;
   city: string;
   zip: string;
-  port: string;            // internal tracking port
+  port: string;            
   type: string;
   note: string;
   status: "Active" | "Offline" | "Expired";
@@ -34,12 +34,12 @@ function toDisplay(r: RentalItem): ProxyDisplay {
   const expiresAt = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
   const isExpired = expiresAt < new Date();
 
-  // ip field = "ip:port" combined (e.g. "123.0.220.210:33494") — split করে আলাদা দেখাই
+  
   const [proxyIp, proxyPort] = r.ip.includes(":")
     ? r.ip.split(":")
     : [r.ip, ""];
 
-  // NSocks online status থাকলে সেটা use করো, নাহলে 30-day fallback
+  
   const nsocksOnline = r.nsocksOnline;
   const status: "Active" | "Offline" | "Expired" =
     nsocksOnline === 1 ? "Active"  :
@@ -48,13 +48,13 @@ function toDisplay(r: RentalItem): ProxyDisplay {
 
   return {
     id: String(r.id),
-    ip: proxyIp,           // শুধু IP
-    proxyPort: proxyPort,  // NSocks proxy port (33494)
+    ip: proxyIp,           
+    proxyPort: proxyPort,  
     country: r.country,
     state: r.state,
     city: r.city,
     zip: r.zip,
-    port: r.port,          // internal tracking port
+    port: r.port,          
     type: r.type,
     note: r.note || "-",
     status,
@@ -108,9 +108,7 @@ const FilterHeaderInput = ({
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PAGE
-// ═══════════════════════════════════════════════════════════════════════════════
+
 
 export default function AdminMyRentals() {
   const [page, setPage] = useState(1);
@@ -129,7 +127,7 @@ export default function AdminMyRentals() {
     setPage(1);
   }, []);
 
-  // proxyApi.getMyRentals() → /api/proxy/my-rentals → শুধু admin এর নিজের rentals
+  
   const fetchRentals = useCallback(async (p: number) => {
     setLoading(true);
     try {
@@ -259,7 +257,7 @@ export default function AdminMyRentals() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 p-4 bg-black rounded-[16px] min-h-[80dvh] text-c-slate-300">
 
-      {/* LEFT: Table */}
+      {}
       <div className="flex-1 min-w-0 overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-20 gap-2 text-c-slate-400">
@@ -287,7 +285,7 @@ export default function AdminMyRentals() {
         )}
       </div>
 
-      {/* RIGHT: Detail Sidebar */}
+      {}
       <div className="w-full lg:w-[250px] shrink-0 bg-c-bg-750 border border-c-slate-800 rounded-xl flex flex-col overflow-hidden">
         {!selectedProxy ? (
           <div className="p-4 text-sm text-c-slate-400">Click a proxy to view info.</div>

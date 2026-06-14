@@ -4,9 +4,7 @@ import { AddedFundModel, DiscountTierModel, UserModel } from "@/db/schema";
 import { asc, and, eq, inArray, ne, sql, ilike } from "drizzle-orm";
 import { z } from "zod";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/discount/tiers
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getDiscountTiers(req: Request, res: Response) {
   try {
     const tiers = await db
@@ -21,9 +19,7 @@ export async function getDiscountTiers(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/admin/discount/tiers/:tier
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function updateDiscountTier(req: Request, res: Response) {
   try {
     const tierName = z.string().min(1).parse(req.params.tier);
@@ -59,7 +55,7 @@ export async function updateDiscountTier(req: Request, res: Response) {
       .where(eq(DiscountTierModel.tier, tierName))
       .returning();
 
-    // Next tier-এর minSpend cascade করো
+    
     if (!isDiamond && newMaxSpend !== null) {
       const allTiers = await db
         .select()
@@ -87,9 +83,7 @@ export async function updateDiscountTier(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/discount/users
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getDiscountUsers(req: Request, res: Response) {
   try {
     const { page, limit, username, badge } = z
@@ -103,7 +97,7 @@ export async function getDiscountUsers(req: Request, res: Response) {
 
     const offset = (page - 1) * limit;
 
-    // ── Step 1: Users আনো ────────────────────────────────────────────────────
+    
     const allUsers = await db
       .select({
         id:       UserModel.id,
@@ -123,7 +117,7 @@ export async function getDiscountUsers(req: Request, res: Response) {
 
     const userIds = allUsers.map((u) => u.id);
 
-    // ── Step 2: Bulk topUp sum ────────────────────────────────────────────────
+    
     const topUpRows = await db
       .select({
         userId: AddedFundModel.userId,
@@ -142,8 +136,8 @@ export async function getDiscountUsers(req: Request, res: Response) {
       topUpRows.map((r) => [r.userId, r.total]),
     );
 
-    // ── Step 2b: Bulk totalSpend sum (সব purchase table মিলিয়ে) ─────────────
-    // Rejected status গুলো বাদ — বাকি সব count করা হয়
+    
+    
     const spendRows = await db.execute<{ user_id: number; total: number }>(
       sql`
         SELECT user_id, coalesce(sum(price), 0)::real AS total
@@ -171,13 +165,13 @@ export async function getDiscountUsers(req: Request, res: Response) {
       spendRows.rows.map((r) => [r.user_id, r.total]),
     );
 
-    // ── Step 3: Tier config আনো ───────────────────────────────────────────────
+    
     const tiers = await db
       .select()
       .from(DiscountTierModel)
       .orderBy(asc(DiscountTierModel.sortOrder));
 
-    // ── Step 4: Badge calculate ───────────────────────────────────────────────
+    
     function calcBadge(totalTopUp: number): string {
       if (tiers.length === 0) return "Basic";
       let matched = tiers[0];
@@ -190,7 +184,7 @@ export async function getDiscountUsers(req: Request, res: Response) {
       return matched.tier;
     }
 
-    // ── Step 5: Enrich + badge filter ────────────────────────────────────────
+    
     const enriched = allUsers
       .map((u) => {
         const totalTopUp = topUpMap.get(u.id) ?? 0;
@@ -206,7 +200,7 @@ export async function getDiscountUsers(req: Request, res: Response) {
       })
       .filter((u) => !badge || badge === "all" || u.badge === badge);
 
-    // ── Step 6: Pagination ────────────────────────────────────────────────────
+    
     const total     = enriched.length;
     const paginated = enriched.slice(offset, offset + limit);
     const totalPage = Math.max(1, Math.ceil(total / limit));

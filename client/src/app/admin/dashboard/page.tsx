@@ -6,7 +6,7 @@ import InfoTabs from "@/components/user/pages/dashboard/InfoTabs";
 import { publicApi, PublicContentData } from "@/lib/api";
 
 const EMPTY_CONTENT: PublicContentData = {
-  notice:             "",
+  notice:             "string",
   rules:              "",
   termsAndConditions: "",
   privacyPolicy:      "",

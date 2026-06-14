@@ -1,9 +1,6 @@
-/**
- * create-discount-table.ts
- *
- * discount_tiers table create + seed করার one-time script।
- * Run: ts-node -r tsconfig-paths/register src/scripts/create-discount-table.ts
- */
+
+
+
 
 import "dotenv/config";
 import { Pool } from "pg";
@@ -15,7 +12,7 @@ async function main() {
   try {
     console.log("🔧 Creating discount_tiers table...");
 
-    // Table create করো
+    
     await client.query(`
       CREATE TABLE IF NOT EXISTS "discount_tiers" (
         "id"          serial PRIMARY KEY NOT NULL,
@@ -30,7 +27,7 @@ async function main() {
     `);
     console.log("  ✅ Table created (or already exists)");
 
-    // Default tier গুলো insert করো — already থাকলে skip
+    
     const tiers = [
       { tier: "Basic",   minSpend: 0,     maxSpend: 1499,  discount: 0,  sortOrder: 1 },
       { tier: "Bronze",  minSpend: 1500,  maxSpend: 2499,  discount: 5,  sortOrder: 2 },

@@ -13,7 +13,7 @@ import { adminProxyApi, proxyApi, type ProxyListItem, type CartItem } from "@/li
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 
 interface DynamicRegion {
   id: string;
@@ -33,7 +33,7 @@ interface DynamicState {
   count: number;
 }
 
-// ─── Adapter ──────────────────────────────────────────────────────────────────
+
 
 function toProxyItem(p: ProxyListItem): ProxyItem & { originalPrice?: number } {
   return {
@@ -74,27 +74,27 @@ const ITEMS_PER_PAGE = 20;
 export default function AdminProxyBrowser() {
   const { refreshBalance } = useAuth();
 
-  // ── Region / Country / State state ─────────────────────────────────────────
+  
   const [activeRegion, setActiveRegion] = useState<string>("usa");
   const [activeCountry, setActiveCountry] = useState<string>("US");
-  const [activeState, setActiveState] = useState<string>("");   // USA states
+  const [activeState, setActiveState] = useState<string>("");   
   const [typeTab, setTypeTab] = useState<ProxyTypeTab>("all");
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
 
-  // ── Dynamic data from API ───────────────────────────────────────────────────
+  
   const [regions, setRegions] = useState<DynamicRegion[]>([]);
   const [countries, setCountries] = useState<DynamicCountry[]>([]);
   const [usaStates, setUsaStates] = useState<DynamicState[]>([]);
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [loadingStates, setLoadingStates] = useState(false);
 
-  // ── Proxy list state ────────────────────────────────────────────────────────
+  
   const [proxies, setProxies] = useState<ProxyItem[]>([]);
   const [totalProxies, setTotalProxies] = useState(0);
   const [loadingProxies, setLoadingProxies] = useState(false);
 
-  // ── Cart state ──────────────────────────────────────────────────────────────
+  
   const [selectedProxy, setSelectedProxy] = useState<ProxyItem | null>(null);
   const [cart, setCart] = useState<ProxyItem[]>([]);
   const [cartDbIds, setCartDbIds] = useState<CartDbIdMap>(new Map());
@@ -103,7 +103,7 @@ export default function AdminProxyBrowser() {
 
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Load countries from API on mount ───────────────────────────────────────
+  
   useEffect(() => {
     (async () => {
       setLoadingMeta(true);
@@ -129,13 +129,13 @@ export default function AdminProxyBrowser() {
           regionCountMap[regionId] = (regionCountMap[regionId] ?? 0) + c.online;
         }
 
-        // USA count আলাদা
+        
         const usEntry = dynamicCountries.find((c) => c.code === "US");
         if (usEntry) {
           regionCountMap["usa"] = usEntry.count;
         }
 
-        // Build regions with dynamic counts — filter count 0
+        
         const dynamicRegions: DynamicRegion[] = REGION_ORDER.map((id) => ({
           id,
           label: REGION_LABELS[id] ?? id,
@@ -152,7 +152,7 @@ export default function AdminProxyBrowser() {
     })();
   }, []);
 
-  // ── Load USA states when USA region selected ────────────────────────────────
+  
   useEffect(() => {
     if (activeRegion !== "usa") {
       setUsaStates([]);
@@ -163,21 +163,21 @@ export default function AdminProxyBrowser() {
       try {
         const res = await adminProxyApi.getStates();
         if (res.success) {
-          // count > 0 এবং sort by count desc
+          
           const sorted = res.states
             .filter((s) => s.count > 0)
             .sort((a, b) => b.count - a.count);
           setUsaStates(sorted);
         }
       } catch {
-        // silent — "All USA" দিয়ে চলবে
+        
       } finally {
         setLoadingStates(false);
       }
     })();
   }, [activeRegion]);
 
-  // ── Countries for active region — sorted by count desc ─────────────────────
+  
   const regionCountries = useMemo(
     () =>
       countries
@@ -186,17 +186,17 @@ export default function AdminProxyBrowser() {
     [countries, activeRegion]
   );
 
-  // ── Region change → reset country & state ──────────────────────────────────
+  
   useEffect(() => {
     const first = regionCountries[0];
     if (first) setActiveCountry(first.code);
     setActiveState("");
     setFilters(EMPTY_FILTERS);
     setPage(1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [activeRegion]);
 
-  // ── Fetch proxy list ────────────────────────────────────────────────────────
+  
   const fetchProxies = useCallback(
     async (
       country: string,
@@ -219,7 +219,7 @@ export default function AdminProxyBrowser() {
         const res = await adminProxyApi.getIPs({
           country:       countryParam,
           type:          typeParam || undefined,
-          // USA-তে activeState, অন্যত্র f.state
+          
           state:         region === "usa" ? (state || f.state || undefined) : (f.state || undefined),
           excludeBlacks: tab === "non-backlisted" ? true : undefined,
           page:          p,
@@ -255,13 +255,13 @@ export default function AdminProxyBrowser() {
     []
   );
 
-  // ── Trigger fetch when country/state/tab/page changes ──────────────────────
+  
   useEffect(() => {
     fetchProxies(activeCountry, activeRegion, activeState, typeTab, filters, page);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [activeCountry, activeRegion, activeState, typeTab, page]);
 
-  // ── Debounced filter change ─────────────────────────────────────────────────
+  
   const setFilter = useCallback(
     (key: keyof FilterState, val: string) => {
       setFilters((prev) => {
@@ -277,7 +277,7 @@ export default function AdminProxyBrowser() {
     [activeCountry, activeRegion, activeState, typeTab, fetchProxies]
   );
 
-  // ── State click handler (USA only) ─────────────────────────────────────────
+  
   const handleStateClick = useCallback((stateCode: string) => {
     const next = activeState === stateCode ? "" : stateCode;
     setActiveState(next);
@@ -286,7 +286,7 @@ export default function AdminProxyBrowser() {
     fetchProxies("US", "usa", next, typeTab, EMPTY_FILTERS, 1);
   }, [activeState, typeTab, fetchProxies]);
 
-  // ── Country click handler ───────────────────────────────────────────────────
+  
   const handleCountryClick = useCallback((code: string) => {
     setActiveCountry(code);
     setActiveState("");
@@ -294,7 +294,7 @@ export default function AdminProxyBrowser() {
     setPage(1);
   }, []);
 
-  // ── Load cart on mount ──────────────────────────────────────────────────────
+  
   useEffect(() => {
     (async () => {
       try {
@@ -306,7 +306,7 @@ export default function AdminProxyBrowser() {
         );
         setCartDbIds(dbIdMap);
 
-        // NSocks থেকে প্রতিটা proxy-র details আনো (parallel)
+        
         const cartProxies: ProxyItem[] = await Promise.all(
           res.items.map(async (item: CartItem) => {
             try {
@@ -314,12 +314,12 @@ export default function AdminProxyBrowser() {
               if (detail.success) {
                 return toProxyItem({
                   ...detail.proxy,
-                  price:         item.price,         // markup price রাখো
+                  price:         item.price,         
                   originalPrice: item.originalPrice,
                 });
               }
             } catch {}
-            // fallback — details না আসলে proxyId দিয়ে placeholder
+            
             return {
               id: item.proxyId, ip: item.proxyId,
               domain: "", countryCode: "", country: "", state: "", city: "",
@@ -332,7 +332,7 @@ export default function AdminProxyBrowser() {
         );
 
         setCart(cartProxies);
-      } catch { /* silent */ }
+      } catch {  }
     })();
   }, []);
 
@@ -362,7 +362,7 @@ export default function AdminProxyBrowser() {
     setCart((prev) => prev.filter((p) => p.id !== proxyId));
     setCartDbIds((prev) => { const next = new Map(prev); next.delete(proxyId); return next; });
     if (dbId) {
-      try { await proxyApi.removeFromCart(dbId); } catch { /* silent */ }
+      try { await proxyApi.removeFromCart(dbId); } catch {  }
     }
   }, [cartDbIds]);
 
@@ -378,7 +378,7 @@ export default function AdminProxyBrowser() {
           return dbId ? proxyApi.removeFromCart(dbId) : Promise.resolve();
         })
       );
-    } catch { /* silent */ }
+    } catch {  }
   }, [cart, cartDbIds]);
 
   const buyOne = useCallback(async (proxy: ProxyItem) => {
@@ -423,13 +423,13 @@ export default function AdminProxyBrowser() {
     }
   }, [cart, refreshBalance]);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  
   return (
     <div className="flex flex-col bg-c-bg-900 text-c-slate-300">
 
       <div className="bg-c-bg-900 border-b border-c-slate-800/60 p-4 space-y-4">
 
-        {/* Region Selector — dynamic counts */}
+        {}
         {loadingMeta ? (
           <div className="flex flex-wrap gap-2">
             {[120, 100, 110, 90, 80, 70].map((w, i) => (
@@ -448,7 +448,7 @@ export default function AdminProxyBrowser() {
           />
         )}
 
-        {/* USA: State selector */}
+        {}
         {activeRegion === "usa" && (
           <div className="pt-4 border-t border-c-slate-800/40">
             {loadingStates ? (
@@ -462,7 +462,7 @@ export default function AdminProxyBrowser() {
               </div>
             ) : usaStates.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
-                {/* All USA button */}
+                {}
                 <button
                   onClick={() => handleStateClick("")}
                   className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-150 border ${
@@ -491,7 +491,7 @@ export default function AdminProxyBrowser() {
           </div>
         )}
 
-        {/* Country Selector — non-USA regions */}
+        {}
         {activeRegion !== "usa" && (
           <CountrySelector
             regionCountries={regionCountries}

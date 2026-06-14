@@ -38,20 +38,20 @@ export const SwapPortModal = ({
   const [loading, setLoading] = useState(false);
   const [swappingPort, setSwappingPort] = useState<string | null>(null);
 
-  // ── Available ports আনো ──────────────────────────────────────────────────
-  // Backend-এ swap-port এর জন্য available ports list endpoint নেই এখনো।
-  // getMyRentals থেকে other users এর ports দেখানো হচ্ছে।
-  // Real implementation-এ provider API থেকে available ports আসবে।
+  
+  
+  
+  
   const fetchAvailablePorts = useCallback(async () => {
     if (!isOpen) return;
     setLoading(true);
     try {
-      // NOTE: এখন my-rentals থেকেই port list বানাচ্ছি।
-      // Provider API ready হলে এখানে dedicated endpoint call হবে।
+      
+      
       const res = await proxyApi.getMyRentals(1, 50);
       if (res.success) {
         const portList: PortData[] = res.rentals
-          .filter((r) => r.port !== targetPort) // নিজের current port বাদ
+          .filter((r) => r.port !== targetPort) 
           .map((r) => ({
             port: r.port,
             location: `${r.state}, ${r.city}`,
@@ -73,7 +73,7 @@ export const SwapPortModal = ({
     fetchAvailablePorts();
   }, [fetchAvailablePorts]);
 
-  // ── Search filter ─────────────────────────────────────────────────────────
+  
   const filteredData = useMemo(() => {
     if (!searchQuery) return ports;
     return ports.filter((item) =>
@@ -82,7 +82,7 @@ export const SwapPortModal = ({
     );
   }, [searchQuery, ports]);
 
-  // ── Swap action ───────────────────────────────────────────────────────────
+  
   const handleSwap = async (newPort: string) => {
     if (!targetPort) return;
     setSwappingPort(newPort);
@@ -102,7 +102,7 @@ export const SwapPortModal = ({
     }
   };
 
-  // ── Columns ───────────────────────────────────────────────────────────────
+  
   const columns: ColumnDef<PortData>[] = [
     { accessorKey: "port", header: "Port" },
     { accessorKey: "location", header: "Location" },
@@ -133,7 +133,7 @@ export const SwapPortModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-[96vw] sm:max-w-[900px] shadow-lg shadow-white/10 p-4 border border-white/20 bg-c-bg-700 [&>button]:hidden overflow-hidden">
-        {/* Header with Close Button */}
+        {}
         <div className="absolute right-4 top-4">
           <DialogClose asChild>
             <button className="text-c-green-600 hover:opacity-80 transition-opacity rounded-full bg-white/10 p-1 cursor-pointer">
@@ -152,7 +152,7 @@ export const SwapPortModal = ({
           <span className="text-c-red-300">{targetPort || "..."}</span> with
         </h2>
 
-        {/* Search Input */}
+        {}
         <div className="relative w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-c-gray-400" />
           <Input
@@ -163,7 +163,7 @@ export const SwapPortModal = ({
           />
         </div>
 
-        {/* Loading state */}
+        {}
         {loading ? (
           <div className="flex items-center justify-center py-12 gap-2 text-c-slate-400">
             <Loader2 size={18} className="animate-spin" />
@@ -174,7 +174,7 @@ export const SwapPortModal = ({
             <p className="text-sm">No available ports found</p>
           </div>
         ) : (
-          /* Reusable Table */
+          
           <div className="max-h-[50vh] overflow-auto hide-scrollbar">
             <ReusableTable
               columns={columns}

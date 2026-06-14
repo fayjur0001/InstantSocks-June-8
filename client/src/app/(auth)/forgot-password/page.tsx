@@ -40,9 +40,9 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-[#09090b] selection:bg-c-green-400/30">
-      {/* Left COLUMN - Light/Image Showcase Area */}
+      {}
       <section className="hidden lg:flex w-full lg:w-[50%] bg-zinc-100 flex-col justify-between relative overflow-hidden">
-        {/* Background Decorative Elements */}
+        {}
         <div className="absolute inset-0 bg-[url('/auth-bg.png')] bg-cover bg-center opacity-30 mix-blend-multiply" />
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-c-orange-500/20 via-transparent to-transparent rounded-full blur-[100px] -translate-y-1/4 translate-x-1/4" />
 
@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        {/* Floating App Mockup */}
+        {}
         <div className="flex-1 w-full flex items-center justify-center relative z-10 my-3 lg:my-6">
           <div className="relative w-full max-w-4xl aspect-[16/10]">
             <Image
@@ -82,12 +82,12 @@ export default function ForgotPasswordPage() {
             : `© ${currentYear} InstantSocks. All Rights Reserved.`}
         </footer>
       </section>
-      {/* Right COLUMN - Dark Form Area with Glow */}
+      {}
       <section className="relative w-full lg:w-[50%] min-h-screen flex flex-col text-zinc-100 pb-10 lg:pb-0 z-10 overflow-hidden">
-        {/* Subtle Background Glow */}
+        {}
         <div className="absolute top-0 left-0 w-full h-[500px] bg-c-green-400/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 -translate-x-1/4" />
 
-        {/* Header */}
+        {}
         <header className="relative flex justify-between items-center p-3 lg:p-6 w-full z-20">
           <Link
             href={authInfo?.homeUrl || "https://instantsocks.com"}
@@ -112,7 +112,7 @@ export default function ForgotPasswordPage() {
           </Link>
         </header>
 
-        {/* Form Card */}
+        {}
         <div className="relative flex-1 flex flex-col justify-center items-center px-3 lg:px-6 w-full max-w-[700px] mx-auto z-20">
           <div className="bg-[#121214] border border-white/10 p-4 lg:p-6 sm:p-8 rounded-2xl shadow-2xl w-full backdrop-blur-xl">
             
@@ -134,7 +134,7 @@ export default function ForgotPasswordPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Email */}
+                  {}
                   <div className="space-y-2">
                     <Label
                       htmlFor="email"
@@ -156,7 +156,7 @@ export default function ForgotPasswordPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
+                  {}
                   <div className="pt-2 space-y-5">
                     <Button
                       type="submit"
@@ -179,7 +179,7 @@ export default function ForgotPasswordPage() {
                 </form>
               </>
             ) : (
-              /* Success State */
+              
               <div className="text-center w-full py-6">
                 <div className="mb-6 flex items-center justify-center w-16 h-16 rounded-full bg-c-green-400/10 border border-c-green-400/30 mx-auto shadow-[0_0_30px_rgba(74,222,128,0.15)]">
                   <CheckCircle2 className="w-8 h-8 text-c-green-400" />

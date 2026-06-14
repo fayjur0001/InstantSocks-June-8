@@ -10,7 +10,7 @@ import { z } from "zod";
 import { paymentExpireTime, nowPaymentsApiUrl } from "@/utils/constants";
 import { createNotification } from "@/controllers/notification.controller";
 
-// GET /api/topup/last-funds
+
 export async function getLastFunds(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -45,7 +45,7 @@ export async function getLastFunds(req: Request, res: Response) {
   }
 }
 
-// GET /api/topup/transactions  (user — নিজের history)
+
 export async function getTopupTransactions(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -82,7 +82,7 @@ export async function getTopupTransactions(req: Request, res: Response) {
   }
 }
 
-// ── GET /api/topup/admin/transactions  (admin — সব users এর transactions) ──
+
 export async function getAdminTransactions(req: Request, res: Response) {
   try {
     const { page, limit, status, userId } = z.object({
@@ -140,7 +140,7 @@ export async function getAdminTransactions(req: Request, res: Response) {
   }
 }
 
-// ── POST /api/topup/admin/transactions  (manual transaction create) ────────
+
 export async function createAdminTransaction(req: Request, res: Response) {
   try {
     const { userId, amount, currency, walletAddress, txid, status } = z
@@ -186,7 +186,7 @@ export async function createAdminTransaction(req: Request, res: Response) {
   }
 }
 
-// ── PUT /api/topup/admin/transactions/:id  (transaction edit) ──────────────
+
 export async function updateAdminTransaction(req: Request, res: Response) {
   try {
     const id = Number(req.params.id);
@@ -234,7 +234,7 @@ export async function updateAdminTransaction(req: Request, res: Response) {
         title:   notifTitle,
         message: notifMessage,
       });
-      // Bell badge real-time update — user channel এ notification action fire করো
+      
       await pusher({
         page:    "/notifications",
         to:      `user-${updated.userId}`,
@@ -254,7 +254,7 @@ export async function updateAdminTransaction(req: Request, res: Response) {
   }
 }
 
-// ── DELETE /api/topup/admin/transactions/:id  (transaction delete) ─────────
+
 export async function deleteAdminTransaction(req: Request, res: Response) {
   try {
     const id = Number(req.params.id);
@@ -278,7 +278,7 @@ export async function deleteAdminTransaction(req: Request, res: Response) {
   }
 }
 
-// POST /api/topup/now-payments
+
 export async function generateNowPayments(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -363,7 +363,7 @@ export async function generateNowPayments(req: Request, res: Response) {
   }
 }
 
-// POST /api/topup/yaan-pay
+
 export async function generateYaanPay(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -467,7 +467,7 @@ export async function generateYaanPay(req: Request, res: Response) {
   }
 }
 
-// POST /api/topup/blockonomics
+
 export async function generateBlockonomics(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -561,7 +561,7 @@ export async function generateBlockonomics(req: Request, res: Response) {
   }
 }
 
-// POST /api/topup/callback
+
 export async function topUpCallback(req: Request, res: Response) {
   try {
     const method = req.query.method as string;
@@ -717,7 +717,7 @@ export async function topUpCallback(req: Request, res: Response) {
   }
 }
 
-// POST /api/topup/convert
+
 export async function convertCurrency(req: Request, res: Response) {
   try {
     const { amount, currency } = z

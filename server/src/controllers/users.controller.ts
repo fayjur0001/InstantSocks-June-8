@@ -38,8 +38,8 @@ export async function getUsers(req: Request, res: Response) {
       role: UserModel.role,
       lastActivity: UserModel.updatedAt,
       isOnline: UserModel.isOnline,
-      // FIXED: expose both banned fields separately so frontend can
-      // distinguish permanent ban from time-limited suspension
+      
+      
       banned: UserModel.banned,
       bannedTill: UserModel.bannedTill,
     }).from(UserModel).where(and(
@@ -58,16 +58,16 @@ export async function getUsers(req: Request, res: Response) {
       db.select({ total: sql<number>`count(*)::int` }).from(query).then((r) => r.at(0)?.total || 0),
     ]);
 
-    // ✅ FIX Bug 2: প্রতিটা user-এর জন্য আলাদা query না করে
-    //    এই page-এর সব user-এর balance ও topUp একটা bulk query-তে বের করা হচ্ছে
-    //    (getBalance() utility N বার call করলে N*8 DB query হতো — এটা তার পরিবর্তে)
+    
+    
+    
     const pageUserIds = users.map((u) => u.id);
 
     if (pageUserIds.length === 0) {
       return res.json({ success: true, users: [], totalPage: Math.ceil(total / limit) });
     }
 
-    // Bulk query: প্রতিটা user-এর approved deposit sum
+    
     const topUpRows = await db
       .select({
         userId: AddedFundModel.userId,
@@ -80,8 +80,8 @@ export async function getUsers(req: Request, res: Response) {
       ))
       .groupBy(AddedFundModel.userId);
 
-    // Bulk query: প্রতিটা user-এর মোট spending (সব transaction table থেকে)
-    // প্রতিটা table আলাদা query, কিন্তু pageUserIds-এ filter — loop নেই
+    
+    
     const spendingQueries = await Promise.all([
       db.select({ userId: OneTimeRentModel.userId, total: sql<number>`coalesce(sum(${OneTimeRentModel.price}), 0)::real` })
         .from(OneTimeRentModel)
@@ -119,10 +119,10 @@ export async function getUsers(req: Request, res: Response) {
         .groupBy(SMSPVALongTermRentModel.userId),
     ]);
 
-    // userId → total deposit map
+    
     const topUpMap = new Map(topUpRows.map((r) => [r.userId, r.total]));
 
-    // userId → total spending map (সব table merge করা)
+    
     const spendingMap = new Map<number, number>();
     for (const tableRows of spendingQueries) {
       for (const row of tableRows) {
@@ -130,7 +130,7 @@ export async function getUsers(req: Request, res: Response) {
       }
     }
 
-    // Users-এ balance fields যোগ করা
+    
     const usersWithBalance = users.map((u) => {
       const topUp = topUpMap.get(u.id) ?? 0;
       const spent = spendingMap.get(u.id) ?? 0;
@@ -150,13 +150,13 @@ export async function getUsers(req: Request, res: Response) {
 
 export async function banUser(req: Request, res: Response) {
   try {
-    // ✅ FIX: id route param থেকে (PATCH /:id/ban), forSevenDays body থেকে
+    
     const id = z.coerce.number().int().min(1).parse(req.params.id);
     const { forSevenDays } = z.object({
       forSevenDays: z.coerce.boolean().default(false),
     }).parse(req.body);
 
-    // FIXED: prevent banning admin/super admin
+    
     const target = await db.query.UserModel.findFirst({
       where: (m, { eq }) => eq(m.id, id),
       columns: { role: true },
@@ -171,9 +171,9 @@ export async function banUser(req: Request, res: Response) {
       return;
     }
 
-    // FIX: permanent ban → banned=true AND bannedTill=null (clear old suspension)
-    //      7-day ban    → bannedTill=7days AND banned=false (clear old permanent ban)
-    // This keeps DB state consistent and matches login checks in auth.controller + auth.middleware
+    
+    
+    
     await db.update(UserModel)
       .set(
         forSevenDays
@@ -192,15 +192,15 @@ export async function banUser(req: Request, res: Response) {
 
 export async function unbanUser(req: Request, res: Response) {
   try {
-    // ✅ FIX: id route param থেকে (PATCH /:id/unban)
+    
     const id = z.coerce.number().int().min(1).parse(req.params.id);
 
-    // FIX 1: Set bannedTill to NULL (not now()) so frontend mapUser correctly
-    //         resolves status as "offline" instead of potentially "suspended"
-    // FIX 2: Removed the or(banned, bannedTill) condition — it silently matched
-    //         0 rows and returned 200 OK without actually updating anything.
-    //         Trust the admin: if they click unban, clear both ban fields unconditionally.
-    // FIX 3: Use .returning() to detect if the row was actually found and updated.
+    
+    
+    
+    
+    
+    
     const updated = await db.update(UserModel)
       .set({ banned: false, bannedTill: null })
       .where(and(
@@ -225,13 +225,13 @@ export async function unbanUser(req: Request, res: Response) {
 
 export async function changePassword(req: Request, res: Response) {
   try {
-    // ✅ FIX: id route param থেকে (PATCH /:id/password)
+    
     const id = z.coerce.number().int().min(1).parse(req.params.id);
     const { password } = z.object({
       password: z.string().min(8),
     }).parse(req.body);
 
-    // ✅ FIX: async hash — event loop block হবে না
+    
     const hashed = await bcrypt.hash(password, 10);
     await db.update(UserModel)
       .set({ password: hashed })
@@ -246,13 +246,13 @@ export async function changePassword(req: Request, res: Response) {
 
 export async function changeRole(req: Request, res: Response) {
   try {
-    // ✅ FIX: id route param থেকে (PATCH /:id/role)
+    
     const id = z.coerce.number().int().min(1).parse(req.params.id);
     const { role } = z.object({
       role: z.enum(["general", "support", "admin"]),
     }).parse(req.body);
 
-    // FIXED: only block super admin — allow changing role of general/support/admin users
+    
     const updated = await db.update(UserModel)
       .set({ role })
       .where(and(
@@ -267,8 +267,8 @@ export async function changeRole(req: Request, res: Response) {
       return;
     }
 
-    // ── Agent Serial Auto-assign ──────────────────────────────────────────────
-    // support বা admin role পেলে agentSerial assign করো (না থাকলে)
+    
+    
     if ((role === "support" || role === "admin") && updated.agentSerial === null) {
       const maxRow = await db.query.UserModel.findMany({
         columns: { agentSerial: true },
@@ -281,7 +281,7 @@ export async function changeRole(req: Request, res: Response) {
         .set({ agentSerial: nextSerial })
         .where(eq(UserModel.id, id));
     }
-    // general role এ ফিরলে agentSerial মুছবো না (ID permanent থাকবে)
+    
 
     await pusher({ page: "/admin-area/users", to: "admin" });
     res.json({ success: true });
@@ -342,14 +342,14 @@ export async function addBalance(req: Request, res: Response) {
 
 export async function editUser(req: Request, res: Response) {
   try {
-    // ✅ FIX: id route param থেকে (PUT /:id)
+    
     const id = z.coerce.number().int().min(1).parse(req.params.id);
     const { username, email } = z.object({
       username: z.string().min(1),
       email: z.string().email(),
     }).parse(req.body);
 
-    // ✅ FIX: duplicate check — unique constraint error আসার আগেই proper 409 দাও
+    
     const conflict = await db.query.UserModel.findFirst({
       where: (m, { and, or, eq, ne }) => and(
         or(eq(m.username, username), eq(m.email, email)),
@@ -385,7 +385,7 @@ export async function editUser(req: Request, res: Response) {
   }
 }
 
-// GET /api/admin/transactions — all users' deposit transactions (admin only)
+
 export async function getAllTransactions(req: Request, res: Response) {
   try {
     const { page, limit, status, userId } = z.object({

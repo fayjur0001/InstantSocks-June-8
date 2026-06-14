@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import React, { useState, useRef, useEffect } from "react";
 import { adminSettingsApi } from "@/lib/api";
 import dynamic from "next/dynamic";
@@ -16,7 +17,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-// shadcn/ui components
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -38,15 +39,13 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-// import { toast } from "sonner";
+import { Toaster } from "sonner";
 
-// Rich text editor (loaded client-side only to avoid SSR issues)
+
 import "react-quill-new/dist/quill.snow.css";
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
-// ─────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────
+
 
 interface MaintenanceSettings {
   text: string;
@@ -82,9 +81,7 @@ interface SiteSettings {
   privacyPolicy: string;
 }
 
-// ─────────────────────────────────────────────
-// DEFAULT VALUES
-// ─────────────────────────────────────────────
+
 
 const DEFAULT_SETTINGS: SiteSettings = {
   hostUrl: "https://acc.repeatsms.com",
@@ -114,25 +111,23 @@ const DEFAULT_SETTINGS: SiteSettings = {
   privacyPolicy: "<h2>Privacy Policy</h2><p>We are committed to protecting your privacy. This policy explains how we collect and use your data.</p>",
 };
 
-// ─────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────
+
 
 export default function SettingsPage() {
-  // All site settings stored in one state object
+  
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
 
-  // Ref used to trigger the hidden file input for logo uploads
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Helpers for updating state ──────────────
+  
 
-  /** Update a top-level field (e.g. hostUrl, siteStatus) */
+  
   function updateField<K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) {
     setSettings((prev) => ({ ...prev, [key]: value }));
   }
 
-  /** Update a nested field (e.g. maintenance.text, authInfo.homeUrl) */
+  
   function updateNestedField<
     K extends "maintenance" | "authInfo" | "topUp",
     F extends keyof SiteSettings[K]
@@ -143,13 +138,13 @@ export default function SettingsPage() {
     }));
   }
 
-  // ── Event Handlers ───────────────────────────
+  
 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // file size check — ~2MB limit
+    
     if (file.size > 2_097_152) {
       alert("Logo file too large. Maximum size is 2MB.");
       return;
@@ -157,7 +152,7 @@ export default function SettingsPage() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      // base64 data URL — preview + save-এ use হবে
+      
       updateField("siteLogo", reader.result as string);
     };
     reader.readAsDataURL(file);
@@ -166,11 +161,11 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load settings from backend on mount
+  
   useEffect(() => {
     adminSettingsApi.getSettings()
       .then(({ data }) => {
-        // maintenanceEnd থেকে remaining hours বের করো
+        
         let hours = 3;
         if (data.maintenanceEnd) {
           const remaining = (new Date(data.maintenanceEnd).getTime() - Date.now()) / (1000 * 60 * 60);
@@ -213,7 +208,6 @@ export default function SettingsPage() {
   function handleSave() {
     setSaving(true);
 
-    // hours থেকে end timestamp calculate — site offline হলেই set করব
     const maintenanceEnd = settings.siteStatus === "offline" && settings.maintenance.hours > 0
       ? new Date(Date.now() + settings.maintenance.hours * 60 * 60 * 1000).toISOString()
       : "";
@@ -231,8 +225,11 @@ export default function SettingsPage() {
       authInfo: settings.authInfo,
       topUp: settings.topUp,
     })
-      .then(() => console.log("Settings saved"))
-      .catch((err) => console.error("Failed to save settings:", err))
+      .then(() => toast.success("Settings saved successfully!"))
+      .catch((err) => {
+        console.error("Failed to save settings:", err);
+        toast.error("Failed to save settings. Please try again.");
+      })
       .finally(() => setSaving(false));
   }
 
@@ -240,14 +237,15 @@ export default function SettingsPage() {
     setSettings(DEFAULT_SETTINGS);
   }
 
-  // ─────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────
+  
+  
+  
 
   return (
     <div className="min-h-[70vh] bg-c-bg-900 text-c-gray-200 p-3 md:p-6 rounded-[12px]">
+      <Toaster position="bottom-right" richColors />
 
-      {/* ── Dark mode overrides for ReactQuill ── */}
+      {}
       <style dangerouslySetInnerHTML={{
         __html: `
           .quill-dark .ql-toolbar   { border-color: #2d3340; background: #151921; border-radius: 6px 6px 0 0; }
@@ -268,7 +266,7 @@ export default function SettingsPage() {
         `,
       }} />
 
-      {/* ── Page Header ── */}
+      {}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white">System Settings</h1>
@@ -278,7 +276,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Reset button — outlined style on dark bg */}
+          {}
           <Button
             variant="outline"
             onClick={handleReset}
@@ -288,7 +286,7 @@ export default function SettingsPage() {
             Reset
           </Button>
 
-          {/* Save button — green accent */}
+          {}
           <Button
             onClick={handleSave}
             disabled={saving || loading}
@@ -300,7 +298,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Tabs Navigation + Content ── */}
+      {}
       <Tabs defaultValue="general">
         <div className="tabs-scrollable w-full mb-6">
           <TabsList className="inline-flex min-w-max gap-1 bg-c-bg-700 border border-c-bg-400 p-1 rounded-lg h-10">
@@ -315,9 +313,9 @@ export default function SettingsPage() {
           </TabsList>
         </div>
 
-        {/* ════════════════════════════════════
-            TAB: GENERAL
-        ════════════════════════════════════ */}
+        {
+
+}
         <TabsContent value="general" className="space-y-5">
           <DarkCard title="Host Configuration" description="Set the base URL for your application.">
             <div className="max-w-md space-y-2">
@@ -332,12 +330,12 @@ export default function SettingsPage() {
             </div>
           </DarkCard>
 
-          {/* Logo upload area */}
+          {}
           <DarkCard title="Site Logo" description="Recommended format: PNG or SVG with transparent background.">
             <div className="border-2 border-dashed border-c-bg-400 rounded-lg p-10 flex flex-col items-center gap-4 text-center hover:border-c-bg-300 transition-colors">
 
               {settings.siteLogo ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                
                 <img src={settings.siteLogo} alt="Site Logo" className="max-h-24 object-contain" />
               ) : (
                 <ImageIcon className="w-12 h-12 text-c-gray-600" />
@@ -347,7 +345,7 @@ export default function SettingsPage() {
                 {settings.siteLogo ? "Logo uploaded successfully." : "No logo uploaded yet."}
               </p>
 
-              {/* Hidden file input — triggered by the button below */}
+              {}
               <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleLogoUpload} />
 
               <Button
@@ -362,15 +360,15 @@ export default function SettingsPage() {
           </DarkCard>
         </TabsContent>
 
-        {/* ════════════════════════════════════
-            TAB: STATUS & MAINTENANCE
-        ════════════════════════════════════ */}
+        {
+
+}
         <TabsContent value="status" className="space-y-5">
 
-          {/* Site status selector */}
+          {}
           <DarkCard title="Website Status" description="Control whether your site is publicly accessible.">
             <div className="flex items-center gap-4 max-w-sm">
-              {/* Animated dot indicator */}
+              {}
               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                 settings.siteStatus === "online" ? "bg-c-green-tw-500 animate-pulse" : "bg-c-orange-500"
               }`} />
@@ -397,7 +395,7 @@ export default function SettingsPage() {
             </div>
           </DarkCard>
 
-          {/* Maintenance settings */}
+          {}
           <DarkCard title="Maintenance Mode" description="Text shown to users when the site is in maintenance mode.">
             <div className="space-y-5">
 
@@ -428,9 +426,9 @@ export default function SettingsPage() {
           </DarkCard>
         </TabsContent>
 
-        {/* ════════════════════════════════════
-            TAB: AUTH INFO
-        ════════════════════════════════════ */}
+        {
+
+}
         <TabsContent value="auth">
           <DarkCard title="Authentication Page Text" description="Customize the copy shown on login, register, and password reset pages.">
             <div className="grid gap-5 sm:grid-cols-2">
@@ -476,9 +474,9 @@ export default function SettingsPage() {
           </DarkCard>
         </TabsContent>
 
-        {/* ════════════════════════════════════
-            TAB: TOP UP
-        ════════════════════════════════════ */}
+        {
+
+}
         <TabsContent value="topup">
           <DarkCard title="Top Up Settings" description="Text and instructions shown on the payment/top-up screen.">
             <div className="space-y-5">
@@ -520,9 +518,9 @@ export default function SettingsPage() {
           </DarkCard>
         </TabsContent>
 
-        {/* ════════════════════════════════════
-            TAB: NOTICE (Rich Text)
-        ════════════════════════════════════ */}
+        {
+
+}
         <TabsContent value="notice">
           <DarkCard title="Global Notice" description="Shown to all users on the dashboard. Supports rich text formatting.">
             <div className="quill-dark">
@@ -531,9 +529,9 @@ export default function SettingsPage() {
           </DarkCard>
         </TabsContent>
 
-        {/* ════════════════════════════════════
-            TAB: RULES (Rich Text)
-        ════════════════════════════════════ */}
+        {
+
+}
         <TabsContent value="rules">
           <DarkCard title="Rules & Regulations" description="Platform rules shown to users. Supports rich text formatting.">
             <div className="quill-dark">
@@ -542,9 +540,9 @@ export default function SettingsPage() {
           </DarkCard>
         </TabsContent>
 
-        {/* ════════════════════════════════════
-            TAB: TERMS & CONDITIONS (Rich Text)
-        ════════════════════════════════════ */}
+        {
+
+}
         <TabsContent value="terms">
           <DarkCard title="Terms & Conditions" description="Legal terms shown to users. Supports rich text formatting.">
             <div className="quill-dark">
@@ -553,9 +551,9 @@ export default function SettingsPage() {
           </DarkCard>
         </TabsContent>
 
-        {/* ════════════════════════════════════
-            TAB: PRIVACY POLICY (Rich Text)
-        ════════════════════════════════════ */}
+        {
+
+}
         <TabsContent value="privacy">
           <DarkCard title="Privacy Policy" description="Privacy policy shown to users. Supports rich text formatting.">
             <div className="quill-dark">
@@ -569,7 +567,7 @@ export default function SettingsPage() {
   );
 }
 
-/** A dark-styled card with a title and optional description */
+
 function DarkCard({
   title,
   description,
@@ -590,7 +588,7 @@ function DarkCard({
   );
 }
 
-/** A label + optional hint text + input wrapper used in the Top Up tab */
+
 function DarkField({
   label,
   htmlFor,

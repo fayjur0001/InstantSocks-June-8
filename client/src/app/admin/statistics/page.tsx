@@ -50,7 +50,7 @@ export default function MainDashboard() {
 
   return (
     <div className="w-full space-y-6 p-3 lg:p-6 rounded-[12px] bg-c-bg-900 text-c-slate-200">
-      {/* Top Statistics Grid */}
+      {}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
         {topCards.map((card, idx) =>
           card.value === null ? (
@@ -69,7 +69,7 @@ export default function MainDashboard() {
         )}
       </div>
 
-      {/* Main Tabs Navigation */}
+      {}
       <Tabs defaultValue="transactions" className="w-full mt-8">
         <TabsList className="bg-transparent h-auto p-0 flex flex-wrap gap-2.5 lg:gap-4 justify-start border-none mb-6">
           <TabsTrigger value="transactions" className={tabTriggerClass}>

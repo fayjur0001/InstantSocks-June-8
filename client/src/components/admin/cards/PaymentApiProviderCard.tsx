@@ -34,7 +34,7 @@ export function PaymentApiProviderCard({ provider, isActive, onToggleActive, onS
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // toast.success("Copied to clipboard");
+    
   };
 
   return (
@@ -53,7 +53,7 @@ export function PaymentApiProviderCard({ provider, isActive, onToggleActive, onS
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             
             <div className="space-y-3">
-              {/* Field Layout Mapping */}
+              {}
               {[
                 { name: "callbackSecret", label: "Callback Secret" },
                 { name: "apiKey", label: "API Key" },
@@ -93,7 +93,7 @@ export function PaymentApiProviderCard({ provider, isActive, onToggleActive, onS
               ))}
             </div>
 
-            {/* Action Buttons */}
+            {}
             <div className="flex items-center justify-end gap-3 pt-3">
               <Button 
                 type="button" 

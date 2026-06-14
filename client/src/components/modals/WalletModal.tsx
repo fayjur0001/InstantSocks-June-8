@@ -1,5 +1,6 @@
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Copy } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface WalletModalProps {
@@ -9,6 +10,8 @@ interface WalletModalProps {
     payAmount?: number | null;
     currency?: string;
     usdAmount?: number;
+    blankCurrencyText?: string;
+    generatedCurrencyText?: string;
 }
 
 export default function WalletModal({
@@ -18,8 +21,11 @@ export default function WalletModal({
     payAmount,
     currency,
     usdAmount,
+    blankCurrencyText,
+    generatedCurrencyText,
 }: WalletModalProps) {
     const [timeLeft, setTimeLeft] = useState<string>("01:59:59");
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         if (!walletModalOpen) return;
@@ -41,10 +47,25 @@ export default function WalletModal({
         return () => clearInterval(interval);
     }, [walletModalOpen]);
 
-    const displayAddress = walletAddress || "0x742dffadf3545dCc...954df56fffg632";
+    const handleCopy = () => {
+        navigator.clipboard.writeText(displayAddress);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const displayAddress = walletAddress || "";
     const displayAmount = payAmount != null ? payAmount : null;
     const displayCurrency = currency?.toUpperCase() ?? "BTC";
     const displayUsd = usdAmount != null ? usdAmount.toFixed(2) : null;
+    const hasAddress = !!walletAddress;
+
+    
+    
+    const resolvedGeneratedText = generatedCurrencyText
+        ? generatedCurrencyText
+            .replace("${amount}", displayAmount != null ? String(displayAmount) : "—")
+            .replace("${currency}", displayCurrency)
+        : null;
 
     return (
         <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
@@ -64,37 +85,63 @@ export default function WalletModal({
                     </span>
                 </DialogHeader>
 
+                {}
                 <div className="flex items-center justify-center gap-2 py-3 mb-2 rounded-lg bg-c-emerald-500/10 border border-c-emerald-500/30">
                     <span className="text-sm font-medium text-c-emerald-400">Time Left:</span>
                     <span className="text-lg font-mono font-bold text-c-emerald-400">{timeLeft}</span>
                 </div>
 
-                <div className="flex flex-col items-center text-center space-y-1 mb-2">
-                    {displayAmount != null && (
-                        <p className="text-sm font-semibold text-white">
-                            Send exactly{" "}
-                            <span className="text-c-emerald-400">
-                                {displayAmount} {displayCurrency}
-                            </span>
+                {}
+                <div className="flex flex-col items-center text-center space-y-1 mb-3">
+                    {hasAddress ? (
+                        
+                        resolvedGeneratedText ? (
+                            <p className="text-sm text-c-slate-300 font-medium leading-relaxed">
+                                {resolvedGeneratedText}
+                            </p>
+                        ) : (
+                            <p className="text-sm text-c-slate-300 font-medium leading-relaxed">
+                                Send exactly{" "}
+                                <span className="text-c-emerald-400 font-semibold">
+                                    {displayAmount ?? "—"} {displayCurrency}
+                                </span>{" "}
+                                to this address.
+                            </p>
+                        )
+                    ) : (
+                        
+                        <p className="text-sm text-c-slate-400 leading-relaxed">
+                            {blankCurrencyText ?? "Your generated address will be shown here."}
                         </p>
                     )}
-                    <p className="text-[15px] text-c-slate-400 font-medium leading-relaxed">
-                        Send exactly (Generated Amount with copy function) {displayCurrency} to this address.
-                    </p>
-                    <p className="text-[15px] text-c-slate-400 font-medium leading-relaxed">
-                        Overpay or Under pay invoice may cause lost of asset.
+                    <p className="text-xs text-c-slate-500 leading-relaxed">
+                        Overpay or underpay may cause loss of asset.
                     </p>
                 </div>
 
+                {}
                 <div className="flex flex-wrap items-center gap-0 bg-black/40 rounded-xl p-1 border border-white/5">
-                    <div className="flex-1 px-4 py-2 text-c-slate-300 font-medium truncate text-sm">
-                        <span>{displayAddress}</span>
+                    <div className="flex-1 px-4 py-2 text-c-slate-300 font-medium truncate text-sm flex items-center gap-2">
+                        {hasAddress ? (
+                            <>
+                                <span className="truncate">{displayAddress}</span>
+                                <Copy
+                                    className="w-3.5 h-3.5 shrink-0 cursor-pointer text-c-slate-500 hover:text-white transition-colors"
+                                    onClick={handleCopy}
+                                />
+                            </>
+                        ) : (
+                            <span className="text-c-slate-600 italic text-xs">
+                                {blankCurrencyText ?? "Your generated address will be shown here."}
+                            </span>
+                        )}
                     </div>
                     <Button
                         className="px-8"
-                        onClick={() => navigator.clipboard.writeText(displayAddress)}
+                        onClick={handleCopy}
+                        disabled={!hasAddress}
                     >
-                        Copy Wallet Address
+                        {copied ? "Copied!" : "Copy Wallet Address"}
                     </Button>
                 </div>
             </DialogContent>

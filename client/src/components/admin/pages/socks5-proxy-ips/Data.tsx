@@ -1,12 +1,10 @@
-// ─── Static country → region mapping ─────────────────────────────────────────
-// NSocks API শুধু country code দেয়, কোন region সেটা বলে না।
-// তাই এই mapping frontend-এ static রাখা হয়েছে।
-// count গুলো NSocks API থেকে dynamic আসে।
+
+
 
 export const COUNTRY_REGION_MAP: Record<string, string> = {
-  // USA
+  
   US: "usa",
-  // America
+  
   AG: "america", AR: "america", AW: "america", VG: "america",
   BS: "america", BB: "america", BZ: "america", BM: "america",
   BO: "america", BR: "america", CA: "america", KY: "america",
@@ -18,7 +16,7 @@ export const COUNTRY_REGION_MAP: Record<string, string> = {
   PY: "america", PE: "america", PR: "america", KN: "america",
   LC: "america", VC: "america", SR: "america", TT: "america",
   TC: "america", UY: "america", VE: "america", MF: "america",
-  // Europe
+  
   AL: "europe", AD: "europe", AM: "europe", AT: "europe",
   AZ: "europe", BY: "europe", BE: "europe", BA: "europe",
   BG: "europe", HR: "europe", CY: "europe", CZ: "europe",
@@ -32,7 +30,7 @@ export const COUNTRY_REGION_MAP: Record<string, string> = {
   SM: "europe", RS: "europe", SK: "europe", SI: "europe",
   ES: "europe", SE: "europe", CH: "europe", TR: "europe",
   UA: "europe", GB: "europe", VA: "europe",
-  // Asia
+  
   AF: "asia", BH: "asia", BD: "asia", BT: "asia",
   BN: "asia", KH: "asia", CN: "asia",
   HK: "asia", IN: "asia", ID: "asia", IR: "asia",
@@ -45,13 +43,13 @@ export const COUNTRY_REGION_MAP: Record<string, string> = {
   SY: "asia", TW: "asia", TJ: "asia", TH: "asia",
   TL: "asia", TM: "asia", AE: "asia", UZ: "asia",
   VN: "asia", YE: "asia",
-  // AU / Oceania
+  
   AU: "oceania", FJ: "oceania", GU: "oceania", KI: "oceania",
   MH: "oceania", FM: "oceania", NR: "oceania", NC: "oceania",
   NZ: "oceania", PW: "oceania", PG: "oceania", PF: "oceania",
   WS: "oceania", SB: "oceania", TO: "oceania", TV: "oceania",
   VU: "oceania",
-  // Africa
+  
   DZ: "africa", AO: "africa", BJ: "africa", BW: "africa",
   BF: "africa", BI: "africa", CM: "africa", CV: "africa",
   CF: "africa", TD: "africa", KM: "africa", CG: "africa",
@@ -68,7 +66,7 @@ export const COUNTRY_REGION_MAP: Record<string, string> = {
   UG: "africa", EH: "africa", ZM: "africa", ZW: "africa",
 };
 
-// Region display label
+
 export const REGION_LABELS: Record<string, string> = {
   usa:     "USA",
   america: "America",
@@ -78,7 +76,7 @@ export const REGION_LABELS: Record<string, string> = {
   africa:  "Africa",
 };
 
-// Region display order
+
 export const REGION_ORDER = [
   "usa",
   "america",
@@ -88,7 +86,7 @@ export const REGION_ORDER = [
   "africa",
 ];
 
-// Country code → display name
+
 export const COUNTRY_NAMES: Record<string, string> = {
   US: "USA", AG: "Antigua", AR: "Argentina", AW: "Aruba", VG: "B.V.I.",
   BS: "Bahamas", BB: "Barbados", BZ: "Belize", BM: "Bermuda", BO: "Bolivia",
@@ -123,15 +121,14 @@ export const COUNTRY_NAMES: Record<string, string> = {
   SN: "Senegal", MZ: "Mozambique", ZM: "Zambia", ZW: "Zimbabwe",
 };
 
-// ─── Legacy export (admin page এখনো COUNTRIES ব্যবহার করে) ──────────────────
-// Admin page কে পরে dynamic করা হবে। এখন fallback হিসেবে রাখা।
+
 import type { Country } from "@/types/admin/socks5-proxy-ips";
 
 export const COUNTRIES: Country[] = Object.entries(COUNTRY_REGION_MAP).map(
   ([code, regionId]) => ({
     code,
     name: COUNTRY_NAMES[code] ?? code,
-    count: 0,   // dynamic count API থেকে আসবে
+    count: 0,   
     regionId,
   })
 );

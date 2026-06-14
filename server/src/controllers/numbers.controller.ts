@@ -13,13 +13,11 @@ const apiUrlBase = process.env.NUMBERS_API_URL || "";
 
 function getApiUrl() { return apiUrlBase; }
 
-// ─────────────────────────────────────────────
-// GET /api/numbers/services
-// ─────────────────────────────────────────────
+
 export async function getServices(_req: Request, res: Response) {
   try {
-    // FIX: USE_MOCK এখন env var দিয়ে control হচ্ছে।
-    // .env তে MOCK_SERVICES=true রাখলে mock, না রাখলে real API।
+    
+    
     const USE_MOCK = process.env.MOCK_SERVICES === "true";
 
     if (USE_MOCK) {
@@ -48,7 +46,7 @@ export async function getServices(_req: Request, res: Response) {
       });
     }
 
-    // 🔽 original code (unchanged)
+    
     const user = await SiteOptions.apiUser.get();
     const api_key = await SiteOptions.apiKey.get();
 
@@ -102,29 +100,27 @@ export async function getServices(_req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────
-// POST /api/numbers/rent/otr  ← নতুন
-// ─────────────────────────────────────────────
+
 export async function rentOneTime(req: Request, res: Response) {
   try {
     const payload = req.payload!;
     const { name } = z.object({ name: z.string().min(1) }).parse(req.body);
 
-    // FIX: USE_MOCK এখন env var দিয়ে control হচ্ছে।
+    
     const USE_MOCK = process.env.MOCK_SERVICES === "true";
 
     if (USE_MOCK) {
-      // fake delay (real feel er jonno optional)
+      
       await new Promise((r) => setTimeout(r, 500));
 
       return res.json({
         success: true,
-        mdn: "+88017" + Math.floor(10000000 + Math.random() * 90000000), // random BD number
+        mdn: "+88017" + Math.floor(10000000 + Math.random() * 90000000), 
         requestId: "mock_" + Date.now(),
       });
     }
 
-    // 🔽 original code (unchanged)
+    
     const result = await db.transaction(async (tx) => {
       await tx
         .select({ id: UserModel.id })
@@ -179,9 +175,7 @@ export async function rentOneTime(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────
-// POST /api/numbers/rent/ltr
-// ─────────────────────────────────────────────
+
 export async function rentLongTerm(req: Request, res: Response) {
   try {
     const payload = req.payload!;
@@ -212,9 +206,7 @@ export async function rentLongTerm(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────
-// Helpers — OTR
-// ─────────────────────────────────────────────
+
 async function getOtrPrice({ user, apiKey, name }: { user: string; apiKey: string; name: string }) {
   const url = new URL(getApiUrl());
   url.searchParams.set("cmd", "list_services");
@@ -249,7 +241,7 @@ async function doRentOtr({ user, apiKey, name, price, userId, tx }: any) {
   if (r.status === "error") throw new UnloggingError(r.message);
 
   const expiresAt = new Date();
-  expiresAt.setMinutes(expiresAt.getMinutes() + 20); // OTR typically 20 min window
+  expiresAt.setMinutes(expiresAt.getMinutes() + 20); 
 
   await tx.insert(OneTimeRentModel).values({
     mdn: r.message.mdn,
@@ -267,9 +259,7 @@ async function doRentOtr({ user, apiKey, name, price, userId, tx }: any) {
   return { mdn: r.message.mdn, requestId: r.message.id };
 }
 
-// ─────────────────────────────────────────────
-// Helpers — LTR
-// ─────────────────────────────────────────────
+
 async function getLtrPrice({ user, apiKey, name, rentType }: any) {
   const url = new URL(getApiUrl());
   url.searchParams.set("cmd", "list_services"); url.searchParams.set("user", user);
@@ -303,9 +293,7 @@ async function doRentLtr({ user, apiKey, name, rentType, price, userId, tx }: an
   return r.message.mdn;
 }
 
-// ─────────────────────────────────────────────
-// Suspension check
-// ─────────────────────────────────────────────
+
 async function checkForSuspension(userId: number, tx: any) {
   const transactions = await tx.query.LongTermRentsModel.findMany({
     columns: { createdAt: true, status: true },

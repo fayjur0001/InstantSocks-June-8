@@ -5,7 +5,7 @@ import { DashboardCardData } from "@/types/user/dashboard";
 import { DashboardCard } from "../../cards/DashboardCard";
 import { dashboardApi, UserDashboardStats } from "@/lib/dashboard.service";
 
-// ── Skeleton ──────────────────────────────────────────────────────────────
+
 function CardSkeleton() {
   return (
     <div className="border-none bg-black shadow-md flex flex-col justify-between p-3 rounded-[16px] animate-pulse min-h-[120px]">
@@ -20,7 +20,7 @@ function CardSkeleton() {
   );
 }
 
-// ── Build cards from API data ─────────────────────────────────────────────
+
 function buildCards(stats: UserDashboardStats): DashboardCardData[] {
   return [
     {
@@ -47,7 +47,7 @@ function buildCards(stats: UserDashboardStats): DashboardCardData[] {
       value: `$ ${stats.pendingTopup.toFixed(2)}`,
       valueColorClass: "text-c-red-300",
     },
-    // Discount — backend এ discount system এখনো নেই, static রাখা হয়েছে
+    
     {
       id: "discount",
       type: "metric",
@@ -56,7 +56,7 @@ function buildCards(stats: UserDashboardStats): DashboardCardData[] {
       value: "15%",
       valueColorClass: "text-c-green-400",
     },
-    // Expiring Soon — backend এ expiry tracking এখনো নেই, static রাখা হয়েছে
+    
     {
       id: "expiring",
       type: "list",
@@ -67,7 +67,7 @@ function buildCards(stats: UserDashboardStats): DashboardCardData[] {
   ];
 }
 
-// ── Component ─────────────────────────────────────────────────────────────
+
 function InfoCardsArea() {
   const [cards, setCards] = useState<DashboardCardData[] | null>(null);
   const [error, setError] = useState(false);

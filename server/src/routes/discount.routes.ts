@@ -9,8 +9,8 @@ import {
 const router = Router();
 router.use(requireAuth(["admin", "super admin"]));
 
-router.get("/tiers",         getDiscountTiers);     // GET  /api/admin/discount/tiers
-router.patch("/tiers/:tier", updateDiscountTier);   // PATCH /api/admin/discount/tiers/:tier
-router.get("/users",         getDiscountUsers);     // GET  /api/admin/discount/users
+router.get("/tiers",         getDiscountTiers);     
+router.patch("/tiers/:tier", updateDiscountTier);   
+router.get("/users",         getDiscountUsers);     
 
 export default router;

@@ -5,10 +5,10 @@ interface WindowEntry {
   resetAt: number;
 }
 
-// In-memory store — production এ Redis দিয়ে replace করুন
+
 const store = new Map<string, WindowEntry>();
 
-// পুরানো entries পরিষ্কার করো (memory leak বন্ধ করতে)
+
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of store) {
@@ -17,14 +17,14 @@ setInterval(() => {
 }, 60_000);
 
 interface RateLimitOptions {
-  windowMs: number;   // time window in ms
-  max: number;        // max requests per window
+  windowMs: number;   
+  max: number;        
   message?: string;
 }
 
 export function rateLimit({ windowMs, max, message }: RateLimitOptions) {
   return (req: Request, res: Response, next: NextFunction) => {
-    // IP + path কে key হিসেবে ব্যবহার করো
+    
     const ip =
       (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
       req.socket.remoteAddress ||
@@ -35,7 +35,7 @@ export function rateLimit({ windowMs, max, message }: RateLimitOptions) {
     const entry = store.get(key);
 
     if (!entry || entry.resetAt <= now) {
-      // নতুন window শুরু
+      
       store.set(key, { count: 1, resetAt: now + windowMs });
       return next();
     }

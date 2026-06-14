@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Copy, Check } from "lucide-react";
 
-// ─── Interfaces ───────────────────────────────────────────────────────────────
+
 
 export interface ActionButtonsProps {
   onReset?: () => void;
@@ -26,7 +26,7 @@ export interface FormRowProps {
   alignItems?: "center" | "start";
 }
 
-// ─── Reusable UI Components ───────────────────────────────────────────────────
+
 
 const SettingsCard: React.FC<SettingsCardProps> = ({
   title,
@@ -159,7 +159,7 @@ const StyledInput = ({
   />
 );
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+
 
 export default function ConfigurationPage() {
   const [socks5ApiKey, setSocks5ApiKey]         = useState("");
@@ -172,7 +172,7 @@ export default function ConfigurationPage() {
   const [savingSocks5, setSavingSocks5]     = useState(false);
   const [savingCallback, setSavingCallback] = useState(false);
 
-  // ── Load ──────────────────────────────────────────────────────────────────
+  
   useEffect(() => {
     Promise.all([
       adminSettingsApi.getProductsApi(),
@@ -194,14 +194,14 @@ export default function ConfigurationPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Callback Secret টাইপ করলে URL live update হয়
+  
   const handleSecretChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setCallbackSecret(val);
     setCallbackUrl(hostUrl && val ? `${hostUrl}/tools/callback?secret=${val}` : "");
   };
 
-  // ── Save Socks5 ───────────────────────────────────────────────────────────
+  
   const handleSaveSocks5 = async () => {
     setSavingSocks5(true);
     try {
@@ -219,7 +219,7 @@ export default function ConfigurationPage() {
     }
   };
 
-  // ── Save Callback ─────────────────────────────────────────────────────────
+  
   const handleSaveCallback = async () => {
     setSavingCallback(true);
     try {
@@ -239,7 +239,7 @@ export default function ConfigurationPage() {
     <div className="w-full bg-c-bg-900 p-3 md:p-4 font-sans rounded-[12px]">
       <div className="space-y-6">
 
-        {/* ── Socks5 Proxy ── */}
+        {}
         <div className="w-full">
           <SettingsCard
             title="Socks5 Proxy"
@@ -269,7 +269,7 @@ export default function ConfigurationPage() {
           </SettingsCard>
         </div>
 
-        {/* ── Callback ── */}
+        {}
         <div className="pt-6 mt-6 border-t border-c-slate-800/80">
           <SettingsCard
             title="Callback"

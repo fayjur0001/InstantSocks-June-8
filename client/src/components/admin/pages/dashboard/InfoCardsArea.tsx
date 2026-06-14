@@ -5,7 +5,7 @@ import { DashboardCardData } from "@/types/admin/dashboard";
 import { DashboardCard } from "../../cards/DashboardCard";
 import { dashboardApi, AdminDashboardStats } from "@/lib/dashboard.service";
 
-// ── Skeleton ──────────────────────────────────────────────────────────────
+
 function CardSkeleton() {
   return (
     <div className="border-none bg-black shadow-md flex flex-col justify-between p-3 rounded-[16px] animate-pulse min-h-[120px]">
@@ -20,7 +20,7 @@ function CardSkeleton() {
   );
 }
 
-// ── Build cards ───────────────────────────────────────────────────────────
+
 function buildCards(stats: AdminDashboardStats): DashboardCardData[] {
   return [
     {
@@ -74,7 +74,7 @@ function buildCards(stats: AdminDashboardStats): DashboardCardData[] {
   ];
 }
 
-// ── Component ─────────────────────────────────────────────────────────────
+
 function InfoCardsArea() {
   const [cards, setCards] = useState<DashboardCardData[] | null>(null);
   const [error, setError] = useState(false);

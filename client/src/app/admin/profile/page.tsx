@@ -30,7 +30,7 @@ interface UserProfile {
 }
 
 
-// ─── Password & PIN validation rules (registration page এর মতো) ──────────────
+
 
 const PASSWORD_RULES = [
   { label: "At least 8 characters",          test: (v: string) => v.length >= 8 },
@@ -173,7 +173,7 @@ const UserManagement: NextPage = () => {
   const [newPasswordTouched, setNewPasswordTouched] = useState(false)
   const [newPinTouched, setNewPinTouched] = useState(false)
 
-  // Avatar upload state
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -218,22 +218,22 @@ const UserManagement: NextPage = () => {
     setUser((prev) => ({ ...prev, [field]: value }))
   }
 
-  // ── Avatar upload ────────────────────────────────────────────────────────────
+  
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Client-side preview — immediate feedback
+    
     const reader = new FileReader()
     reader.onload = (ev) => setAvatarPreview(ev.target?.result as string)
     reader.readAsDataURL(file)
 
-    // Upload via profileService (base64 JSON)
+    
     setUploadingAvatar(true)
     try {
       const result = await profileService.uploadAvatar(file)
       toast.success(result.message || 'Profile photo updated successfully.')
-      // HeaderNav এ avatar auto-update করার জন্য AuthContext refresh
+      
       await refreshUser()
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to upload photo.'))
@@ -247,7 +247,7 @@ const UserManagement: NextPage = () => {
   const handleProfileUpdate = async () => {
     try {
       const result = await profileService.updateProfile({
-        // ✅ FIX: username বদলা না হলে পাঠাবো না — "already taken" error বন্ধ হবে
+        
         ...(user.username !== originalUsernameRef.current && { username: user.username }),
         firstName: user.firstName,
         lastName: user.lastName,
@@ -258,9 +258,9 @@ const UserManagement: NextPage = () => {
         bio: user.aboutBio,
       })
       toast.success(result.message || 'Profile updated successfully.')
-      // ✅ FIX: header এ নাম/username সাথে সাথে update হবে — extra refresh দরকার নেই
+      
       await refreshUser()
-      // ref update করো যাতে পরের submit এ আবার change detect করে
+      
       originalUsernameRef.current = user.username
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Profile update failed.'))
@@ -317,7 +317,7 @@ const UserManagement: NextPage = () => {
         <title>User Management | Repsatsms</title>
       </Head>
 
-      {/* Hidden file input for avatar upload */}
+      {}
       <input
         ref={fileInputRef}
         type="file"
@@ -328,7 +328,7 @@ const UserManagement: NextPage = () => {
 
       <div className=" rounded-[12px] bg-zinc-950 text-white p-2 lg:p-4">
         <div>
-          {/* Header */}
+          {}
           <header className="flex items-center justify-between pb-4 mb-4 border-b border-c-zinc-800">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-c-zinc-900 border border-c-zinc-800">
@@ -345,11 +345,11 @@ const UserManagement: NextPage = () => {
             </div>
           </header>
 
-          {/* Main Content: Responsive Grid */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-6">
-            {/* Left Content: Profile, Contact, About (2/3 width on md+) */}
+            {}
             <div className="md:col-span-2 space-y-4 xl:space-y-6">
-              {/* Profile Information */}
+              {}
               <Card className="bg-c-zinc-900 border-c-zinc-800 py-3 xl:py-4 gap-2">
                 <CardHeader className='px-3 xl:px-4'>
                   <CardTitle className="text-lg xl:text-xl text-white">Profile Information</CardTitle>
@@ -366,7 +366,7 @@ const UserManagement: NextPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Contact Information */}
+              {}
               <Card className="bg-c-zinc-900 border-c-zinc-800 py-3 xl:py-4 gap-2">
                 <CardHeader className='px-3 xl:px-4'>
                   <CardTitle className="text-lg xl:text-xl text-white">Contact Information</CardTitle>
@@ -383,7 +383,7 @@ const UserManagement: NextPage = () => {
                 </CardContent>
               </Card>
 
-              {/* About / Bio */}
+              {}
               <Card className="bg-c-zinc-900 border-c-zinc-800 py-3 xl:py-4 gap-2">
                 <CardHeader className='px-3 xl:px-4'>
                   <CardTitle className="text-lg xl:text-xl text-white">About / Bio</CardTitle>
@@ -406,7 +406,7 @@ const UserManagement: NextPage = () => {
               </div>
             </div>
 
-            {/* Right Panel: Account Management (1/3 width on md+) */}
+            {}
             <div className="space-y-4 xl:space-y-6">
               <Card className="bg-c-zinc-900 border-c-zinc-800 py-3 xl:py-4">
                 <CardHeader>
@@ -414,7 +414,7 @@ const UserManagement: NextPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-3 xl:space-y-4 px-3 xl:px-4">
 
-                  {/* Avatar Section */}
+                  {}
                   <div className="flex flex-col items-center gap-4 text-center">
                     <Avatar className="w-28 h-28 border-4 border-c-zinc-700 bg-c-zinc-800 rounded-lg">
                       <AvatarImage src={avatarPreview} alt={user.firstName} />
@@ -448,7 +448,7 @@ const UserManagement: NextPage = () => {
 
                   <Separator className="bg-c-zinc-800" />
 
-                  {/* Password Change */}
+                  {}
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-c-zinc-400 mb-2">Change Password</h4>
                     <InputWithVisibility
@@ -477,7 +477,7 @@ const UserManagement: NextPage = () => {
 
                   <Separator className="bg-c-zinc-800" />
 
-                  {/* Pin Change */}
+                  {}
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-c-zinc-400 mb-2">Change Secret Pin</h4>
                     <InputWithVisibility

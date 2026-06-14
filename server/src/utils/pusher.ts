@@ -29,7 +29,7 @@ export default async function pusher({ page, to, payload }: {
 
     await pusherClient.trigger(channel, "revalidate", eventData);
   } catch (e) {
-    // Pusher error হলে log করো কিন্তু main flow block করো না
+    
     console.warn("Pusher warning (non-critical):", (e as any)?.message);
   }
 }

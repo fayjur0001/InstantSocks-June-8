@@ -26,7 +26,7 @@ import {
   StatSummaryPeriod,
 } from "@/lib/dashboard.service";
 
-// ─── Re-export types ──────────────────────────────────────────────────────────
+
 export type { ChartDataPoint };
 export type SummaryBoxData = SummaryBox;
 
@@ -39,7 +39,7 @@ export interface CoinDataPoint {
 export type TabContext    = "transactions" | "remote-devices" | "numbers" | "proxy";
 export type SummaryPeriod = StatSummaryPeriod;
 
-// ─── Static coins ─────────────────────────────────────────────────────────────
+
 const DUMMY_COINS: CoinDataPoint[] = [
   { name: "BTC",  fullName: "BTC",                percentage: 30, amount: 0.4411861,    color: "#f59e0b" },
   { name: "ETH",  fullName: "ETH",                percentage: 30, amount: 0.4411861,    color: "#6366f1" },
@@ -47,13 +47,13 @@ const DUMMY_COINS: CoinDataPoint[] = [
   { name: "TRX",  fullName: "TRX",                percentage: 11, amount: 5053.477194,  color: "#ef4444" },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function toApiTab(ctx: TabContext): StatTab {
   return ctx === "proxy" ? "proxy" : "transactions";
 }
 
 function toApiTabForSummary(ctx: TabContext): StatTab {
-  return ctx === "proxy" ? "proxy" : "transactions"; // summary নিজের tab অনুযায়ী
+  return ctx === "proxy" ? "proxy" : "transactions"; 
 }
 
 function toApiPeriod(t: "7D" | "1M" | "3M" | "Custom"): StatPeriod {
@@ -62,7 +62,7 @@ function toApiPeriod(t: "7D" | "1M" | "3M" | "Custom"): StatPeriod {
   return "7d";
 }
 
-// ─── Custom Tooltip ───────────────────────────────────────────────────────────
+
 const CustomTooltip = ({
   activeTab, tabContext, active, payload,
 }: {
@@ -102,7 +102,7 @@ const CustomTooltip = ({
   );
 };
 
-// ─── Loading overlay ──────────────────────────────────────────────────────────
+
 function ChartLoadingOverlay() {
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-c-bg-750/70 rounded-xl z-10">
@@ -114,7 +114,7 @@ function ChartLoadingOverlay() {
   );
 }
 
-// ─── Summary skeleton ─────────────────────────────────────────────────────────
+
 function SummarySkeleton() {
   return (
     <div className="bg-c-bg-750 border border-c-slate-800 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-2 animate-pulse">
@@ -124,9 +124,7 @@ function SummarySkeleton() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Component
-// ─────────────────────────────────────────────────────────────────────────────
+
 export default function StatisticsArea({
   tabContext = "transactions",
 }: {
@@ -142,8 +140,8 @@ export default function StatisticsArea({
   const [chartLoading,   setChartLoading]   = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(true);
 
-  // ── Fetch chart only (Turnover/Top Users tab) — শুধু chart data আনে ────────
-  // summaryPeriod dependency নেই — period change এ fetchSummaryOnly আলাদাভাবে fire হবে
+  
+  
   const fetchTurnover = useCallback(async () => {
     setChartLoading(true);
     try {
@@ -161,7 +159,7 @@ export default function StatisticsArea({
     }
   }, [tabContext, activeTime]);
 
-  // ── Fetch chart only (Top Users tab) ──────────────────────────────────────
+  
   const fetchTopUsers = useCallback(async () => {
     setChartLoading(true);
     try {
@@ -178,7 +176,7 @@ export default function StatisticsArea({
     }
   }, [tabContext, activeTime]);
 
-  // ── Fetch summary only (summaryPeriod changed while Turnover is active) ────
+  
   const fetchSummaryOnly = useCallback(async () => {
     setSummaryLoading(true);
     try {
@@ -195,31 +193,31 @@ export default function StatisticsArea({
     }
   }, [tabContext, summaryPeriod]);
 
-  // ── Effects ───────────────────────────────────────────────────────────────
-  // chart tab বা time বদলালে: chart reload + summary reload
+  
+  
   useEffect(() => {
     if (activeTab === "Coins") {
       setChartLoading(false); setSummaryLoading(false); return;
     }
     if (activeTab === "Top Users") {
       fetchTopUsers();
-      fetchSummaryOnly(); // Top Users tab এও summary দেখাবে
+      fetchSummaryOnly(); 
     } else {
       fetchTurnover();
       fetchSummaryOnly();
     }
   }, [activeTab, activeTime, tabContext, fetchTopUsers, fetchTurnover, fetchSummaryOnly]);
 
-  // শুধু summaryPeriod বদলালে: শুধু summary reload (chart unchanged)
+  
   useEffect(() => {
     fetchSummaryOnly();
   }, [summaryPeriod, fetchSummaryOnly]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  
   return (
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
 
-      {/* ── Chart Section ── */}
+      {}
       <div className="xl:col-span-3 bg-c-bg-750 border border-c-slate-800 rounded-xl p-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-2">
@@ -228,7 +226,7 @@ export default function StatisticsArea({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Category tab */}
+            {}
             <div className="flex items-center text-xs bg-black rounded-md overflow-hidden border border-c-slate-800">
               {(["Turnover", "Top Users", "Coins"] as const).map((tab) => (
                 <button
@@ -248,7 +246,7 @@ export default function StatisticsArea({
               ))}
             </div>
 
-            {/* Time tab */}
+            {}
             <div className={`flex items-center text-xs bg-black rounded-md border border-c-slate-800 transition-opacity ${
               activeTab === "Coins" ? "opacity-40 pointer-events-none" : "opacity-100"
             }`}>
@@ -298,7 +296,7 @@ export default function StatisticsArea({
           </div>
         </div>
 
-        {/* Chart area */}
+        {}
         <div className="relative min-h-[250px] w-full flex items-center justify-center">
           {chartLoading && activeTab !== "Coins" && <ChartLoadingOverlay />}
 
@@ -392,7 +390,7 @@ export default function StatisticsArea({
         </div>
       </div>
 
-      {/* ── Summary Boxes (right column) ── */}
+      {}
       <div className="xl:col-span-1 flex flex-col gap-3">
         <Select
           value={summaryPeriod}
@@ -409,7 +407,7 @@ export default function StatisticsArea({
           </SelectContent>
         </Select>
 
-        {/* Summary grid — proxy ও transactions দুটোর জন্যই same 2-col layout */}
+        {}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-3 auto-rows-max">
           {summaryLoading
             ? Array.from({ length: 6 }).map((_, i) => <SummarySkeleton key={i} />)

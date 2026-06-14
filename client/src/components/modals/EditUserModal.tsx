@@ -46,10 +46,10 @@ export function EditUserModal({ user, open, onOpenChange, onSave }: EditUserModa
     setIsLoading(true);
     try {
       await onSave?.({ username: username.trim(), email: email.trim() });
-      // Only close on success — if onSave throws, we stay open and show the error
+      
       onOpenChange(false);
     } catch (err: unknown) {
-      // Extract the server error message (e.g. "Username is already taken.")
+      
       let msg = "Failed to update user. Please try again.";
       if (err instanceof Error) {
         try {
@@ -97,7 +97,7 @@ export function EditUserModal({ user, open, onOpenChange, onSave }: EditUserModa
             />
           </div>
 
-          {/* Inline error — shown inside modal, not as toast */}
+          {}
           {error && (
             <p className="text-xs text-c-rose-400 -mt-1">{error}</p>
           )}

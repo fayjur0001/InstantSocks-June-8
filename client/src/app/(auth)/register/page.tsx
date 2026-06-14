@@ -1,4 +1,4 @@
-// PATH: client/src/app/(auth)/register/page.tsx
+
 
 "use client";
 
@@ -47,7 +47,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>("");
 
-  // Per-field blur errors
+  
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -74,7 +74,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
     e.preventDefault();
     setSubmitError("");
 
-    // Touch all fields so errors show
+    
     const allFields = ["username", "email", "password", "confirmPassword", "pin"];
     const values: Record<string, string> = { username, email, password, confirmPassword, pin };
     const newErrors: Record<string, string> = {};
@@ -123,7 +123,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
 
   return (
     <main className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-[#09090b] selection:bg-c-green-400/30">
-      {/* Left COLUMN */}
+      {}
       <section className="hidden lg:flex w-full lg:w-[50%] bg-zinc-100 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/auth-bg.png')] bg-cover bg-center opacity-30 mix-blend-multiply" />
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-c-orange-500/20 via-transparent to-transparent rounded-full blur-[100px] -translate-y-1/4 translate-x-1/4" />
@@ -164,7 +164,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
         </footer>
       </section>
 
-      {/* Right COLUMN */}
+      {}
       <section className="relative w-full lg:w-[50%] min-h-screen flex flex-col text-zinc-100 pb-10 lg:pb-0 z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-c-green-400/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 -translate-x-1/4" />
 
@@ -206,7 +206,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
               </p>
             </div>
 
-            {/* Submit-level error (server errors: username taken, etc.) */}
+            {}
             {submitError && (
               <div className="mb-5 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {submitError}
@@ -214,7 +214,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Username */}
+              {}
               <div className="space-y-1.5">
                 <Label htmlFor="username" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                   Username
@@ -235,7 +235,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                 )}
               </div>
 
-              {/* Email */}
+              {}
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                   Email Address
@@ -257,9 +257,9 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                 )}
               </div>
 
-              {/* Password Grid */}
+              {}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {/* Password */}
+                {}
                 <div className="space-y-1.5">
                   <Label htmlFor="password" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                     Password
@@ -288,7 +288,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                   )}
                 </div>
 
-                {/* Confirm Password */}
+                {}
                 <div className="space-y-1.5">
                   <Label htmlFor="confirmPassword" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                     Confirm
@@ -318,7 +318,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                 </div>
               </div>
 
-              {/* Pin Code */}
+              {}
               <div className="space-y-1.5 pt-1">
                 <Label htmlFor="pin" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                   Secret Pin Code
@@ -339,7 +339,7 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                 )}
               </div>
 
-              {/* Actions */}
+              {}
               <div className="pt-4 space-y-6">
                 <div className="flex items-start space-x-3">
                   <Checkbox

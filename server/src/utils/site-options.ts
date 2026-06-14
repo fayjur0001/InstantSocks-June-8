@@ -33,12 +33,12 @@ export default class SiteOptions {
   static siteLogo = mks("site-logo");
   static notice = mks("notice");
   static maintenanceText = mks("maintenance-text", "Site is undergoing maintenance");
-  static maintenanceEnd = mks("maintenance-end", ""); // ISO timestamp — e.g. "2026-06-10T15:00:00.000Z"
+  static maintenanceEnd = mks("maintenance-end", ""); 
   static rules = mks("rules", "");
   static termsAndConditions = mks("terms-and-conditions", "");
   static privacyPolicy = mks("privacy-policy", "");
   static providerCallbackSecret = mks("provider-callback-secret");
-  // Auth page text
+  
   static authInfo = {
     copyrightText: mks("auth-copyright-text", "© 2014-${year} RepeatSMS. All Rights Reserved"),
     signInText: mks("auth-sign-in-text", "Access your account with your secure login"),
@@ -46,7 +46,7 @@ export default class SiteOptions {
     passwordResetText: mks("auth-password-reset-text", "Lost your password? No problem. Just enter your email below."),
     homeUrl: mks("auth-home-url", "https://repeatsms.com/"),
   };
-  // Top Up page text
+  
   static topUp = {
     cryptoText: mks("topup-crypto-text", "Insert your deposit amount and click on Get wallet button"),
     blankCurrencyText: mks("topup-blank-currency-text", "Your generated address will be shown here."),

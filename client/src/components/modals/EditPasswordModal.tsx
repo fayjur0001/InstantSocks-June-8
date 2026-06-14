@@ -37,7 +37,7 @@ export function EditPasswordModal({ user, open, onOpenChange, onSave }: Password
   const [isLoading, setIsLoading]             = useState(false);
   const [error, setError]                     = useState("");
 
-  // Reset all state whenever the modal opens
+  
   useEffect(() => {
     if (open) {
       setPassword("");
@@ -85,7 +85,7 @@ export function EditPasswordModal({ user, open, onOpenChange, onSave }: Password
         </DialogHeader>
 
         <div className="flex flex-col gap-3 py-4">
-          {/* New Password */}
+          {}
           <div className="relative">
             <Input
               type={showPassword ? "text" : "password"}
@@ -106,7 +106,7 @@ export function EditPasswordModal({ user, open, onOpenChange, onSave }: Password
             </button>
           </div>
 
-          {/* Confirm Password */}
+          {}
           <div className="relative">
             <Input
               type={showConfirm ? "text" : "password"}
@@ -127,7 +127,7 @@ export function EditPasswordModal({ user, open, onOpenChange, onSave }: Password
             </button>
           </div>
 
-          {/* Validation rules — only show when user has started typing */}
+          {}
           {password.length > 0 && (
             <ul className="flex flex-col gap-1 mt-1">
               {RULES.map((rule) => {
@@ -143,7 +143,7 @@ export function EditPasswordModal({ user, open, onOpenChange, onSave }: Password
                   </li>
                 );
               })}
-              {/* Passwords-match rule — only show when confirm field has input */}
+              {}
               {confirmPassword.length > 0 && (
                 <li className="flex items-center gap-2 text-xs">
                   {passwordsMatch
@@ -157,7 +157,7 @@ export function EditPasswordModal({ user, open, onOpenChange, onSave }: Password
             </ul>
           )}
 
-          {/* Inline error */}
+          {}
           {error && (
             <p className="text-xs text-c-rose-400">{error}</p>
           )}

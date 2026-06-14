@@ -1,4 +1,4 @@
-// PATH: client/src/app/(auth)/login/page.tsx
+
 
 "use client";
 
@@ -16,7 +16,7 @@ import { apiFetch, authInfoApi, PublicAuthInfo } from "@/lib/api";
 import { safeRedirect } from "@/lib/helpers";
 import { toast } from "sonner";
 
-// ─── Countdown helpers ────────────────────────────────────────────────────────
+
 
 function calcTimeLeft(endIso: string | null): { h: number; m: number; s: number } | null {
   if (!endIso) return null;
@@ -46,7 +46,7 @@ function useCountdown(endIso: string | null) {
   return time;
 }
 
-// ─── Maintenance Modal ────────────────────────────────────────────────────────
+
 function MaintenanceModal({ message, endIso, onClose }: { message: string; endIso: string | null; onClose: () => void }) {
   const time = useCountdown(endIso);
   return (
@@ -140,10 +140,10 @@ function LoginPageContent() {
 
     setLoading(true);
     try {
-      // ✅ FIX: Login এর আগে maintenance check করো।
-      //         Maintenance active থাকলে modal দেখাও, login হতে দিও না।
-      //         Admin/super admin এর জন্য check করার দরকার নেই —
-      //         তারা এই portal এ আসেই না (instants portal আলাদা)।
+      
+      
+      
+      
       const statusData = await apiFetch("/api/site-status").catch(() => null);
       if (statusData?.maintenance) {
         setMaintenanceModal({
@@ -192,7 +192,7 @@ function LoginPageContent() {
         />
       )}
 
-      {/* Left column */}
+      {}
       <section className="hidden lg:flex w-full lg:w-[50%] bg-zinc-100 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/auth-bg.png')] bg-cover bg-center opacity-30 mix-blend-multiply" />
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-c-orange-500/20 via-transparent to-transparent rounded-full blur-[100px] -translate-y-1/4 translate-x-1/4" />
@@ -233,7 +233,7 @@ function LoginPageContent() {
         </footer>
       </section>
 
-      {/* Right column */}
+      {}
       <section className="relative w-full lg:w-[50%] min-h-screen flex flex-col text-zinc-100 pb-10 lg:pb-0 z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-c-green-400/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 -translate-x-1/4" />
 

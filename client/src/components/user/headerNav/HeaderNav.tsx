@@ -1,5 +1,3 @@
-// PATH: client/src/components/user/headerNav/HeaderNav.tsx
-
 "use client";
 
 import AdminUserDropdown from "./AdminUserDropdown";
@@ -22,7 +20,7 @@ function getRoleLabel(role?: string, badge?: string): string {
 }
 
 const HeaderNav = () => {
-  const { user, logout, exitLoginAs, hostUrl } = useAuth(); // ← hostUrl add
+  const { user, logout, exitLoginAs, hostUrl, siteLogo } = useAuth();
   const router = useRouter();
   const [exitingLoginAs, setExitingLoginAs] = useState(false);
 
@@ -66,14 +64,15 @@ const HeaderNav = () => {
     <>
       <header className="sticky top-0 z-50 flex justify-between h-17 shrink-0 items-center gap-2 border-b border-white/10 bg-black px-4">
         <div className="flex items-center gap-2">
-          <a href={hostUrl || "https://instantsocks.com/"} target="_blank" rel="noopener noreferrer"> {/* ← fix */}
+          <a href={hostUrl || "https://instantsocks.com/"} target="_blank" rel="noopener noreferrer">
             <Image
-              src="/logo.webp"
+              src={siteLogo || "/logo.webp"}
               alt="logo"
               width={160}
               height={56}
               className="h-8 w-auto object-contain"
               priority
+              unoptimized={!!siteLogo}
             />
           </a>
         </div>

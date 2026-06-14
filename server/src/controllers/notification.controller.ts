@@ -5,7 +5,7 @@ import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 
 const NOTIFICATION_LIMIT = 50;
 
-// ─── Helper: filter → date range ─────────────────────────────────────────────
+
 function getFilterRange(filter: string): { from?: Date; to?: Date } {
   const now = new Date();
 
@@ -31,13 +31,11 @@ function getFilterRange(filter: string): { from?: Date; to?: Date } {
     return { to };
   }
 
-  // "all" — no range
+  
   return {};
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/notifications?filter=today|week|earlier|all
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getNotifications(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -62,9 +60,7 @@ export async function getNotifications(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/notifications/read — সব notification isRead = true
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function markAllRead(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -86,9 +82,7 @@ export async function markAllRead(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/notifications/:id/read — একটা notification isRead = true
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function markOneRead(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -116,9 +110,7 @@ export async function markOneRead(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper: notification insert করার জন্য — controller থেকে call হবে
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function createNotification({
   userId,
   type,
@@ -133,7 +125,7 @@ export async function createNotification({
   try {
     await db.insert(NotificationModel).values({ userId, type, title, message });
 
-    // 50+ হলে সবচেয়ে পুরনোগুলো কেটে ফেলো
+    
     const count = await db
       .select({ total: sql<number>`count(*)` })
       .from(NotificationModel)
@@ -141,7 +133,7 @@ export async function createNotification({
       .then((r) => Number(r[0]?.total ?? 0));
 
     if (count > NOTIFICATION_LIMIT) {
-      // সবচেয়ে পুরনো (count - NOTIFICATION_LIMIT) টা বের করো
+      
       const excess = count - NOTIFICATION_LIMIT;
       const oldest = await db
         .select({ id: NotificationModel.id })

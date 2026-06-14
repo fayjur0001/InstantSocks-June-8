@@ -20,25 +20,25 @@ import {
 import ReusablePagination from "./ReusablePagination";
 
 interface ReusableTableProps<TData> {
-  // Replaced 'any' with 'unknown' for proper strict typing
+  
   columns: ColumnDef<TData, unknown>[];
   data: TData[];
 
-  /** Pagination (optional) */
+  
   currentPage?: number;
   itemsPerPage?: number;
   totalItems?: number;
   setCurrentPage?: React.Dispatch<React.SetStateAction<number>>;
 
-  /** States */
+  
   isLoading?: boolean;
 
-  /** Selection & Interactivity */
+  
   onRowClick?: (row: TData) => void;
   selectedRowId?: string | number | null;
   getRowId?: (row: TData) => string | number;
 
-  /** Optional wrappers */
+  
   className?: string;
 }
 
@@ -72,7 +72,7 @@ export function ReusableTable<TData>({
     <div
       className={`w-full overflow-hidden bg-black border border-c-emerald-900/20 rounded-xl flex flex-col justify-between ${className}`}
     >
-      {/* ================= TABLE ================= */}
+      {}
       <Table className="w-full">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -98,7 +98,7 @@ export function ReusableTable<TData>({
         </TableHeader>
 
         <TableBody className="max-h-[70dvh] overflow-auto">
-          {/* Loading */}
+          {}
           {isLoading && (
             <TableRow>
               <TableCell colSpan={columns.length} className="p-8">
@@ -112,11 +112,11 @@ export function ReusableTable<TData>({
             </TableRow>
           )}
 
-          {/* Data */}
+          {}
           {!isLoading &&
             table.getRowModel().rows.length > 0 &&
             table.getRowModel().rows.map((row) => {
-              // Check if the current row is selected
+              
               const isSelected =
                 getRowId && selectedRowId !== undefined
                   ? getRowId(row.original) === selectedRowId
@@ -148,7 +148,7 @@ export function ReusableTable<TData>({
               );
             })}
 
-          {/* Empty */}
+          {}
           {!isLoading && table.getRowModel().rows.length === 0 && (
             <TableRow className="hover:bg-transparent">
               <TableCell
@@ -161,7 +161,7 @@ export function ReusableTable<TData>({
           )}
         </TableBody>
 
-        {/* ================= FOOTER ================= */}
+        {}
         {hasFooterContent && (
           <TableFooter className="bg-c-emerald-900/10 hover:bg-c-emerald-900/10 text-c-emerald-500 border-green/20">
             {footerGroups.map((footerGroup) => (
@@ -180,7 +180,7 @@ export function ReusableTable<TData>({
         )}
       </Table>
 
-      {/* ================= PAGINATION ================= */}
+      {}
       {totalItems !== undefined &&
         itemsPerPage !== undefined &&
         currentPage !== undefined &&

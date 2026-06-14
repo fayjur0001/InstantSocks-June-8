@@ -66,7 +66,7 @@ const CreateTicketModal = ({
           <DialogTitle>Create Support Ticket</DialogTitle>
         </VisuallyHidden>
 
-        {/* Header Section */}
+        {}
         <div className="p-8 pb-4">
           <h3 className="text-xl font-bold text-white/70 mb-1">Create Support Ticket</h3>
           <p className="text-sm text-c-slate-400">
@@ -74,10 +74,10 @@ const CreateTicketModal = ({
           </p>
         </div>
 
-        {/* Body Section (Form) */}
+        {}
         <div className="px-8 pb-8 space-y-6">
           
-          {/* Category Selection */}
+          {}
           <div className="space-y-2">
             <Label className="font-semibold text-white/70 text-sm">
               Select Category
@@ -97,7 +97,7 @@ const CreateTicketModal = ({
             </Select>
           </div>
 
-          {/* Subject Field */}
+          {}
           <div className="space-y-2">
             <Label className="font-semibold text-white/70 text-sm">
               Subject
@@ -110,7 +110,7 @@ const CreateTicketModal = ({
             />
           </div>
 
-          {/* Message Field */}
+          {}
           <div className="space-y-2">
             <Label className="font-semibold text-white/70 text-sm">
               Message
@@ -125,7 +125,7 @@ const CreateTicketModal = ({
 
         </div>
 
-        {/* Footer Section (Buttons) */}
+        {}
         <div className="p-8 pt-0 flex gap-4">
           <Button
             variant="outline"

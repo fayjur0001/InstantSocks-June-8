@@ -1,6 +1,6 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-// ✅ FIX Bug 10: 15 second timeout — server hang করলে user আটকে থাকবে না
+
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export async function apiFetch(path: string, options?: RequestInit) {
@@ -11,9 +11,9 @@ export async function apiFetch(path: string, options?: RequestInit) {
   try {
     res = await fetch(`${BASE}${path}`, {
       credentials: "include",
-      // ✅ FIX: cache: "no-store" — Next.js 15+ fetch() default-এ cache করে।
-      // এটা ছাড়া loginAs/exitLoginAs-এর পর /api/auth/me stale data দিত —
-      // shadow user-এর role="general" ফেরত আসত, Back to Admin ভুল redirect করত।
+      
+      
+      
       cache: "no-store",
       headers: { "Content-Type": "application/json" },
       ...options,
@@ -21,7 +21,7 @@ export async function apiFetch(path: string, options?: RequestInit) {
     });
   } catch (err) {
     clearTimeout(timeoutId);
-    // AbortError = timeout
+    
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error("Request timed out. Please check your connection and try again.");
     }
@@ -35,7 +35,7 @@ export async function apiFetch(path: string, options?: RequestInit) {
       const errData = await res.json();
       throw new Error(errData?.message || "Something went wrong. Please try again.");
     } catch (jsonErr) {
-      // Only replace the error if JSON parsing itself failed (not an Error we just threw)
+      
       if (jsonErr instanceof SyntaxError) {
         throw new Error("Something went wrong. Please try again.");
       }
@@ -45,10 +45,10 @@ export async function apiFetch(path: string, options?: RequestInit) {
   return res.json();
 }
 
-// ─── Auth ────────────────────────────────────────────────────────────────────
+
 
 export interface LoginPayload {
-  identifier: string; // email or username
+  identifier: string; 
   password: string;
   pin: string;
   rememberMe?: boolean;
@@ -149,7 +149,7 @@ export const authApi = {
     }),
 };
 
-// ─── Admin Settings ───────────────────────────────────────────────────────────
+
 
 export interface AdminSettingsData {
   hostUrl?: string;
@@ -157,7 +157,7 @@ export interface AdminSettingsData {
   notice?: string;
   maintenanceText?: string;
   siteLogo?: string;
-  maintenanceEnd?: string; // ISO timestamp — e.g. "2026-06-10T15:00:00.000Z"
+  maintenanceEnd?: string; 
   rules?: string;
   termsAndConditions?: string;
   privacyPolicy?: string;
@@ -189,7 +189,7 @@ export interface PaymentApiUpdatePayload {
   currentMethod?: string;
 }
 
-// ─── Public Auth Info (no auth required — used by login/register pages) ───────
+
 
 export interface PublicAuthInfo {
   copyrightText: string;
@@ -205,7 +205,7 @@ export const authInfoApi = {
     apiFetch("/api/auth-info"),
 };
 
-// ─── Admin Settings ───────────────────────────────────────────────────────────
+
 
 export const adminSettingsApi = {
   getSettings: (): Promise<{ data: AdminSettingsData }> =>
@@ -236,7 +236,7 @@ export const adminSettingsApi = {
     }),
 };
 
-// ─── Public Content (logged-in users) ────────────────────────────────────────
+
 
 export interface PublicContentData {
   notice:             string;
@@ -246,7 +246,7 @@ export interface PublicContentData {
 }
 
 export const publicApi = {
-  /** GET /api/dashboard/content — notice, rules, terms, privacy for dashboard */
+  
   getContent: (): Promise<{ success: boolean; data: PublicContentData }> =>
     apiFetch("/api/dashboard/content"),
 };
@@ -254,4 +254,17 @@ export const publicApi = {
 export const publicSettingsApi = {
   getSiteInfo: (): Promise<{ success: boolean; hostUrl: string }> =>
     apiFetch("/api/site-info"),
+};
+
+export interface PublicTopUpSettings {
+  cryptoText: string;
+  blankCurrencyText: string;
+  generatedCurrencyText: string;
+  cautionText: string;
+  popUpText: string;
+}
+
+export const publicTopUpApi = {
+  getSettings: (): Promise<{ success: boolean; data: PublicTopUpSettings }> =>
+    apiFetch("/api/public-topup-settings"),  
 };

@@ -12,7 +12,7 @@ import { supportApi, Ticket } from "@/lib/support.service";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
-// --- Types ---
+
 
 interface SupportTicketRow {
   id: string;
@@ -47,14 +47,14 @@ export default function AdminSupportPage() {
   const [loading, setLoading] = useState(false);
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
 
-  // --- Status & Category Styles ---
+  
   const statusStyles = {
     "In Progress": "bg-c-orange-900/30 text-c-orange-400 border-c-orange-800/50",
     Completed: "bg-c-green-tw-900/30 text-c-green-tw-400 border-c-green-tw-800/50",
     Open: "bg-c-blue-900/30 text-c-blue-400 border-c-blue-800/50",
   };
 
-  // --- Fetch Tickets ---
+  
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
@@ -92,7 +92,7 @@ export default function AdminSupportPage() {
     fetchTickets();
   }, [fetchTickets]);
 
-  // --- Pusher real-time revalidation ---
+  
   useEffect(() => {
     if (!user) return;
     const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY;
@@ -131,7 +131,7 @@ export default function AdminSupportPage() {
     };
   }, [user, fetchTickets]);
 
-  // --- Action handlers ---
+  
   const handleDelete = async (ticketId: string) => {
     if (user?.role !== "super admin") {
       toast.error("You cannot delete ticket.");
@@ -147,7 +147,7 @@ export default function AdminSupportPage() {
     }
   };
 
-  // --- Table Configuration ---
+  
   const ticketColumns: ColumnDef<SupportTicketRow>[] = [
     {
       accessorKey: "ticketId",
@@ -234,7 +234,7 @@ export default function AdminSupportPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-4 p-4 bg-black rounded-2xl">
-        {/* Header inside the card */}
+        {}
         <div className="flex justify-between items-start mb-6">
           <div className="space-y-1">
             <h3 className="font-bold text-white/90">Support Tickets</h3>
@@ -248,7 +248,7 @@ export default function AdminSupportPage() {
           </Button>
         </div>
 
-        {/* Tabs */}
+        {}
         <div className="flex gap-2 border-b border-c-slate-800 pb-2">
           {tabs.map((tab) => (
             <button
@@ -265,7 +265,7 @@ export default function AdminSupportPage() {
           ))}
         </div>
 
-        {/* Inner Table Container */}
+        {}
         <div className="space-y-4">
           <h4 className="font-bold text-white/90 text-sm ml-1">
             {tabs.find((t) => t.key === activeTab)?.label ?? "Tickets"}
@@ -288,7 +288,7 @@ export default function AdminSupportPage() {
           </div>
         </div>
 
-        {/* Create Ticket Modal */}
+        {}
         <CreateTicketModal
           isCreateTicketOpen={isCreateTicketOpen}
           setIsCreateTicketOpen={setIsCreateTicketOpen}

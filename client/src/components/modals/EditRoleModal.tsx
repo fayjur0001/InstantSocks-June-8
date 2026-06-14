@@ -45,14 +45,14 @@ export function EditRoleModal({ user, open, onOpenChange, onSave }: RoleModalPro
     setError("");
     setIsLoading(true);
 
-    // Optimistic close — modal বন্ধ করে দাও, API background-এ চলুক
-    // (role change-এ agent serial assign হওয়ার কারণে backend একটু slow)
+    
+    
     onOpenChange(false);
 
     try {
       await onSave?.(role);
     } catch {
-      // onSave already handles toast.error — nothing extra needed here
+      
     } finally {
       setIsLoading(false);
     }

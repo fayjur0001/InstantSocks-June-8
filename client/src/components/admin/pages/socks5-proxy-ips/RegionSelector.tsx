@@ -9,11 +9,11 @@ interface RegionItem {
 interface RegionProps {
   activeRegion: string;
   setActiveRegion: (region: string) => void;
-  regions?: RegionItem[];   // dynamic হলে pass করো, না হলে static fallback
+  regions?: RegionItem[];   
 }
 
 function RegionSelector({ activeRegion, setActiveRegion, regions }: RegionProps) {
-  // dynamic regions আসলে সেটা ব্যবহার করো, না হলে static REGION_ORDER দিয়ে শুধু label দেখাও
+  
   const items: RegionItem[] = regions && regions.length > 0
     ? regions
     : REGION_ORDER.map((id) => ({ id, label: REGION_LABELS[id] ?? id, count: 0 }));

@@ -1,12 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// NSocks.net API Adapter  —  real implementation
-// Path: server/src/utils/nsocks.adapter.ts
-// ─────────────────────────────────────────────────────────────────────────────
+
+
 
 const NSOCKS_API_BASE =
   process.env.SOCKS_5_PROXY_API_URL?.replace(/\/$/, "") || "https://nsocks.net";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+
 
 export interface NsocksProxyItem {
   id: string;
@@ -89,7 +87,7 @@ export interface NsocksHistoryItem {
   paid: number;
 }
 
-// ── Risk score types ──────────────────────────────────────────────────────────
+
 
 export interface NsocksRiskScoreScl {
   service: "scl";
@@ -117,11 +115,11 @@ export interface NsocksRiskScoreIpq {
 
 export type NsocksRiskScore = NsocksRiskScoreScl | NsocksRiskScoreIpq;
 
-// ── Blacklist check type ──────────────────────────────────────────────────────
+
 
 export type NsocksBlacklistResult = Record<string, "Clean" | "Yes">;
 
-// ── Internal helper ───────────────────────────────────────────────────────────
+
 
 async function nsocksPost<T = unknown>(
   endpoint: string,
@@ -159,7 +157,7 @@ async function nsocksPost<T = unknown>(
   return data as T;
 }
 
-// ── Mappers ───────────────────────────────────────────────────────────────────
+
 
 function mapSearchProxy(raw: Record<string, unknown>): NsocksProxyItem {
   const id = String(raw.id ?? "");
@@ -216,13 +214,13 @@ function mapSearchProxy(raw: Record<string, unknown>): NsocksProxyItem {
     speed: speedStr,
     price: Number(raw.price ?? 0),
     added: addedStr,
-    // pbl_black বাদ: PBL = ISP নিজের dynamic IP range block (outgoing mail policy only)
-    // প্রায় সব residential/ISP proxy PBL-এ থাকে — actual quality indicator না
-    // NSocks.net নিজেও এগুলো blacklisted দেখায় না
+    
+    
+    
     blacklisted:
-      raw.sbl_black === "1" ||   // Spamhaus SBL — spam source
-      raw.css_black === "1" ||   // Spamhaus CSS — snowshoe spam
-      raw.xbl_black === "1",     // Exploits Block List — infected machine
+      raw.sbl_black === "1" ||   
+      raw.css_black === "1" ||   
+      raw.xbl_black === "1",     
     connectionString: `socks5://${raw.sock_real_ip ?? id}`,
     zone: raw.time_zone ? String(raw.time_zone) : undefined,
     usage: usageStr,
@@ -270,7 +268,7 @@ function mapBuyProxy(
   };
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+
 
 export async function nsocksFetchList(
   apiKey: string,
@@ -309,7 +307,7 @@ export async function nsocksFetchList(
     } else if (params.type === "RESIDENTIAL") {
       body.RESIDENTIAL = 1;
     } else {
-      body.TYPE = params.type; // ISP/MOB/COM — শুধু TYPE, RESIDENTIAL set করবে না
+      body.TYPE = params.type; 
     }
   }
 
@@ -366,7 +364,7 @@ export async function nsocksBuyProxy(
 
   const buyResult = mapBuyProxy(data, proxyId);
 
-  // Buy response-এ country/state/city/type নেই — /api/proxy দিয়ে আনো
+  
   try {
     const proxyDetails = await nsocksGetProxy(apiKey, proxyId);
     if (proxyDetails) {
@@ -378,7 +376,7 @@ export async function nsocksBuyProxy(
       buyResult.type        = proxyDetails.type;
     }
   } catch {
-    // details না আসলেও buy সফল — silent fail
+    
   }
 
   return buyResult;

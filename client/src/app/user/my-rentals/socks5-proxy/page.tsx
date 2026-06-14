@@ -16,17 +16,17 @@ import { proxyApi, type RentalItem } from "@/lib/proxy.service";
 import { toFlagEmoji } from "@/lib/helpers";
 import { toast } from "sonner";
 
-// ─── Display type ─────────────────────────────────────────────────────────────
+
 export interface ProxyDisplay {
   id: string;
   _rawId: number;
   ip: string;
-  proxyPort: string;       // NSocks proxy port (e.g. 33494)
+  proxyPort: string;       
   country: string;
   state: string;
   city: string;
   zip: string;
-  port: string;            // internal tracking port
+  port: string;            
   type: string;
   note: string;
   status: "Active" | "Offline" | "Expired";
@@ -35,18 +35,18 @@ export interface ProxyDisplay {
   connectionString: string;
 }
 
-// ─── Map API RentalItem → ProxyDisplay ───────────────────────────────────────
+
 function toDisplay(r: RentalItem): ProxyDisplay {
   const createdAt = new Date(r.createdAt);
   const expiresAt = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
   const isExpired = expiresAt < new Date();
 
-  // ip field = "ip:port" combined (e.g. "123.0.220.210:33494") — split করে আলাদা দেখাই
+  
   const [proxyIp, proxyPort] = r.ip.includes(":")
     ? r.ip.split(":")
     : [r.ip, ""];
 
-  // NSocks online status থাকলে সেটা use করো, নাহলে 30-day fallback
+  
   const nsocksOnline = r.nsocksOnline;
   const status: "Active" | "Offline" | "Expired" =
     nsocksOnline === 1 ? "Active"  :
@@ -56,13 +56,13 @@ function toDisplay(r: RentalItem): ProxyDisplay {
   return {
     id: String(r.id),
     _rawId: r.id,
-    ip: proxyIp,           // শুধু IP
-    proxyPort: proxyPort,  // NSocks proxy port (33494)
+    ip: proxyIp,           
+    proxyPort: proxyPort,  
     country: r.country,
     state: r.state,
     city: r.city,
     zip: r.zip,
-    port: r.port,          // internal tracking port
+    port: r.port,          
     type: r.type,
     note: r.note || "-",
     status,
@@ -129,9 +129,7 @@ const FilterHeaderInput = ({
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PAGE
-// ═══════════════════════════════════════════════════════════════════════════════
+
 
 export default function ProxyDashboard() {
   const [page, setPage] = useState(1);
@@ -151,7 +149,7 @@ export default function ProxyDashboard() {
     setPage(1);
   }, []);
 
-  // ── Fetch rentals ─────────────────────────────────────────────────────────
+  
   const fetchRentals = useCallback(async (p: number) => {
     setLoading(true);
     try {
@@ -169,7 +167,7 @@ export default function ProxyDashboard() {
 
   useEffect(() => { fetchRentals(page); }, [page, fetchRentals]);
 
-  // ── Client-side filter ────────────────────────────────────────────────────
+  
   const filteredData = useMemo(() => {
     const m = (val: string, f: string) =>
       !f || val.toLowerCase().includes(f.toLowerCase());
@@ -186,7 +184,7 @@ export default function ProxyDashboard() {
     );
   }, [rentals, filters]);
 
-  // ── Renew ─────────────────────────────────────────────────────────────────
+  
   const handleRenew = async (proxy: ProxyDisplay) => {
     setRenewingId(proxy._rawId);
     try {
@@ -209,7 +207,7 @@ export default function ProxyDashboard() {
     }
   };
 
-  // ── Columns ───────────────────────────────────────────────────────────────
+  
   const columns = useMemo<ColumnDef<ProxyDisplay, unknown>[]>(
     () => [
       {
@@ -364,7 +362,7 @@ export default function ProxyDashboard() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 p-4 bg-black rounded-[16px] min-h-[80dvh] text-c-slate-300">
 
-      {/* LEFT: Table */}
+      {}
       <div className="flex-1 min-w-0 overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-20 gap-2 text-c-slate-400">
@@ -416,7 +414,7 @@ export default function ProxyDashboard() {
         )}
       </div>
 
-      {/* RIGHT: Detail Sidebar */}
+      {}
       <div className="w-full lg:w-[250px] shrink-0 bg-c-bg-750 border border-c-slate-800 rounded-xl flex flex-col overflow-hidden">
         {!selectedProxy ? (
           <div className="p-4 text-sm text-c-slate-400">
@@ -457,7 +455,7 @@ export default function ProxyDashboard() {
               </div>
             </div>
 
-            {/* Renew Action */}
+            {}
             <div className="mt-auto pt-6">
               <Button
                 variant="default"

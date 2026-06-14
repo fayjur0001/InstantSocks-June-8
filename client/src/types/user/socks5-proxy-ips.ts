@@ -14,7 +14,7 @@ export interface Country {
 export interface ProxyItem {
   id: string;
   ip: string;
-  domain?: string;        // API তে সবসময় আসে না
+  domain?: string;        
   countryCode: string;
   country: string;
   state: string;
@@ -26,13 +26,13 @@ export interface ProxyItem {
   type: string;
   added: string;
   price: number;
-  originalPrice?: number; // markup আগের original price
-  // Sidebar detail fields
+  originalPrice?: number; 
+  
   org: string;
-  zone?: string;          // time_zone থেকে আসে, সবসময় থাকে না
-  dns?: string;           // sock_dns_ip থেকে আসে, সবসময় থাকে না
+  zone?: string;          
+  dns?: string;           
   blacklisted: boolean;
-  usage?: string;         // traffic_limit + traffic_price থেকে তৈরি, সবসময় থাকে না
+  usage?: string;         
   connectionString: string;
   udp?: boolean;
   rating?: number;

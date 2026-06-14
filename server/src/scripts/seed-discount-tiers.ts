@@ -1,12 +1,6 @@
-/**
- * seed-discount-tiers.ts
- *
- * One-time script — discount_tiers table-এ 5টা default tier insert করার জন্য।
- *
- * Run: ts-node -r tsconfig-paths/register src/scripts/seed-discount-tiers.ts
- *
- * Safe to re-run — already tier আছে এমন rows skip হবে (upsert)।
- */
+
+
+
 
 import "dotenv/config";
 import db from "@/db";
@@ -28,7 +22,7 @@ async function main() {
     await db
       .insert(DiscountTierModel)
       .values(row)
-      .onConflictDoNothing(); // tier column-এ unique constraint আছে — already থাকলে skip
+      .onConflictDoNothing(); 
 
     console.log(`  ✅ ${row.tier.padEnd(8)} | min: $${String(row.minSpend).padStart(6)} | max: ${row.maxSpend === null ? "   ∞" : "$" + String(row.maxSpend).padStart(5)} | discount: ${row.discount}%`);
   }

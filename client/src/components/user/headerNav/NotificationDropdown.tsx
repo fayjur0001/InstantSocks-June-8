@@ -1,4 +1,4 @@
-// PATH: client/src/components/user/headerNav/NotificationDropdown.tsx
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -103,7 +103,7 @@ const NotificationDropdown = () => {
         align="start"
         className="w-[340px] sm:w-[400px] p-0 bg-c-bg-750 border border-c-slate-800 rounded-[10px] shadow-2xl z-50 overflow-hidden font-sans"
       >
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-c-slate-800/60">
           <h2 className="text-xs font-bold text-white tracking-wide">Notification Centre</h2>
           <div className="flex items-center gap-1.5">
@@ -123,7 +123,7 @@ const NotificationDropdown = () => {
           </div>
         </div>
 
-        {/* List — last 10 */}
+        {}
         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
           {loading ? (
             <div className="py-5 text-center text-c-slate-500 text-[11px]">Loading…</div>

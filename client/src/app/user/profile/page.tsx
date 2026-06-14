@@ -1,4 +1,4 @@
-// app/(user)/profile/page.tsx
+
 
 "use client"
 
@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { profileService } from '@/lib/profile.service'
 
-// ─── Password & PIN validation rules ─────────────────────────────────────────
+
 
 const PASSWORD_RULES = [
   { label: "At least 8 characters",          test: (v: string) => v.length >= 8 },
@@ -67,7 +67,7 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
   }
 }
 
-// ─── 24h lockout helpers ──────────────────────────────────────────────────────
+
 const CHANGE_LOCKOUT_MS = 24 * 60 * 60 * 1000
 
 type SecurityChangeType = 'password' | 'pin' | null
@@ -77,7 +77,7 @@ interface SecurityLockState {
   changedAt: number
 }
 
-// userId per-user key — অন্য user এর lock এ প্রভাব পড়বে না
+
 const lockKey = (userId: string | number) => `profile_security_change:${userId}`
 
 function getLockState(userId: string | number): SecurityLockState | null {
@@ -107,9 +107,9 @@ function saveLockState(userId: string | number, type: SecurityChangeType) {
     JSON.stringify({ type, changedAt: Date.now() } satisfies SecurityLockState)
   )
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
-// ─── UserProfile interface ────────────────────────────────────────────────────
+
+
 interface UserProfile {
   username: string
   firstName: string
@@ -123,7 +123,7 @@ interface UserProfile {
   avatarUrl?: string
 }
 
-// ─── ProfileField ─────────────────────────────────────────────────────────────
+
 const ProfileField = ({
   id,
   label,
@@ -153,7 +153,7 @@ const ProfileField = ({
   </div>
 )
 
-// ─── InputWithVisibility ──────────────────────────────────────────────────────
+
 const InputWithVisibility = ({
   id,
   label,
@@ -197,7 +197,7 @@ const InputWithVisibility = ({
   )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+
 const UserManagement: NextPage = () => {
   const { refreshUser, user: authUser } = useAuth()
   const [user, setUser] = useState<UserProfile>({
@@ -212,25 +212,25 @@ const UserManagement: NextPage = () => {
     aboutBio: '',
   })
 
-  // Password fields
+  
   const [oldPassword, setOldPassword]           = useState('')
   const [newPassword, setNewPassword]           = useState('')
 
-  // PIN fields
+  
   const [oldSecretPin, setOldSecretPin]         = useState('')
   const [newSecretPin, setNewSecretPin]         = useState('')
   const [newPasswordTouched, setNewPasswordTouched] = useState(false)
   const [newPinTouched, setNewPinTouched]       = useState(false)
 
-  // 24h lockout state
+  
   const [lockState, setLockStateLocal] = useState<SecurityLockState | null>(null)
 
-  // Avatar upload
+  
   const fileInputRef                            = useRef<HTMLInputElement>(null)
   const [avatarPreview, setAvatarPreview]       = useState<string | undefined>(undefined)
   const [uploadingAvatar, setUploadingAvatar]   = useState(false)
 
-  // ── Bootstrap ───────────────────────────────────────────────────────────────
+  
   useEffect(() => {
     if (authUser?.id) setLockStateLocal(getLockState(authUser.id))
 
@@ -264,7 +264,7 @@ const UserManagement: NextPage = () => {
     setUser((prev) => ({ ...prev, [field]: value }))
   }
 
-  // ── Avatar upload ─────────────────────────────────────────────────────────
+  
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -287,7 +287,7 @@ const UserManagement: NextPage = () => {
     }
   }
 
-  // ── Profile update ────────────────────────────────────────────────────────
+  
   const handleProfileUpdate = async () => {
     try {
       const result = await profileService.updateProfile({
@@ -301,14 +301,14 @@ const UserManagement: NextPage = () => {
         bio:       user.aboutBio,
       })
       toast.success(result.message || 'Your profile information has been updated successfully.')
-      // ✅ FIX: header এ নাম/username সাথে সাথে update হবে — extra refresh দরকার নেই
+      
       await refreshUser()
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Profile update failed. Please try again.'))
     }
   }
 
-  // ── Password change ───────────────────────────────────────────────────────
+  
   const handlePasswordChange = async () => {
     setNewPasswordTouched(true)
     if (!oldPassword || !newPassword) {
@@ -321,7 +321,7 @@ const UserManagement: NextPage = () => {
       return
     }
 
-    // 24h lockout — pin was changed recently
+    
     if (lockState?.type === 'pin') {
       toast.error(
         `You recently changed your secret PIN. You can change your password again in ${remainingTime(lockState.changedAt)}.`
@@ -344,7 +344,7 @@ const UserManagement: NextPage = () => {
     }
   }
 
-  // ── PIN change ────────────────────────────────────────────────────────────
+  
   const handlePinChange = async () => {
     setNewPinTouched(true)
     if (!oldSecretPin || !newSecretPin) {
@@ -357,7 +357,7 @@ const UserManagement: NextPage = () => {
       return
     }
 
-    // 24h lockout — password was changed recently
+    
     if (lockState?.type === 'password') {
       toast.error(
         `You recently changed your password. You can change your secret PIN again in ${remainingTime(lockState.changedAt)}.`
@@ -386,7 +386,7 @@ const UserManagement: NextPage = () => {
         <title>User Management | Repsatsms</title>
       </Head>
 
-      {/* Hidden file input for avatar upload */}
+      {}
       <input
         ref={fileInputRef}
         type="file"
@@ -397,7 +397,7 @@ const UserManagement: NextPage = () => {
 
       <div className="rounded-[12px] bg-zinc-950 text-white p-2 lg:p-4">
         <div>
-          {/* Header */}
+          {}
           <header className="flex items-center justify-between pb-4 mb-4 border-b border-c-zinc-800">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-c-zinc-900 border border-c-zinc-800">
@@ -414,12 +414,12 @@ const UserManagement: NextPage = () => {
             </div>
           </header>
 
-          {/* Main Content */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-6">
-            {/* Left: Profile, Contact, About */}
+            {}
             <div className="md:col-span-2 space-y-4 xl:space-y-6">
 
-              {/* Profile Information */}
+              {}
               <Card className="bg-c-zinc-900 border-c-zinc-800 py-3 xl:py-4 gap-2">
                 <CardHeader className="px-3 xl:px-4">
                   <CardTitle className="text-lg xl:text-xl text-white">Profile Information</CardTitle>
@@ -436,7 +436,7 @@ const UserManagement: NextPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Contact Information */}
+              {}
               <Card className="bg-c-zinc-900 border-c-zinc-800 py-3 xl:py-4 gap-2">
                 <CardHeader className="px-3 xl:px-4">
                   <CardTitle className="text-lg xl:text-xl text-white">Contact Information</CardTitle>
@@ -453,7 +453,7 @@ const UserManagement: NextPage = () => {
                 </CardContent>
               </Card>
 
-              {/* About / Bio */}
+              {}
               <Card className="bg-c-zinc-900 border-c-zinc-800 py-3 xl:py-4 gap-2">
                 <CardHeader className="px-3 xl:px-4">
                   <CardTitle className="text-lg xl:text-xl text-white">About / Bio</CardTitle>
@@ -479,7 +479,7 @@ const UserManagement: NextPage = () => {
               </div>
             </div>
 
-            {/* Right Panel: Account Management */}
+            {}
             <div className="space-y-4 xl:space-y-6">
               <Card className="bg-c-zinc-900 border-c-zinc-800 py-3 xl:py-4">
                 <CardHeader>
@@ -487,7 +487,7 @@ const UserManagement: NextPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-3 xl:space-y-4 px-3 xl:px-4">
 
-                  {/* Avatar Section */}
+                  {}
                   <div className="flex flex-col items-center gap-4 text-center">
                     <Avatar className="w-28 h-28 border-4 border-c-zinc-700 bg-c-zinc-800 rounded-lg">
                       <AvatarImage src={avatarPreview} alt={user.firstName} />
@@ -512,7 +512,7 @@ const UserManagement: NextPage = () => {
 
                   <Separator className="bg-c-zinc-800" />
 
-                  {/* Change Password */}
+                  {}
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-c-zinc-400 mb-2">Change Password</h4>
                     {lockState?.type === 'pin' ? (
@@ -541,7 +541,7 @@ const UserManagement: NextPage = () => {
 
                   <Separator className="bg-c-zinc-800" />
 
-                  {/* Change Secret PIN */}
+                  {}
                   <div className="space-y-1">
                     <h4 className="text-sm font-medium text-c-zinc-400 mb-2">Change Secret PIN</h4>
                     {lockState?.type === 'password' ? (

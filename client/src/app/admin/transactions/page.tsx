@@ -20,18 +20,18 @@ import { AddBalanceModal } from "@/components/modals/AddBalanceModal";
 import TransactionsTable from "@/components/admin/pages/transactions/TransactionsTable";
 
 export default function TransactionsDashboard() {
-  // Bug 1 Fix: আলাদা আলাদা state — একটা input পরিবর্তন করলে অন্যটা change হবে না
+  
   const [txIdInput, setTxIdInput] = useState("");
   const [usernameInput, setUsernameInput] = useState("");
 
-  // Bug 2 Fix: wallet filter-এর জন্য state
+  
   const [walletFilter, setWalletFilter] = useState("all");
 
-  // Bug 3 Fix: dateRange state আগেই ছিল, এখন props-এ পাস হবে
+  
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Bug 6 Fix: Search button click-এ active filters set হবে
+  
   const [activeTxId, setActiveTxId] = useState("");
   const [activeUsername, setActiveUsername] = useState("");
   const [activeWallet, setActiveWallet] = useState("all");
@@ -78,7 +78,7 @@ export default function TransactionsDashboard() {
       />
 
       <Tabs defaultValue="transactions" className="w-full">
-        {/* Header Navigation & New Button */}
+        {}
         <div className="flex flex-wrap gap-6 flex-wrap justify-between items-center mb-4">
           <TabsList className="bg-transparent h-auto p-0 flex flex-wrap gap-2.5 justify-start border-none">
             <TabsTrigger value="all" className={tabTriggerClass}>
@@ -100,12 +100,12 @@ export default function TransactionsDashboard() {
           </Button>
         </div>
 
-        {/* Filter Bar */}
+        {}
         <div className="bg-c-bg-700 border border-c-slate-800 rounded-xl p-5 shadow-sm mb-6">
           <div className="flex flex-col space-y-4">
-            {/* Top Row: Inputs & Selects */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Bug 1 Fix: আলাদা value ও onChange */}
+              {}
               <Input
                 placeholder="TXID"
                 value={txIdInput}
@@ -120,7 +120,7 @@ export default function TransactionsDashboard() {
                 className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 placeholder:text-c-slate-500 focus-visible:ring-c-emerald-500/50"
               />
 
-              {/* Bug 2 Fix: walletFilter state-এ bind করা */}
+              {}
               <Select value={walletFilter} onValueChange={setWalletFilter}>
                 <SelectTrigger className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 w-full focus:ring-c-emerald-500/50">
                   <SelectValue placeholder="Wallet Name/All" />
@@ -169,7 +169,7 @@ export default function TransactionsDashboard() {
                     selected={dateRange}
                     onSelect={(range) => {
                       setDateRange(range);
-                      // to date select হলে calendar বন্ধ করো
+                      
                       if (range?.to) setCalendarOpen(false);
                     }}
                     numberOfMonths={2}
@@ -179,7 +179,7 @@ export default function TransactionsDashboard() {
               </Popover>
             </div>
 
-            {/* Bottom Row: Action Buttons */}
+            {}
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button
                 className="bg-c-emerald-500 hover:bg-c-emerald-600 text-white px-6 shadow-sm"
@@ -200,7 +200,7 @@ export default function TransactionsDashboard() {
           </div>
         </div>
 
-        {/* Main Content Area */}
+        {}
         <div className="bg-c-bg-700 rounded-xl border border-c-slate-800 p-0 overflow-hidden">
           <TabsContent value="all" className="mt-0 outline-none">
             <TransactionsTable

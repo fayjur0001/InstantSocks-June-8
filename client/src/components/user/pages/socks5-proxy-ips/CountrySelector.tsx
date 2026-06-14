@@ -2,12 +2,12 @@ import { Country, FilterState } from "@/types/user/socks5-proxy-ips";
 import React from "react";
 
 interface CountryProps {
-    regionCountries: Country[]; // Changed from any[]
+    regionCountries: Country[]; 
     setActiveCountry: (country: string) => void;
-    setFilters: (filters: FilterState) => void; // Changed from any
-    setPage: React.Dispatch<React.SetStateAction<number>>; // Changed from (page: number) => void
+    setFilters: (filters: FilterState) => void; 
+    setPage: React.Dispatch<React.SetStateAction<number>>; 
     activeCountry: string;
-    EMPTY_FILTERS: FilterState; // Changed from any
+    EMPTY_FILTERS: FilterState; 
 }
 
 function CountrySelector({ regionCountries, setActiveCountry, setFilters, setPage, activeCountry, EMPTY_FILTERS }: CountryProps) {

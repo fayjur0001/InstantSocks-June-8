@@ -27,7 +27,7 @@ const ReusablePagination: React.FC<ReusablePaginationProps> = ({
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   if (totalPages <= 1) return null;
 
-  /** Generate visible page numbers */
+  
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
     const half = Math.floor(maxVisiblePages / 2);
@@ -60,7 +60,7 @@ const ReusablePagination: React.FC<ReusablePaginationProps> = ({
   return (
     <Pagination className="mt-full justify-end">
       <PaginationContent className="flex-wrap justify-between w-full">
-        {/* Previous Button */}
+        {}
         <PaginationItem>
           <PaginationPrevious
             onClick={() => onPageChange(currentPage - 1)}
@@ -70,7 +70,7 @@ const ReusablePagination: React.FC<ReusablePaginationProps> = ({
           />
         </PaginationItem>
         <div className="flex flex-wrap sm:flex-nowrap gap-0.5">
-          {/* Page Numbers */}
+          {}
           {pageNumbers.map((page, index) => (
             <PaginationItem className="" key={index}>
               {typeof page === "number" ? (
@@ -88,7 +88,7 @@ const ReusablePagination: React.FC<ReusablePaginationProps> = ({
           ))}
         </div>
 
-        {/* Next Button */}
+        {}
         <PaginationItem>
           <PaginationNext
             onClick={() => onPageChange(currentPage + 1)}

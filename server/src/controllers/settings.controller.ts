@@ -1,7 +1,8 @@
+import pusher from "@/utils/pusher";
 import { Request, Response } from "express";
 import SiteOptions from "@/utils/site-options";
 
-// PUBLIC — GET /api/site-status  (no auth required)
+
 export async function getSiteStatus(req: Request, res: Response) {
   try {
     const [siteMode, maintenanceText, maintenanceEnd] = await Promise.all([
@@ -16,12 +17,12 @@ export async function getSiteStatus(req: Request, res: Response) {
       maintenanceEnd: maintenanceEnd || null,
     });
   } catch (e) {
-    // DB down হলে lock-out করবো না
+    
     res.json({ success: true, maintenance: false, message: "", maintenanceEnd: null });
   }
 }
 
-// PUBLIC — GET /api/public/content  (auth required — logged-in user হলেই দেখাবে)
+
 export async function getPublicContent(req: Request, res: Response) {
   try {
     const [notice, rules, termsAndConditions, privacyPolicy] = await Promise.all([
@@ -37,15 +38,15 @@ export async function getPublicContent(req: Request, res: Response) {
   }
 }
 
-// D1 — GET /api/admin/settings
+
 export async function getSettings(req: Request, res: Response) {
   try {
     const [
       hostUrl, siteMode, notice, maintenanceText, siteLogo, maintenanceEnd,
       rules, termsAndConditions, privacyPolicy,
-      // authInfo
+      
       authCopyrightText, authSignInText, authSignUpText, authPasswordResetText, authHomeUrl,
-      // topUp
+      
       topUpCryptoText, topUpBlankCurrencyText, topUpGeneratedCurrencyText, topUpCautionText, topUpPopUpText,
     ] = await Promise.all([
       SiteOptions.hostUrl.get(),
@@ -57,13 +58,13 @@ export async function getSettings(req: Request, res: Response) {
       SiteOptions.rules.get(),
       SiteOptions.termsAndConditions.get(),
       SiteOptions.privacyPolicy.get(),
-      // authInfo
+      
       SiteOptions.authInfo.copyrightText.get(),
       SiteOptions.authInfo.signInText.get(),
       SiteOptions.authInfo.signUpText.get(),
       SiteOptions.authInfo.passwordResetText.get(),
       SiteOptions.authInfo.homeUrl.get(),
-      // topUp
+      
       SiteOptions.topUp.cryptoText.get(),
       SiteOptions.topUp.blankCurrencyText.get(),
       SiteOptions.topUp.generatedCurrencyText.get(),
@@ -97,7 +98,7 @@ export async function getSettings(req: Request, res: Response) {
   }
 }
 
-// D1 — PUT /api/admin/settings
+
 export async function updateSettings(req: Request, res: Response) {
   try {
     const {
@@ -106,18 +107,18 @@ export async function updateSettings(req: Request, res: Response) {
       authInfo, topUp,
     } = req.body;
 
-    // siteLogo validation — base64 data URL অথবা null/empty
+    
     if (siteLogo !== undefined && siteLogo !== null && siteLogo !== "") {
       if (!/^data:image\/(jpeg|png|webp|gif|svg\+xml);base64,/.test(siteLogo)) {
         return res.status(400).json({ success: false, message: "Invalid logo format. Must be a base64 image." });
       }
-      // ~2MB limit (base64 ~1.37x overhead)
+      
       if (siteLogo.length > 3_000_000) {
         return res.status(400).json({ success: false, message: "Logo too large. Maximum size is ~2MB." });
       }
     }
 
-    // maintenanceEnd validation — ISO timestamp অথবা empty
+    
     if (maintenanceEnd !== undefined && maintenanceEnd !== null && maintenanceEnd !== "") {
       if (isNaN(Date.parse(maintenanceEnd))) {
         return res.status(400).json({ success: false, message: "Invalid maintenanceEnd format. Must be ISO timestamp." });
@@ -134,19 +135,23 @@ export async function updateSettings(req: Request, res: Response) {
       rules !== undefined && SiteOptions.rules.set(rules),
       termsAndConditions !== undefined && SiteOptions.termsAndConditions.set(termsAndConditions),
       privacyPolicy !== undefined && SiteOptions.privacyPolicy.set(privacyPolicy),
-      // authInfo
+      
       authInfo?.copyrightText !== undefined && SiteOptions.authInfo.copyrightText.set(authInfo.copyrightText),
       authInfo?.signInText !== undefined && SiteOptions.authInfo.signInText.set(authInfo.signInText),
       authInfo?.signUpText !== undefined && SiteOptions.authInfo.signUpText.set(authInfo.signUpText),
       authInfo?.passwordResetText !== undefined && SiteOptions.authInfo.passwordResetText.set(authInfo.passwordResetText),
       authInfo?.homeUrl !== undefined && SiteOptions.authInfo.homeUrl.set(authInfo.homeUrl),
-      // topUp
+      
       topUp?.cryptoText !== undefined && SiteOptions.topUp.cryptoText.set(topUp.cryptoText),
       topUp?.blankCurrencyText !== undefined && SiteOptions.topUp.blankCurrencyText.set(topUp.blankCurrencyText),
       topUp?.generatedCurrencyText !== undefined && SiteOptions.topUp.generatedCurrencyText.set(topUp.generatedCurrencyText),
       topUp?.cautionText !== undefined && SiteOptions.topUp.cautionText.set(topUp.cautionText),
       topUp?.popUpText !== undefined && SiteOptions.topUp.popUpText.set(topUp.popUpText),
     ]);
+
+    
+    await pusher({ page: "topup-settings", payload: { action: "new" } });
+
     res.json({ success: true, message: "Settings updated" });
   } catch (e) {
     console.error("UPDATE SETTINGS ERROR:", e);
@@ -154,7 +159,7 @@ export async function updateSettings(req: Request, res: Response) {
   }
 }
 
-// D2 — GET /api/admin/payment-api
+
 export async function getPaymentApi(req: Request, res: Response) {
   try {
     const [
@@ -186,7 +191,7 @@ export async function getPaymentApi(req: Request, res: Response) {
   }
 }
 
-// D2 — PUT /api/admin/payment-api
+
 export async function updatePaymentApi(req: Request, res: Response) {
   try {
     const { nowPayments, yaanPay, blockonomics, currentMethod } = req.body;
@@ -206,7 +211,7 @@ export async function updatePaymentApi(req: Request, res: Response) {
   }
 }
 
-// D3 — GET /api/admin/products-api
+
 export async function getProductsApi(req: Request, res: Response) {
   try {
     const [apiUser, apiKey, socks5ApiKey] = await Promise.all([
@@ -221,7 +226,7 @@ export async function getProductsApi(req: Request, res: Response) {
   }
 }
 
-// D3 — PUT /api/admin/products-api
+
 export async function updateProductsApi(req: Request, res: Response) {
   try {
     const { numbersApi, socks5Api } = req.body;
@@ -237,7 +242,7 @@ export async function updateProductsApi(req: Request, res: Response) {
   }
 }
 
-// D4 — GET /api/admin/pricing
+
 export async function getPricing(req: Request, res: Response) {
   try {
     const tc = SiteOptions.transactionCut;
@@ -252,7 +257,7 @@ export async function getPricing(req: Request, res: Response) {
   }
 }
 
-// D4 — PUT /api/admin/pricing
+
 export async function updatePricing(req: Request, res: Response) {
   try {
     const { oneTime, longTerm, socks5Proxy } = req.body;
@@ -269,7 +274,7 @@ export async function updatePricing(req: Request, res: Response) {
     res.status(500).json({ success: false, message: "Internal server error." });
   }
 }
-// D5 — GET /api/admin/callback
+
 export async function getCallback(req: Request, res: Response) {
   try {
     const [secret, hostUrl] = await Promise.all([
@@ -289,7 +294,7 @@ export async function getCallback(req: Request, res: Response) {
   }
 }
 
-// D5 — PUT /api/admin/callback
+
 export async function updateCallback(req: Request, res: Response) {
   try {
     const { secret } = req.body;
@@ -303,7 +308,7 @@ export async function updateCallback(req: Request, res: Response) {
   }
 }
 
-// PUBLIC — GET /api/auth-info  (no auth — used by login/register/etc pages)
+
 export async function getAuthInfo(req: Request, res: Response) {
   try {
     const [copyrightText, signInText, signUpText, passwordResetText, homeUrl, siteLogo] = await Promise.all([
@@ -324,12 +329,40 @@ export async function getAuthInfo(req: Request, res: Response) {
   }
 }
 
-// PUBLIC — GET /api/site-info
+
 export async function getSiteInfo(req: Request, res: Response) {
   try {
-    const hostUrl = await SiteOptions.hostUrl.get();
-    res.json({ success: true, hostUrl: hostUrl || "https://instantsocks.com" });
+    const [hostUrl, siteLogo] = await Promise.all([
+      SiteOptions.hostUrl.get(),
+      SiteOptions.siteLogo.get(),
+    ]);
+    res.json({
+      success: true,
+      hostUrl: hostUrl || "https://instantsocks.com",
+      siteLogo: siteLogo || "",
+    });
   } catch {
-    res.json({ success: true, hostUrl: "https://instantsocks.com" });
+    res.json({ success: true, hostUrl: "https://instantsocks.com", siteLogo: "" });
+  }
+}
+
+
+export async function getPublicTopUpSettings(req: Request, res: Response) {
+  try {
+    const [cryptoText, blankCurrencyText, generatedCurrencyText, cautionText, popUpText] =
+      await Promise.all([
+        SiteOptions.topUp.cryptoText.get(),
+        SiteOptions.topUp.blankCurrencyText.get(),
+        SiteOptions.topUp.generatedCurrencyText.get(),
+        SiteOptions.topUp.cautionText.get(),
+        SiteOptions.topUp.popUpText.get(),
+      ]);
+    res.json({
+      success: true,
+      data: { cryptoText, blankCurrencyText, generatedCurrencyText, cautionText, popUpText },
+    });
+  } catch (e) {
+    console.error("GET PUBLIC TOPUP SETTINGS ERROR:", e);
+    res.status(500).json({ success: false, message: "Internal server error." });
   }
 }

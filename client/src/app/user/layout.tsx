@@ -8,7 +8,7 @@ import HeaderNav from "@/components/user/headerNav/HeaderNav";
 import { WrenchIcon } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
-// ─── Countdown helpers ────────────────────────────────────────────────────────
+
 
 function calcTimeLeft(endIso: string | null): { h: number; m: number; s: number } | null {
   if (!endIso) return null;
@@ -21,15 +21,14 @@ function calcTimeLeft(endIso: string | null): { h: number; m: number; s: number 
   };
 }
 
-// calc function টা component এর বাইরে থাকায় stale closure সমস্যা নেই।
-// endIso change হলে useEffect restart হয় এবং setInterval নতুন করে চালু হয়।
+
 function useCountdown(endIso: string | null) {
   const [time, setTime] = useState<{ h: number; m: number; s: number } | null>(
     () => calcTimeLeft(endIso)
   );
 
   useEffect(() => {
-    // endIso change হলে immediately নতুন value দাও
+    
     setTime(calcTimeLeft(endIso));
 
     if (!endIso) return;
@@ -37,7 +36,7 @@ function useCountdown(endIso: string | null) {
     const id = setInterval(() => {
       const next = calcTimeLeft(endIso);
       setTime(next);
-      if (!next) clearInterval(id); // time শেষ হলে interval বন্ধ করো
+      if (!next) clearInterval(id); 
     }, 1000);
 
     return () => clearInterval(id);
@@ -46,7 +45,7 @@ function useCountdown(endIso: string | null) {
   return time;
 }
 
-// ─── Maintenance Wall ─────────────────────────────────────────────────────────
+
 function MaintenanceWall({ message, endIso }: { message: string; endIso: string | null }) {
   const time = useCountdown(endIso);
 
@@ -64,7 +63,7 @@ function MaintenanceWall({ message, endIso }: { message: string; endIso: string 
           {message || "We're performing scheduled maintenance to improve your experience. Please check back shortly."}
         </p>
 
-        {/* Countdown timer — শুধু endIso থাকলে এবং time শেষ না হলে দেখাবে */}
+        {}
         {time && (
           <div className="flex items-center justify-center gap-3 mb-8">
             {[
@@ -110,7 +109,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     endIso: null,
   });
 
-  // ✅ Maintenance check — admin/super admin bypass
+  
   useEffect(() => {
     if (loading || !user) return;
     if (user.role === "admin" || user.role === "super admin") return;
@@ -125,25 +124,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           });
         }
       })
-      .catch(() => {/* network error — don't block */});
+      .catch(() => {});
   }, [user, loading]);
 
   useEffect(() => {
     if (loading) return;
     if (redirected.current) return;
 
-    // Login নেই
+    
     if (!user) {
       redirected.current = true;
       router.replace("/login");
       return;
     }
 
-    // ✅ FIX: shadow admin session এ banned check skip —
-    // admin banned user এ login as করলে layout থেকে logout হওয়া উচিত না
+    
+    
     if (user.isShadowAdmin) return;
 
-    // ✅ Permanently banned
+    
     if (user.banned) {
       redirected.current = true;
       logout();
@@ -151,7 +150,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // ✅ Suspended
+    
     if (user.bannedTill && new Date(user.bannedTill) > new Date()) {
       redirected.current = true;
       logout();
@@ -160,13 +159,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, router, logout]);
 
-  // Banned/suspended হলে কিছু render করবে না
-  // ✅ FIX: shadow admin session এ banned check skip — admin banned user এ login as করলে render হবে
-  // ✅ FIX: loading=true তে null না দিয়ে skeleton দাও — white page বন্ধ হবে
+  
+  
+  
   if (loading) {
     return (
       <div className="bg-black min-h-screen">
-        {/* Header skeleton */}
+        {}
         <div className="sticky top-0 z-50 flex justify-between h-17 shrink-0 items-center gap-2 border-b border-white/10 bg-black px-4">
           <div className="h-7 w-32 rounded bg-white/5 animate-pulse" />
           <div className="flex items-center gap-4">
@@ -180,7 +179,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (!user?.isShadowAdmin && user?.banned) return null;
   if (!user?.isShadowAdmin && user?.bannedTill && new Date(user.bannedTill) > new Date()) return null;
 
-  // ✅ Maintenance active হলে wall দেখাও
+  
   if (maintenance.active) {
     return <MaintenanceWall message={maintenance.message} endIso={maintenance.endIso} />;
   }

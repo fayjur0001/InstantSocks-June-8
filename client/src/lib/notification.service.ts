@@ -1,13 +1,13 @@
 import { apiFetch } from "@/lib/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 
 export type NotificationFilter = "all" | "today" | "week" | "earlier";
 
 export interface Notification {
   id: number;
   userId: number;
-  type: string;          // "proxy_rent" | "topup_approved" | "system"
+  type: string;          
   title: string;
   message: string;
   isRead: boolean;
@@ -23,24 +23,24 @@ export interface MarkAllReadResponse {
   success: boolean;
 }
 
-// ─── Service ─────────────────────────────────────────────────────────────────
+
 
 export const notificationService = {
-  /**
-   * GET /api/notifications?filter=all|today|week|earlier
-   */
+  
+
+
   getNotifications: (filter: NotificationFilter = "all"): Promise<GetNotificationsResponse> =>
     apiFetch(`/api/notifications?filter=${filter}`),
 
-  /**
-   * PATCH /api/notifications/read — mark all as read
-   */
+  
+
+
   markAllRead: (): Promise<MarkAllReadResponse> =>
     apiFetch("/api/notifications/read", { method: "PATCH" }),
 
-  /**
-   * PATCH /api/notifications/:id/read — mark one as read
-   */
+  
+
+
   markOneRead: (id: number): Promise<MarkAllReadResponse> =>
     apiFetch(`/api/notifications/${id}/read`, { method: "PATCH" }),
 };

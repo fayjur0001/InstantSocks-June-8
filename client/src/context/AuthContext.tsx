@@ -1,4 +1,4 @@
-// src/context/AuthContext.tsx
+
 
 "use client";
 
@@ -13,7 +13,7 @@ import { authApi, apiFetch, type LoginResponse } from "@/lib/api";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 
 export interface AuthUser {
   id: string;
@@ -57,11 +57,11 @@ interface AuthContextValue extends AuthState {
   refreshNotifications: () => Promise<void>;
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ─── Helper: site-info fetch ──────────────────────────────────────────────────
+
 
 async function fetchHostUrl(): Promise<string> {
   try {
@@ -74,7 +74,7 @@ async function fetchHostUrl(): Promise<string> {
   }
 }
 
-// ─── Helper: fetch all auth data at once ─────────────────────────────────────
+
 
 async function fetchAllAuthData(): Promise<Omit<AuthState, "loading">> {
   const [meData, balanceData, notifData, hostUrlData] = await Promise.allSettled([
@@ -104,14 +104,14 @@ async function fetchAllAuthData(): Promise<Omit<AuthState, "loading">> {
   };
 }
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
+
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     balance: 0,
     notificationsCount: 0,
-    hostUrl: "",      // ← add
+    hostUrl: "",      
     loading: true,
   });
 
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
-  // Bootstrap on mount
+  
   useEffect(() => {
     (async () => {
       setState((prev) => ({ ...prev, loading: true }));
@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+
 
 export function useAuth() {
   const ctx = useContext(AuthContext);

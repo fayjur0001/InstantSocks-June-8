@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Instant Socks Polished",
+  title: "InstantSocks",
   description: "A Proxy Service for Instant Socks",
 };
 

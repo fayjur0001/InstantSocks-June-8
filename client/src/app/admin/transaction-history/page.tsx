@@ -29,12 +29,12 @@ export interface TransactionHistoryData {
   totalCost: string;
 }
 
-// Helper: "yyyy-MM-dd" string → Date (avoids timezone shift from new Date(str))
+
 const toDate = (str: string) => parseISO(str);
-// Helper: Date → "yyyy-MM-dd" string
+
 const toStr = (d: Date) => format(d, "yyyy-MM-dd");
 
-// Maps user-scoped TopupTransaction (no manuallyUploaded field)
+
 function mapToHistoryRow(tx: TopupTransaction, idx: number): TransactionHistoryData {
   const dateStr = format(new Date(tx.date), "yyyy-MM-dd");
   const isDeposit = tx.status === "approved";
@@ -69,7 +69,7 @@ const TransactionHistoryTable = ({ searchQuery }: { searchQuery?: string }) => {
   const [fromOpen, setFromOpen] = useState(false);
   const [toOpen, setToOpen] = useState(false);
 
-  // topupApi.getTransactions() → /api/topup/transactions → শুধু admin নিজের transactions
+  
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -212,14 +212,14 @@ const TransactionHistoryTable = ({ searchQuery }: { searchQuery?: string }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── Header ── */}
+      {}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-c-emerald-400 font-semibold text-base">
           Transaction History
         </h2>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* From date picker */}
+          {}
           <span className="text-c-slate-400 text-sm">From</span>
           <Popover open={fromOpen} onOpenChange={setFromOpen}>
             <PopoverTrigger asChild>
@@ -249,7 +249,7 @@ const TransactionHistoryTable = ({ searchQuery }: { searchQuery?: string }) => {
             </PopoverContent>
           </Popover>
 
-          {/* To date picker */}
+          {}
           <span className="text-c-slate-400 text-sm">To</span>
           <Popover open={toOpen} onOpenChange={setToOpen}>
             <PopoverTrigger asChild>
@@ -295,7 +295,7 @@ const TransactionHistoryTable = ({ searchQuery }: { searchQuery?: string }) => {
         </div>
       )}
 
-      {/* ── Table ── */}
+      {}
       {!loading && (
         <ReusableTable
           columns={columns}

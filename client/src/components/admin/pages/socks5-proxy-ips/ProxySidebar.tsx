@@ -53,12 +53,12 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
           form.setValue("password", res.auth.password);
         }
       } catch {
-        // silent
+        
       } finally {
         setAuthLoading(false);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, []);
 
   const onSave = async (data: Socks5Values) => {
@@ -87,7 +87,7 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
   return (
     <div className="flex flex-col h-full bg-c-bg-900 border-l border-c-slate-800/60 text-[13px]">
 
-      {/* Cart header */}
+      {}
       <div className="px-4 pt-2 pb-2 border-b border-c-slate-800/60">
         <button
           onClick={onShowCart}
@@ -123,7 +123,7 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
       ) : (
         <div className="flex-1 overflow-y-auto">
 
-          {/* Info block */}
+          {}
           <div className="p-4 border-b border-c-slate-800/60">
             <p className="text-[10px] text-c-emerald-500 uppercase tracking-[0.1em] font-bold mb-2">
               Info
@@ -164,7 +164,7 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
                   </p>
                 )}
                 {proxy.rating !== undefined && (() => {
-                  // clamp + round: API range unclear (1-5 or 0-10), float values possible
+                  
                   const MAX_STARS = 5;
                   const displayRating = Math.min(MAX_STARS, Math.round(Number(proxy.rating)));
                   return (
@@ -202,7 +202,7 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
             </div>
           </div>
 
-          {/* Connection string */}
+          {}
           <div className="p-4 border-b border-c-slate-800/60 bg-emerald-950/5">
             <div className="flex items-center gap-1.5 mb-1">
               <ShoppingCart size={11} className="text-c-slate-500" />
@@ -216,7 +216,7 @@ function ProxySidebar({ proxy, cartCount, onShowCart }: ProxySidebarProps) {
             </div>
           </div>
 
-          {/* Socks5 Auth Form */}
+          {}
           <div className="p-4">
             <p className="text-[10px] text-c-emerald-500 uppercase tracking-[0.1em] font-bold mb-2">
               Socks5 Auth

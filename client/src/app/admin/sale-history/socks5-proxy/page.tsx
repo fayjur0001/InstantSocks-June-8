@@ -7,11 +7,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-// ✅ FIX Bug 1: dummy data সরিয়ে real API import করা হয়েছে
+
 import { adminProxyApi, type RentalItem } from "@/lib/proxy.service";
 import { toast } from "sonner";
 
-// ─── Display type ─────────────────────────────────────────────────────────────
+
 interface ProxyDisplay {
   id: string;
   ip: string;
@@ -29,8 +29,7 @@ interface ProxyDisplay {
   connectionString: string;
 }
 
-// ✅ FIX Bug 1: RentalItem → ProxyDisplay mapper
-//    server থেকে আসা data-তে user field আছে (adminGetAllProxies এ join করা)
+
 function toDisplay(r: RentalItem): ProxyDisplay {
   const createdAt = new Date(r.createdAt);
   const expiresAt = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -99,9 +98,7 @@ const FilterHeaderInput = ({
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PAGE
-// ═══════════════════════════════════════════════════════════════════════════════
+
 
 export default function AdminSaleHistory() {
   const [page, setPage] = useState(1);
@@ -120,8 +117,8 @@ export default function AdminSaleHistory() {
     setPage(1);
   }, []);
 
-  // ✅ FIX Bug 1: mockProxyData সরিয়ে adminProxyApi.getAllRentals() দিয়ে
-  //    সব user-এর real proxy purchase history load করা হচ্ছে
+  
+  
   const fetchRentals = useCallback(async (p: number) => {
     setLoading(true);
     try {
@@ -249,7 +246,7 @@ export default function AdminSaleHistory() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 p-4 bg-black rounded-[16px] min-h-[80dvh] text-c-slate-300">
 
-      {/* LEFT: Table */}
+      {}
       <div className="flex-1 min-w-0 overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-20 gap-2 text-c-slate-400">
@@ -285,7 +282,7 @@ export default function AdminSaleHistory() {
         )}
       </div>
 
-      {/* RIGHT: Detail Sidebar */}
+      {}
       <div className="w-full lg:w-[250px] shrink-0 bg-c-bg-750 border border-c-slate-800 rounded-xl flex flex-col overflow-hidden">
         {!selectedProxy ? (
           <div className="p-4 text-sm text-c-slate-400">Click a row to view details.</div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { usePusherChannel } from "@/hooks/usePusherChannel";
 import { ReusableTable } from "@/components/tables/ReusableTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,11 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { ColumnDef } from "@tanstack/react-table";
-import { Copy } from "lucide-react";
+import { Copy, X, Sparkles } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import WalletModal from "@/components/modals/WalletModal";
 import { topupApi } from "@/lib/topup.service";
+import { publicTopUpApi, PublicTopUpSettings } from "@/lib/api";
 
 type UiStatus = "Completed" | "Awaiting" | "Cancelled";
 
@@ -36,6 +38,94 @@ interface TableRow {
     status: UiStatus;
 }
 
+function renderInline(text: string): React.ReactNode[] {
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+    return parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**"))
+            return <strong key={i} className="text-white font-semibold">{part.slice(2, -2)}</strong>;
+        if (part.startsWith("*") && part.endsWith("*"))
+            return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+        if (part.startsWith("`") && part.endsWith("`"))
+            return <code key={i} className="text-green text-xs bg-green/10 px-1 rounded">{part.slice(1, -1)}</code>;
+        return part;
+    });
+}
+
+function renderMarkdown(text: string): React.ReactNode[] {
+    const lines = text.split("\n").filter((l) => l.trim());
+    return lines.map((line, i) => {
+        if (line.startsWith("## "))
+            return <h2 key={i} className="text-xl font-bold text-white leading-snug">{renderInline(line.replace(/^##\s*/, ""))}</h2>;
+        if (line.startsWith("# "))
+            return <h1 key={i} className="text-2xl font-bold text-white leading-snug">{renderInline(line.replace(/^#\s*/, ""))}</h1>;
+        return <p key={i} className="text-sm text-c-slate-400 leading-relaxed">{renderInline(line)}</p>;
+    });
+}
+
+// ── Size map: admin যে size পাঠাবে সেই অনুযায়ী modal-এর width ও maxHeight ─────
+const sizeMap: Record<string, { width: string; maxHeight: string }> = {
+    sm:   { width: "max-w-sm",  maxHeight: "max-h-[300px]" },
+    md:   { width: "max-w-md",  maxHeight: "max-h-[420px]" },
+    lg:   { width: "max-w-lg",  maxHeight: "max-h-[560px]" },
+    xl:   { width: "max-w-xl",  maxHeight: "max-h-[680px]" },
+    "2xl":{ width: "max-w-2xl", maxHeight: "max-h-[780px]" },
+    full: { width: "max-w-3xl", maxHeight: "max-h-[90vh]"  },
+};
+
+// ── Deposit Popup Banner (centered modal) ─────────────────────────────────────
+function DepositPopupBanner({
+    popUpText,
+    popUpSize = "md",
+    onClose,
+}: {
+    popUpText: string;
+    popUpSize?: string;
+    onClose: () => void;
+}) {
+    const size = sizeMap[popUpSize] ?? sizeMap["md"];
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                className={`relative w-full ${size.width} mx-4 rounded-2xl border border-green/30 bg-c-bg-700 shadow-2xl shadow-black/50 overflow-hidden`}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Top glow bar */}
+                <div className="h-1 w-full bg-gradient-to-r from-green/0 via-green to-green/0" />
+
+                {/* Glow blob */}
+                <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-64 h-32 rounded-full bg-green/20 blur-3xl" />
+
+                {/* Content — scrollable যদি content বেশি হয় */}
+                <div className={`relative px-8 py-8 flex flex-col items-center text-center gap-4 overflow-y-auto ${size.maxHeight}`}>
+                    {/* Icon */}
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green/15 border border-green/30">
+                        <Sparkles className="w-7 h-7 text-green" />
+                    </div>
+
+                    {/* Markdown rendered content */}
+                    <div className="flex flex-col items-center gap-2 w-full">
+                        {renderMarkdown(popUpText)}
+                    </div>
+                </div>
+
+                {/* Close X */}
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-c-slate-500 hover:text-white transition-colors"
+                    aria-label="Close"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function BillingPage() {
     const [selectedCoin, setSelectedCoin] = useState("");
     const [cryptoAmount, setCryptoAmount] = useState("");
@@ -49,8 +139,25 @@ export default function BillingPage() {
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [selectedTag, setSelectedTag] = useState("all");
+    const [topUpSettings, setTopUpSettings] = useState<PublicTopUpSettings | null>(null);
+    const [showBanner, setShowBanner] = useState(false);
 
-    // Uses topupApi (user-scoped) — returns only the logged-in admin's own deposits
+    const loadTopUpSettings = useCallback(() => {
+        publicTopUpApi.getSettings()
+            .then(({ data }) => {
+                setTopUpSettings(data);
+                if (data.popUpText?.trim()) setShowBanner(true);
+            })
+            .catch((err) => console.error("Failed to load topup settings:", err));
+    }, []);
+
+    useEffect(() => { loadTopUpSettings(); }, [loadTopUpSettings]);
+
+    // Pusher — admin settings change হলে real-time re-fetch
+    usePusherChannel("broadcast", "revalidate", useCallback((data: Record<string, unknown>) => {
+        if (data.page === "topup-settings") loadTopUpSettings();
+    }, [loadTopUpSettings]));
+
     const fetchTransactions = useCallback(async () => {
         setLoading(true);
         try {
@@ -196,12 +303,26 @@ export default function BillingPage() {
 
     return (
         <div>
-            <div className="space-y-6 ">
+            {/* ── Popup Banner ── */}
+            {showBanner && topUpSettings?.popUpText && (
+                <DepositPopupBanner
+                    popUpText={topUpSettings.popUpText}
+                    popUpSize={topUpSettings.popUpSize}
+                    onClose={() => setShowBanner(false)}
+                />
+            )}
+
+            <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
-                    {/* 1. Crypto Payment — FIRST */}
+                    {/* 1. Crypto Payment */}
                     <div className="relative p-5 bg-black rounded-[12px] border transition-all cursor-pointer border-white/10 hover:border-white/20">
-                        <h3 className="font-semibold text-green mb-4">Crypto Payment</h3>
+                        <h3 className="font-semibold text-green mb-2">Crypto Payment</h3>
+                        {topUpSettings?.cryptoText && (
+                            <p className="text-xs text-c-slate-400 mb-3 leading-relaxed">
+                                {topUpSettings.cryptoText}
+                            </p>
+                        )}
                         <div className="space-y-3">
                             <Select value={selectedCoin} onValueChange={setSelectedCoin}>
                                 <SelectTrigger className="bg-black/20 border-white/10 focus:ring-c-green-400 w-full text-white">
@@ -240,7 +361,7 @@ export default function BillingPage() {
                         </div>
                     </div>
 
-                    {/* 2. PayPal — SECOND */}
+                    {/* 2. PayPal */}
                     <div className="relative p-5 bg-black rounded-[12px] border transition-all cursor-pointer border-white/10 hover:border-white/20">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="text-2xl font-bold text-green">PayPal</span>
@@ -254,7 +375,7 @@ export default function BillingPage() {
                         </div>
                     </div>
 
-                    {/* 3. Stripe — THIRD */}
+                    {/* 3. Stripe */}
                     <div className="relative p-5 bg-black rounded-[12px] border transition-all cursor-pointer border-white/10 hover:border-white/20">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="text-2xl font-bold text-green">Stripe</span>
@@ -268,13 +389,11 @@ export default function BillingPage() {
                         </div>
                     </div>
 
-                    {/* 4. Caution — FOURTH */}
+                    {/* 4. Caution */}
                     <div className="p-5 bg-black rounded-[12px] border border-white/10 flex flex-col items-center text-center justify-center">
                         <h3 className="font-bold text-red mb-3">Caution!</h3>
                         <p className="text-sm text-c-slate-400 leading-relaxed">
-                            If you have any issues with payment, open a support ticket please.
-                            We are here 24/7. After opening a ticket wait for our reply. We
-                            will get back to you as soon as possible.
+                            {topUpSettings?.cautionText ?? "If you have any issues with payment, open a support ticket please. We are here 24/7."}
                         </p>
                     </div>
 
@@ -321,6 +440,8 @@ export default function BillingPage() {
                         payAmount={payAmount}
                         currency={selectedCoin}
                         usdAmount={Number(cryptoAmount)}
+                        blankCurrencyText={topUpSettings?.blankCurrencyText}
+                        generatedCurrencyText={topUpSettings?.generatedCurrencyText}
                     />
                 </div>
             </div>

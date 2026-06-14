@@ -1,4 +1,4 @@
-// src/controllers/auth.controller.ts
+
 
 import { AdditionalUserInformationModel } from "@/db/schema";
 import { PasswordResetRequestModel } from "@/db/schema";
@@ -46,11 +46,10 @@ import Payload from "@/types/payload.type";
 
 import getBalance from "@/utils/get-balance";
 
-// ─── Shared Zod schemas ───────────────────────────────────────────────────────
 
-/**
- * Strict password rule — registration ও changePassword দুটোতেই same rule।
- */
+
+
+
 const strictPasswordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
@@ -59,19 +58,19 @@ const strictPasswordSchema = z
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 import { DiscountTierModel } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import { AddedFundModel } from "@/db/schema";
 
 async function getUserBadge(userId: number, role: string): Promise<string> {
-  // admin/support/super admin এর জন্য role-based label
+  
   if (role === "super admin") return "Super Admin";
   if (role === "admin") return "Admin";
   if (role === "support") return "Support";
 
-  // general user — total approved top-up দিয়ে badge calculate
+  
   const [topUpRow] = await db
     .select({
       total: sql<number>`coalesce(sum(${AddedFundModel.amount}), 0)::real`,
@@ -106,7 +105,7 @@ async function getUserBadge(userId: number, role: string): Promise<string> {
   return matched.tier;
 }
 
-// ── REGISTER ─────────────────────────────────────────────────────
+
 export async function register(
   req: Request,
   res: Response
@@ -115,13 +114,13 @@ export async function register(
     const { username, email, password, pin } = z.object({
       username: z.string().trim().min(1, "Username is required"),
       email:    z.string().trim().email("Invalid email address"),
-      // Doc 4: strict password validation
+      
       password: strictPasswordSchema,
-      // Doc 4: exactly 6 digits (consistent with changePin)
+      
       pin: z.string().regex(/^\d{6}$/, "PIN must be exactly 6 digits"),
     }).parse(req.body);
 
-    // Doc 4: separate queries → distinct error messages per field
+    
     const [existingUsername, existingEmail] = await Promise.all([
       db.query.UserModel.findFirst({
         where: (m) => eq(m.username, username),
@@ -152,9 +151,9 @@ export async function register(
       bcrypt.hash(pin, 10),
     ]);
 
-    // Doc 3: .returning({ id }) দিয়ে newUser.id capture করা হচ্ছে
-    // যাতে welcome notification পাঠানো যায়।
-    // Race condition বন্ধ — COUNT + INSERT একটা transaction এ।
+    
+    
+    
     const newUser = await db.transaction(async (tx) => {
       const [{ count }] = await tx
         .select({ count: sql<number>`count(*)::int` })
@@ -173,7 +172,7 @@ export async function register(
       return inserted;
     });
 
-    // Doc 3: welcome notification — registration সফল হলে user কে জানাও
+    
     await createNotification({
       userId:  newUser.id,
       type:    "welcome",
@@ -201,7 +200,7 @@ export async function register(
   }
 }
 
-// ── LOGIN ─────────────────────────────────────────────────────────
+
 export async function login(
   req: Request,
   res: Response
@@ -263,9 +262,9 @@ export async function login(
       }
     }
 
-    // ── Maintenance mode check ────────────────────────────────────────────────
-    // admin/super admin সবসময় login করতে পারবে।
-    // general/support user — siteMode=maintenance হলে block করো।
+    
+    
+    
     const isAdminUser = user.role === "admin" || user.role === "super admin";
     if (!isAdminUser) {
       const siteMode = await SiteOptions.siteMode.get();
@@ -287,7 +286,7 @@ export async function login(
       });
     }
 
-    // suspended user ও login করতে পারবে না
+    
     if (user.bannedTill && user.bannedTill > new Date()) {
       return res.status(403).json({
         success: false,
@@ -326,7 +325,7 @@ export async function login(
   }
 }
 
-// ── LOGOUT ───────────────────────────────────────────────────────
+
 export async function logout(
   req: Request,
   res: Response
@@ -348,7 +347,7 @@ export async function logout(
   }
 }
 
-// ── ME ────────────────────────────────────────────────────────────
+
 export async function me(req: Request, res: Response) {
   try {
     const p = req.payload!;
@@ -361,7 +360,7 @@ export async function me(req: Request, res: Response) {
       db.query.AdditionalUserInformationModel.findFirst({
         where: (m, { eq }) => eq(m.userId, p.id),
       }),
-      getUserBadge(p.id, p.role), // ← async badge calculation
+      getUserBadge(p.id, p.role), 
     ]);
 
     return res.json({
@@ -369,7 +368,7 @@ export async function me(req: Request, res: Response) {
       user: {
         id:            p.id,
         username:      p.username,
-        badge,                      // ← calculated badge
+        badge,                      
         role:          p.role,
         isShadowAdmin: p.isShadowAdmin ?? false,
         email:         user?.email     || "",
@@ -390,7 +389,7 @@ export async function me(req: Request, res: Response) {
   }
 }
 
-// ── BALANCE ──────────────────────────────────────────────────────
+
 export async function getUserBalance(
   req: Request,
   res: Response
@@ -406,7 +405,7 @@ export async function getUserBalance(
   }
 }
 
-// ── NOTIFICATIONS COUNT ──────────────────────────────────────────
+
 export async function getNotificationCount(
   req: Request,
   res: Response
@@ -415,16 +414,16 @@ export async function getNotificationCount(
     const { id: userId } = req.payload!;
 
     const [unread, unreadNotif] = await Promise.all([
-      // Bell badge এ শুধু দেখাবে:
-      //   (a) নিজে ticket owner — অন্য কেউ reply করেছে, নিজে দেখেনি
-      //   (b) নিজে assigned agent — ticket owner বা অন্য কেউ reply করেছে, নিজে দেখেনি
-      //
-      // Unclaimed tickets (isNull agentId) bell এ count করা ঠিক না —
-      // support user role পেলেই সব unclaimed ticket count এ ঢুকত, যেগুলো
-      // সে কখনো দেখেনি → false badge।
-      // Unclaimed tickets support dashboard এ আলাদাভাবে দেখানো হয়।
-      //
-      // DISTINCT ticket id — একটা ticket এ একাধিক unseen message থাকলেও count = 1।
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
       db
         .select({ total: sql<number>`count(distinct ${TicketModel.id})::int` })
         .from(TicketModel)
@@ -442,8 +441,8 @@ export async function getNotificationCount(
         .where(
           and(
             or(
-              eq(TicketModel.agentId, userId),   // নিজে assigned agent
-              eq(TicketModel.userId,  userId),   // নিজের ticket (owner)
+              eq(TicketModel.agentId, userId),   
+              eq(TicketModel.userId,  userId),   
             ),
             isNull(TicketMessageSeenByModel.id),
             isNotNull(TicketMessageModel.id),
@@ -473,7 +472,7 @@ export async function getNotificationCount(
   }
 }
 
-// ── LOGIN AS ─────────────────────────────────────────────────────
+
 export async function loginAs(
   req: Request,
   res: Response
@@ -524,7 +523,7 @@ export async function loginAs(
   }
 }
 
-// ── EXIT LOGIN AS ─────────────────────────────────────────────────
+
 export async function exitLoginAs(
   req: Request,
   res: Response
@@ -560,7 +559,7 @@ export async function exitLoginAs(
   }
 }
 
-// ── FORGOT PASSWORD ──────────────────────────────────────────────
+
 export async function forgotPassword(
   req: Request,
   res: Response
@@ -618,7 +617,7 @@ export async function forgotPassword(
   }
 }
 
-// ── RESET PASSWORD ───────────────────────────────────────────────
+
 export async function resetPassword(
   req: Request,
   res: Response
@@ -712,7 +711,7 @@ export async function resetPassword(
   }
 }
 
-// ── GET PROFILE ──────────────────────────────────────────────────
+
 export async function getProfile(
   req: Request,
   res: Response
@@ -773,7 +772,7 @@ export async function getProfile(
   }
 }
 
-// ── UPDATE PROFILE ───────────────────────────────────────────────
+
 export async function updateProfile(
   req: Request,
   res: Response
@@ -855,12 +854,12 @@ export async function updateProfile(
       }
     }
 
-    // ✅ FIX: username change হলে JWT reissue — middleware username mismatch → 401 বন্ধ
+    
     if (username) {
       const currentPayload = req.payload!;
       setAuthCookie(res, { ...currentPayload, username });
 
-      // ✅ Security notification
+      
       await createNotification({
         userId,
         type: "security",
@@ -882,12 +881,12 @@ export async function updateProfile(
   }
 }
 
-// ── CHANGE PASSWORD ──────────────────────────────────────────────
+
 export async function changePassword(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
 
-    // Doc 4: strict validation — registration এর সাথে consistent
+    
     const { oldPassword, newPassword } = z.object({
       oldPassword: z.string().min(1, "Old password required"),
       newPassword: strictPasswordSchema,
@@ -910,7 +909,7 @@ export async function changePassword(req: Request, res: Response) {
     const hashed = await bcrypt.hash(newPassword, 10);
     await db.update(UserModel).set({ password: hashed }).where(eq(UserModel.id, userId));
 
-    // ✅ Security notification
+    
     await createNotification({
       userId,
       type: "security",
@@ -927,7 +926,7 @@ export async function changePassword(req: Request, res: Response) {
   }
 }
 
-// ── CHANGE PIN ───────────────────────────────────────────────────
+
 export async function changePin(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -961,7 +960,7 @@ export async function changePin(req: Request, res: Response) {
     const hashedPin = await bcrypt.hash(newPin, 10);
     await db.update(UserModel).set({ pinCode: hashedPin }).where(eq(UserModel.id, userId));
 
-    // ✅ Security notification
+    
     await createNotification({
       userId,
       type: "security",
@@ -978,10 +977,7 @@ export async function changePin(req: Request, res: Response) {
   }
 }
 
-// ── UPLOAD AVATAR ─────────────────────────────────────────────────────────────
-// POST /api/auth/profile/avatar
-// Client থেকে base64 data URL আসে (e.g. "data:image/jpeg;base64,/9j/...")
-// DB-তে AdditionalUserInformationModel.profilePicture তে store করা হয়।
+
 export async function uploadAvatar(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -994,7 +990,7 @@ export async function uploadAvatar(req: Request, res: Response) {
           (v) => /^data:image\/(jpeg|png|webp|gif);base64,/.test(v),
           "Invalid image format. Allowed: JPEG, PNG, WebP, GIF"
         )
-        // ~5MB limit: base64 overhead ~1.37x → 7MB base64 ≈ 5MB actual
+        
         .refine(
           (v) => v.length <= 7 * 1024 * 1024,
           "Image is too large. Maximum size is 5MB."

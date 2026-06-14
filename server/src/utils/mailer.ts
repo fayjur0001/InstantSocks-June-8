@@ -1,17 +1,17 @@
 import nodemailer from "nodemailer";
 
-// transporter create
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, // Gmail TLS
+  secure: false, 
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
 
-// send reset email
+
 export async function sendPasswordResetEmail(
   to: string,
   resetLink: string
@@ -41,6 +41,6 @@ export async function sendPasswordResetEmail(
     console.log("✅ Email sent:", info.messageId);
   } catch (error) {
     console.error("❌ Email send failed:", error);
-    throw error; // important
+    throw error; 
   }
 }

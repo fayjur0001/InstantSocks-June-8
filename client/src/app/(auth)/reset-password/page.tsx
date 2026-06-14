@@ -32,11 +32,11 @@ function ResetPasswordPageContent({
 
   useEffect(() => {
     authInfoApi.get().then(({ data }) => setAuthInfo(data)).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, []);
 
-  // ✅ FIX Bug 7: token URL এ রাখলে browser history/logs এ থাকে
-  // প্রথমবার URL থেকে পড়ে sessionStorage এ সরিয়ে URL clean করো
+  
+  
   const [selector, setSelector] = useState<string>("");
   const [token, setToken] = useState<string>("");
   const tokenMoved = useRef(false);
@@ -49,13 +49,13 @@ function ResetPasswordPageContent({
     const urlToken = params.get("token") ?? "";
 
     if (urlSelector && urlToken) {
-      // sessionStorage এ রাখো — tab বন্ধ হলে মুছে যাবে
+      
       sessionStorage.setItem("reset_selector", urlSelector);
       sessionStorage.setItem("reset_token", urlToken);
-      // URL clean করো — history তে token থাকবে না
+      
       router.replace("/reset-password");
     } else {
-      // URL clean হওয়ার পর sessionStorage থেকে পড়ো
+      
       const storedSelector = sessionStorage.getItem("reset_selector") ?? "";
       const storedToken = sessionStorage.getItem("reset_token") ?? "";
       setSelector(storedSelector);
@@ -67,7 +67,7 @@ function ResetPasswordPageContent({
     const urlSelector = params.get("selector");
     const urlToken = params.get("token");
     if (!urlSelector && !urlToken) {
-      // URL clean হয়ে গেছে — sessionStorage থেকে পড়ো
+      
       setSelector(sessionStorage.getItem("reset_selector") ?? "");
       setToken(sessionStorage.getItem("reset_token") ?? "");
     }
@@ -77,7 +77,7 @@ function ResetPasswordPageContent({
   const toggleConfirmPasswordVisibility = (): void =>
     setShowConfirmPassword((p) => !p);
 
-  // Simple strength check
+  
   const getStrength = (
     pwd: string
   ): { label: string; color: string; width: string } => {
@@ -114,7 +114,7 @@ function ResetPasswordPageContent({
     setLoading(true);
     try {
       await authApi.resetPassword(selector, token, password);
-      // ✅ token use হয়ে গেছে — sessionStorage থেকে মুছে দাও
+      
       sessionStorage.removeItem("reset_selector");
       sessionStorage.removeItem("reset_token");
       setSubmitted(true);
@@ -129,9 +129,9 @@ function ResetPasswordPageContent({
 
   return (
     <main className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-[#09090b] selection:bg-c-green-400/30">
-       {/* Left COLUMN - Light/Image Showcase Area */}
+       {}
       <section className="hidden lg:flex w-full lg:w-[50%] bg-zinc-100 flex-col justify-between relative overflow-hidden">
-        {/* Background Decorative Elements */}
+        {}
         <div className="absolute inset-0 bg-[url('/auth-bg.png')] bg-cover bg-center opacity-30 mix-blend-multiply" />
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-c-orange-500/20 via-transparent to-transparent rounded-full blur-[100px] -translate-y-1/4 translate-x-1/4" />
 
@@ -151,7 +151,7 @@ function ResetPasswordPageContent({
           </p>
         </div>
 
-        {/* Floating App Mockup */}
+        {}
         <div className="flex-1 w-full flex items-center justify-center relative z-10 my-3 lg:my-6">
           <div className="relative w-full max-w-4xl aspect-[16/10]">
             <Image
@@ -172,7 +172,7 @@ function ResetPasswordPageContent({
         </footer>
       </section>
 
-      {/* Right COLUMN */}
+      {}
       <section className="relative w-full lg:w-[50%] min-h-screen flex flex-col text-zinc-100 pb-10 lg:pb-0 z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-c-green-400/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 -translate-x-1/4" />
 
@@ -211,7 +211,7 @@ function ResetPasswordPageContent({
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* New Password */}
+                  {}
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                       New Password
@@ -237,7 +237,7 @@ function ResetPasswordPageContent({
                       </button>
                     </div>
 
-                    {/* Strength bar */}
+                    {}
                     {password.length > 0 && (
                       <div className="space-y-1.5 pt-1">
                         <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
@@ -252,7 +252,7 @@ function ResetPasswordPageContent({
                     )}
                   </div>
 
-                  {/* Confirm Password */}
+                  {}
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                       Confirm Password
@@ -278,7 +278,7 @@ function ResetPasswordPageContent({
                       </button>
                     </div>
 
-                    {/* Match indicator */}
+                    {}
                     {confirmPassword.length > 0 && (
                       <p className={`text-xs font-medium pt-1 ${password === confirmPassword ? "text-c-green-400" : "text-red-400"}`}>
                         {password === confirmPassword ? "✓ Passwords match" : "✗ Passwords do not match"}
@@ -286,14 +286,14 @@ function ResetPasswordPageContent({
                     )}
                   </div>
 
-                  {/* Inline error */}
+                  {}
                   {error && (
                     <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                       <p className="text-sm font-medium text-red-400">{error}</p>
                     </div>
                   )}
 
-                  {/* Actions */}
+                  {}
                   <div className="pt-4 space-y-5">
                     <Button
                       type="submit"
@@ -313,7 +313,7 @@ function ResetPasswordPageContent({
                 </form>
               </>
             ) : (
-              /* Success State */
+              
               <div className="text-center w-full py-6">
                 <div className="mb-6 flex items-center justify-center w-16 h-16 rounded-full bg-c-green-400/10 border border-c-green-400/30 mx-auto shadow-[0_0_30px_rgba(74,222,128,0.15)]">
                   <CheckCircle2 className="w-8 h-8 text-c-green-400" />

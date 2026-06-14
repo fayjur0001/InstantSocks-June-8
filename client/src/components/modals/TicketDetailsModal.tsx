@@ -17,7 +17,7 @@ const TicketDetailsModal = ({
     <Dialog open={isTicketModalOpen} onOpenChange={setIsTicketModalOpen}>
       <DialogContent className="sm:max-w-[850px] p-0 overflow-hidden gap-0 bg-black border border-white/20 shadow-xl shadow-white/10">
         
-        {/* Header Section */}
+        {}
         <div className="p-8 pb-6 relative">
 
           
@@ -36,11 +36,11 @@ const TicketDetailsModal = ({
           </div>
         </div>
 
-        {/* Chat Body Section */}
-        {/* Removed bg-white so it adopts the modal's dark background */}
+        {}
+        {}
         <div className="px-8 py-4 h-[370px] sm:h-[420px] lg:h-[450px] overflow-y-auto space-y-6 flex flex-col">
           
-          {/* User Message */}
+          {}
           <div className="self-end max-w-[70%] space-y-2">
             <div className="bg-green text-white p-4 rounded-2xl rounded-tr-none text-sm leading-relaxed">
               I&apos;m unable to process my payment. The system keeps showing an error message.
@@ -48,7 +48,7 @@ const TicketDetailsModal = ({
             <p className="text-[11px] text-c-slate-500 text-right mr-1">1 min ago</p>
           </div>
 
-          {/* Agent Message */}
+          {}
           <div className="self-start max-w-[70%] space-y-2">
             <div className="bg-c-slate-800 text-c-slate-300 p-5 rounded-2xl rounded-tl-none space-y-3">
               <p className="font-bold text-c-slate-200 text-sm">Support Agent</p>
@@ -59,7 +59,7 @@ const TicketDetailsModal = ({
             <p className="text-[11px] text-c-slate-500 ml-1">1 hour ago</p>
           </div>
 
-          {/* User Message 2 */}
+          {}
           <div className="self-end max-w-[70%] space-y-2">
             <div className="bg-green text-white p-4 rounded-2xl rounded-tr-none text-sm leading-relaxed">
               Sure! The error says: &apos;Transaction declined - Please verify your payment method&apos;
@@ -68,7 +68,7 @@ const TicketDetailsModal = ({
           </div>
         </div>
 
-        {/* Footer / Input Section */}
+        {}
         <div className="p-8 pt-4 pb-10 flex gap-3 items-center">
           <div className="relative flex-1">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-c-slate-500 cursor-pointer hover:text-c-slate-300">

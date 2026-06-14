@@ -4,10 +4,7 @@ import { LongTermRentsModel, OneTimeRentModel, UserModel } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
-// ─────────────────────────────────────────────
-// GET /api/rentals/numbers
-// Current user এর সব LTR + OTR rentals
-// ─────────────────────────────────────────────
+
 export async function getMyNumberRentals(req: Request, res: Response) {
   try {
     const payload = req.payload!;
@@ -19,11 +16,11 @@ export async function getMyNumberRentals(req: Request, res: Response) {
 
     const offset = (page - 1) * limit;
 
-    // FIX: in-memory pagination সরানো হয়েছে।
-    // LTR + OTR আলাদা type হওয়ায় একটাই DB query তে merge+sort+paginate সম্ভব না।
-    // তাই count query আলাদা করে total বের করা হচ্ছে, তারপর প্রতিটা থেকে
-    // প্রয়োজনীয় rows টেনে JS এ final sort+slice — কিন্তু এখন শুধু
-    // (offset + limit) rows পর্যন্ত টানা হচ্ছে, সব নয়।
+    
+    
+    
+    
+    
     const [ltrRentals, otrRentals, ltrCount, otrCount] = await Promise.all([
       type !== "otr"
         ? db.query.LongTermRentsModel.findMany({
@@ -72,10 +69,7 @@ export async function getMyNumberRentals(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────
-// GET /api/admin/rentals/numbers
-// Admin — সব users এর LTR + OTR rentals
-// ─────────────────────────────────────────────
+
 export async function getAllNumberRentals(req: Request, res: Response) {
   try {
     const { page, limit, type, userId } = z.object({
@@ -87,7 +81,7 @@ export async function getAllNumberRentals(req: Request, res: Response) {
 
     const offset = (page - 1) * limit;
 
-    // FIX: in-memory pagination সরানো হয়েছে — count query আলাদা করে total বের করা।
+    
     const [ltrRentals, otrRentals, ltrCount, otrCount] = await Promise.all([
       type !== "otr"
         ? db.query.LongTermRentsModel.findMany({

@@ -30,7 +30,7 @@ import {
   type DiscountUser,
 } from "@/lib/discount.service";
 
-// ─── Static color/style config ────────────────────────────────────────────────
+
 const TIER_STYLES: Record<BadgeTier, { border: string; bg: string; text: string; badge: string; glow: string; dot: string; inputBorder: string; icon: string }> = {
   Basic: {
     border: "border-c-slate-700",
@@ -84,7 +84,7 @@ const TIER_STYLES: Record<BadgeTier, { border: string; bg: string; text: string;
   },
 };
 
-// ─── Badge Pill ───────────────────────────────────────────────────────────────
+
 function BadgePill({ tier }: { tier: BadgeTier }) {
   const s = TIER_STYLES[tier];
   return (
@@ -97,7 +97,7 @@ function BadgePill({ tier }: { tier: BadgeTier }) {
   );
 }
 
-// ─── Tier Card ────────────────────────────────────────────────────────────────
+
 interface EditDraft { maxSpend: string; discount: string; }
 
 interface TierCardProps {
@@ -118,14 +118,14 @@ function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, o
   return (
     <div className={`relative rounded-xl border ${s.border} ${s.bg} ${s.glow} p-4 flex flex-col gap-3 backdrop-blur-sm transition-all duration-200`}>
 
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xl leading-none">{s.icon}</span>
           <span className={`text-sm font-bold ${s.text}`}>{cfg.tier}</span>
         </div>
 
-        {/* Discount badge only — pencil removed from here */}
+        {}
         {isEditing ? (
           <div className="flex items-center gap-1">
             <Input
@@ -148,7 +148,7 @@ function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, o
 
       <div className="h-px w-full bg-white/5" />
 
-      {/* Spend Range */}
+      {}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
           <TrendingUp className="w-3 h-3 text-c-slate-500 shrink-0" />
@@ -172,7 +172,7 @@ function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, o
         )}
       </div>
 
-      {/* Purchase Discount — pencil/save/cancel এখন এখানে */}
+      {}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-3 h-3 text-c-slate-500 shrink-0" />
@@ -185,7 +185,7 @@ function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, o
               : cfg.discount === 0 ? "None" : `${cfg.discount}% on each purchase`}
           </span>
 
-          {/* Pencil / Save / Cancel */}
+          {}
           {isEditing ? (
             <div className="flex items-center gap-1 shrink-0">
               <button onClick={onSave} className="flex items-center justify-center w-6 h-6 rounded-md bg-c-emerald-700/30 hover:bg-c-emerald-700/60 border border-c-emerald-600/40 transition-colors" title="Save">
@@ -207,18 +207,16 @@ function TierCard({ cfg, isEditing, draft, onEditStart, onDraftChange, onSave, o
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PAGE
-// ═══════════════════════════════════════════════════════════════════════════════
+
 export default function AdminDiscountPage() {
-  // ── Tiers state ──────────────────────────────────────────────────────────────
+  
   const [tiers,        setTiers]        = useState<DiscountTier[]>([]);
   const [tiersLoading, setTiersLoading] = useState(true);
   const [editingTier,  setEditingTier]  = useState<BadgeTier | null>(null);
   const [saving,       setSaving]       = useState(false);
   const [draft,        setDraft]        = useState<EditDraft>({ maxSpend: "", discount: "" });
 
-  // ── Users state ───────────────────────────────────────────────────────────────
+  
   const [users,          setUsers]          = useState<DiscountUser[]>([]);
   const [usersLoading,   setUsersLoading]   = useState(true);
   const [totalPage,      setTotalPage]      = useState(1);
@@ -226,7 +224,7 @@ export default function AdminDiscountPage() {
   const [searchBadge,    setSearchBadge]    = useState<string>("all");
   const [page,           setPage]           = useState(1);
 
-  // ── Fetch tiers on mount ──────────────────────────────────────────────────────
+  
   useEffect(() => {
     discountService.getTiers()
       .then((res) => setTiers(res.tiers))
@@ -234,7 +232,7 @@ export default function AdminDiscountPage() {
       .finally(() => setTiersLoading(false));
   }, []);
 
-  // ── Fetch users whenever filters/page change ──────────────────────────────────
+  
   const fetchUsers = useCallback(() => {
     setUsersLoading(true);
     discountService
@@ -251,7 +249,7 @@ export default function AdminDiscountPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  // ── Tier edit handlers ────────────────────────────────────────────────────────
+  
   const handleEditStart = useCallback((cfg: DiscountTier) => {
     setEditingTier(cfg.tier);
     setDraft({
@@ -279,7 +277,7 @@ export default function AdminDiscountPage() {
       toast.error("Discount must be between 0 and 100"); return;
     }
 
-    // Optimistic update
+    
     const prev = tiers;
     setTiers((ts) => {
       const idx     = ts.findIndex((t) => t.tier === tier);
@@ -305,7 +303,7 @@ export default function AdminDiscountPage() {
     });
     setEditingTier(null);
 
-    // API call
+    
     setSaving(true);
     try {
       await discountService.updateTier(tier, {
@@ -316,7 +314,7 @@ export default function AdminDiscountPage() {
       fetchUsers();
     } catch (err: any) {
       toast.error(err?.message || "Failed to save tier.");
-      setTiers(prev); // rollback
+      setTiers(prev); 
     } finally {
       setSaving(false);
     }
@@ -330,7 +328,7 @@ export default function AdminDiscountPage() {
     setPage(1);
   }, []);
 
-  // ── Table columns ─────────────────────────────────────────────────────────────
+  
   const columns = useMemo<ColumnDef<DiscountUser, unknown>[]>(() => [
     {
       accessorKey: "userId",
@@ -371,11 +369,11 @@ export default function AdminDiscountPage() {
     },
   ], []);
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  
   return (
     <div className="space-y-6 w-full">
 
-      {/* Section Title */}
+      {}
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-c-emerald-900/40 border border-c-emerald-700/30">
           <Tag className="w-4 h-4 text-c-emerald-400" />
@@ -391,7 +389,7 @@ export default function AdminDiscountPage() {
         </div>
       </div>
 
-      {/* Tier Cards */}
+      {}
       {tiersLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -415,7 +413,7 @@ export default function AdminDiscountPage() {
         </div>
       )}
 
-      {/* Users Table */}
+      {}
       <div className="bg-c-bg-700 border border-c-slate-800 rounded-xl p-5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-c-slate-200 tracking-wide">All Users</h2>

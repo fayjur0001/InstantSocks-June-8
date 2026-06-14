@@ -11,9 +11,9 @@ export default function ResetSuccessPage() {
 
   return (
     <main className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-[#09090b] selection:bg-c-green-400/30">
-      {/* Left COLUMN - Light Promotional Area */}
+      {}
       <section className="hidden lg:flex w-full lg:w-[50%] bg-zinc-100 flex-col justify-between relative overflow-hidden">
-        {/* Background Decorative Elements */}
+        {}
         <div className="absolute inset-0 bg-[url('/auth-bg.png')] bg-cover bg-center opacity-30 mix-blend-multiply" />
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-c-orange-500/20 via-transparent to-transparent rounded-full blur-[100px] -translate-y-1/4 translate-x-1/4" />
 
@@ -33,7 +33,7 @@ export default function ResetSuccessPage() {
           </p>
         </div>
 
-        {/* Floating App Mockup */}
+        {}
         <div className="flex-1 w-full flex items-center justify-center relative z-10 my-3 lg:my-6">
           <div className="relative w-full max-w-4xl aspect-[16/10]">
             <Image
@@ -52,19 +52,19 @@ export default function ResetSuccessPage() {
         </footer>
       </section>
 
-      {/* Right COLUMN - Success Message Area */}
+      {}
       <section className="relative w-full lg:w-[50%] min-h-screen flex flex-col text-zinc-100 pb-10 lg:pb-0 z-10 overflow-hidden">
-        {/* Subtle Background Glow */}
+        {}
         <div className="absolute top-0 left-0 w-full h-[500px] bg-c-green-400/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 -translate-x-1/4" />
 
-        {/* Header */}
+        {}
         <header className="relative flex justify-between items-center p-3 lg:p-6 w-full z-20">
           <Link
             href="https://instantsocks.com"
             className="hover:opacity-80 transition-opacity"
           >
             <Image
-              src="/logo.webp" // Updated to match your theme logo name
+              src="/logo.webp" 
               alt="InstantSocks Logo"
               width={160}
               height={56}
@@ -82,11 +82,11 @@ export default function ResetSuccessPage() {
           </Link>
         </header>
 
-        {/* Success Card */}
+        {}
         <div className="relative flex-1 flex flex-col justify-center items-center px-3 lg:px-6 w-full max-w-[600px] mx-auto z-20">
           <div className="bg-[#121214] border border-white/10 p-6 lg:p-10 rounded-2xl shadow-2xl w-full backdrop-blur-xl text-center">
             
-            {/* Animated Success Icon */}
+            {}
             <div className="mb-8 relative flex items-center justify-center">
               <div className="w-20 h-20 rounded-full bg-c-green-400/10 border border-c-green-400/30 flex items-center justify-center shadow-[0_0_30px_rgba(74,222,128,0.15)]">
                 <CheckCircle2 className="w-10 h-10 text-c-green-400" />
@@ -103,7 +103,7 @@ export default function ResetSuccessPage() {
               </p>
             </div>
 
-            {/* Info Badges */}
+            {}
             <div className="w-full space-y-4 mb-10 text-left">
               <div className="flex items-start gap-4 bg-white/5 border border-white/5 rounded-xl p-4 transition-colors hover:bg-white/[0.07]">
                 <div className="mt-1 bg-c-green-400/20 p-1.5 rounded-md">
@@ -136,7 +136,7 @@ export default function ResetSuccessPage() {
               </div>
             </div>
 
-            {/* CTA Actions */}
+            {}
             <div className="space-y-6">
               <Link href="/login" className="block w-full">
                 <Button className="w-full bg-c-green-400 hover:bg-c-green-500 text-[#09090b] font-bold text-base h-12 rounded-xl shadow-[0_0_20px_rgba(74,222,128,0.2)] hover:shadow-[0_0_25px_rgba(74,222,128,0.4)] transition-all duration-300 flex items-center justify-center gap-2">

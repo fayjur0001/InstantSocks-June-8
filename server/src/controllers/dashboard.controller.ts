@@ -10,9 +10,7 @@ import { and, desc, eq, gte, sql } from "drizzle-orm";
 import SiteOptions from "@/utils/site-options";
 import { nsocksGetBalance } from "@/utils/nsocks.adapter";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/dashboard/content  — logged-in user (notice, rules, terms, privacy)
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getDashboardContent(_req: Request, res: Response) {
   try {
     const [notice, rules, termsAndConditions, privacyPolicy] = await Promise.all([
@@ -28,12 +26,12 @@ export async function getDashboardContent(_req: Request, res: Response) {
   }
 }
 
-// ─── Helper: period string → Date cutoff ─────────────────────────────────────
+
 function getChartPeriodStart(period: string): Date {
   const d = new Date();
   if (period === "1m")  { d.setDate(d.getDate() - 30);  return d; }
   if (period === "3m")  { d.setDate(d.getDate() - 90);  return d; }
-  d.setDate(d.getDate() - 7); // default 7d
+  d.setDate(d.getDate() - 7); 
   return d;
 }
 
@@ -42,14 +40,12 @@ function getSummaryPeriodStart(period: string): Date {
   if (period === "3days")  { d.setDate(d.getDate() - 3);  return d; }
   if (period === "weekly") { d.setDate(d.getDate() - 7);  return d; }
   if (period === "monthly"){ d.setDate(d.getDate() - 30); return d; }
-  // today
+  
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/dashboard/stats  — logged-in user
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getUserDashboardStats(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -85,9 +81,7 @@ export async function getUserDashboardStats(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/dashboard  — admin
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getAdminDashboardStats(_req: Request, res: Response) {
   try {
     const apiKey = await SiteOptions.socks5ProxyAPIKey.get();
@@ -98,14 +92,14 @@ export async function getAdminDashboardStats(_req: Request, res: Response) {
         db.select({ c: sql<number>`count(*)::int` }).from(UserModel).where(eq(UserModel.isOnline, true)),
         db.select({ c: sql<number>`count(*)::int` }).from(UserModel).where(eq(UserModel.banned, true)),
         db.select({ c: sql<number>`count(*)::int` }).from(AddedFundModel).where(eq(AddedFundModel.status, "pending")),
-        // Total Turnover — website শুরু থেকে সব approved top-up এর sum
+        
         db.select({ total: sql<number>`coalesce(sum(${AddedFundModel.amount}), 0)::real` })
           .from(AddedFundModel).where(eq(AddedFundModel.status, "approved")),
         db.select({ c: sql<number>`count(*)::int` }).from(Socks5ProxyTransactionModel),
-        // Proxy Balance — website শুরু থেকে সব proxy sell এর sum
+        
         db.select({ total: sql<number>`coalesce(sum(${Socks5ProxyTransactionModel.price}), 0)::real` })
           .from(Socks5ProxyTransactionModel),
-        // NSocks Balance — NSocks API থেকে real-time balance; API key না থাকলে বা fail করলে 0
+        
         apiKey ? nsocksGetBalance(apiKey).catch(() => 0) : Promise.resolve(0),
       ]);
 
@@ -128,12 +122,7 @@ export async function getAdminDashboardStats(_req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/statistics
-//   ?tab=proxy|transactions
-//   ?period=7d|1m|3m          ← chart range
-//   ?summaryPeriod=today|3days|weekly|monthly  ← summary boxes range
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getAdminStatistics(req: Request, res: Response) {
   try {
     const tab           = (req.query.tab           as string) || "proxy";
@@ -143,10 +132,10 @@ export async function getAdminStatistics(req: Request, res: Response) {
     const chartStart   = getChartPeriodStart(period);
     const summaryStart = getSummaryPeriodStart(summaryPeriod);
 
-    // ── PROXY TAB ────────────────────────────────────────────────────────────
+    
     if (tab === "proxy") {
 
-      // Chart: daily turnover grouped by date
+      
       const chartRows = await db
         .select({
           date:     sql<string>`to_char(date_trunc('day', ${Socks5ProxyTransactionModel.createdAt}), 'Mon DD, YYYY')`,
@@ -167,25 +156,25 @@ export async function getAdminStatistics(req: Request, res: Response) {
         proxyLocation: r.topCountry ?? "N/A",
       }));
 
-      // Summary boxes: use summaryPeriod window
+      
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
       const weekStart  = new Date(); weekStart.setDate(weekStart.getDate() - 7); weekStart.setHours(0, 0, 0, 0);
 
       const [summaryTurnoverRow, summaryCountRow, summaryTopUserRow, summaryTopServiceRow, dayRentRow, weeklyRentRow, availableRow] =
         await Promise.all([
-          // Total turnover in summaryPeriod
+          
           db.select({
             total: sql<number>`coalesce(sum(${Socks5ProxyTransactionModel.price}), 0)::real`,
           }).from(Socks5ProxyTransactionModel)
             .where(gte(Socks5ProxyTransactionModel.createdAt, summaryStart)),
 
-          // Total rented count in summaryPeriod
+          
           db.select({
             count: sql<number>`count(*)::int`,
           }).from(Socks5ProxyTransactionModel)
             .where(gte(Socks5ProxyTransactionModel.createdAt, summaryStart)),
 
-          // Top user by spend in summaryPeriod
+          
           db.select({
             username: UserModel.username,
             total:    sql<number>`coalesce(sum(${Socks5ProxyTransactionModel.price}), 0)::real`,
@@ -196,7 +185,7 @@ export async function getAdminStatistics(req: Request, res: Response) {
             .orderBy(sql`sum(${Socks5ProxyTransactionModel.price}) desc`)
             .limit(1),
 
-          // Top service = country/state combo (e.g. "US/NY") by count
+          
           db.select({
             country: Socks5ProxyTransactionModel.country,
             state:   Socks5ProxyTransactionModel.state,
@@ -207,19 +196,19 @@ export async function getAdminStatistics(req: Request, res: Response) {
             .orderBy(sql`count(*) desc`)
             .limit(1),
 
-          // Day Rented = today's count (always fixed, not summaryPeriod)
+          
           db.select({
             count: sql<number>`count(*)::int`,
           }).from(Socks5ProxyTransactionModel)
             .where(gte(Socks5ProxyTransactionModel.createdAt, todayStart)),
 
-          // Weekly Rented = last 7 days count (always fixed)
+          
           db.select({
             count: sql<number>`count(*)::int`,
           }).from(Socks5ProxyTransactionModel)
             .where(gte(Socks5ProxyTransactionModel.createdAt, weekStart)),
 
-          // Available = all time total proxy transactions (stock indicator)
+          
           db.select({
             count: sql<number>`count(*)::int`,
           }).from(Socks5ProxyTransactionModel),
@@ -245,9 +234,9 @@ export async function getAdminStatistics(req: Request, res: Response) {
       return res.json({ success: true, data: { chartData, summaryBoxes } });
     }
 
-    // ── TRANSACTIONS TAB ─────────────────────────────────────────────────────
+    
 
-    // Chart: daily approved deposit amounts + count
+    
     const chartRows = await db
       .select({
         date:    sql<string>`to_char(date_trunc('day', ${AddedFundModel.createdAt}), 'Mon DD, YYYY')`,
@@ -266,10 +255,10 @@ export async function getAdminStatistics(req: Request, res: Response) {
       date:     r.date,
       turnover: Number(r.deposit.toFixed(2)),
       value:    Number(r.deposit.toFixed(2)),
-      deposit:  Number(r.count),  // ওই দিন কতটা deposit হয়েছে (count)
+      deposit:  Number(r.count),  
     }));
 
-    // Summary boxes: summaryPeriod window
+    
     const [approvedRow, pendingRow, rejectedRow, topUserRow] = await Promise.all([
       db.select({
         total: sql<number>`coalesce(sum(${AddedFundModel.amount}), 0)::real`,
@@ -294,7 +283,7 @@ export async function getAdminStatistics(req: Request, res: Response) {
           eq(AddedFundModel.status, "rejected"),
         )),
 
-      // Top user by deposit amount
+      
       db.select({
         username: UserModel.username,
         total:    sql<number>`coalesce(sum(${AddedFundModel.amount}), 0)::real`,
@@ -331,38 +320,32 @@ export async function getAdminStatistics(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/statistics/summary
-//   ?tab=proxy|transactions
-//   ?summaryPeriod=today|3days|weekly|monthly
-//   শুধু summary boxes return করে — chart data ছাড়া।
-//   Period dropdown change হলে শুধু এই endpoint call হবে।
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getAdminSummaryBoxes(req: Request, res: Response) {
   try {
     const tab           = (req.query.tab           as string) || "transactions";
     const summaryPeriod = (req.query.summaryPeriod as string) || "today";
     const summaryStart  = getSummaryPeriodStart(summaryPeriod);
 
-    // ── PROXY TAB ────────────────────────────────────────────────────────────
+    
     if (tab === "proxy") {
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
       const weekStart  = new Date(); weekStart.setDate(weekStart.getDate() - 7); weekStart.setHours(0, 0, 0, 0);
 
       const [turnoverRow, countRow, topUserRow, topServiceRow, dayRentRow, weeklyRentRow, availableRow] = await Promise.all([
-        // Total turnover in summaryPeriod
+        
         db.select({
           total: sql<number>`coalesce(sum(${Socks5ProxyTransactionModel.price}), 0)::real`,
         }).from(Socks5ProxyTransactionModel)
           .where(gte(Socks5ProxyTransactionModel.createdAt, summaryStart)),
 
-        // Total rented count in summaryPeriod
+        
         db.select({
           count: sql<number>`count(*)::int`,
         }).from(Socks5ProxyTransactionModel)
           .where(gte(Socks5ProxyTransactionModel.createdAt, summaryStart)),
 
-        // Top user by spend in summaryPeriod
+        
         db.select({
           username: UserModel.username,
           total:    sql<number>`coalesce(sum(${Socks5ProxyTransactionModel.price}), 0)::real`,
@@ -373,7 +356,7 @@ export async function getAdminSummaryBoxes(req: Request, res: Response) {
           .orderBy(sql`sum(${Socks5ProxyTransactionModel.price}) desc`)
           .limit(1),
 
-        // Top service = country/state combo (e.g. "US/NY") by count
+        
         db.select({
           country: Socks5ProxyTransactionModel.country,
           state:   Socks5ProxyTransactionModel.state,
@@ -384,19 +367,19 @@ export async function getAdminSummaryBoxes(req: Request, res: Response) {
           .orderBy(sql`count(*) desc`)
           .limit(1),
 
-        // Day Rented = today's count (fixed, not summaryPeriod)
+        
         db.select({
           count: sql<number>`count(*)::int`,
         }).from(Socks5ProxyTransactionModel)
           .where(gte(Socks5ProxyTransactionModel.createdAt, todayStart)),
 
-        // Weekly Rented = last 7 days count (fixed)
+        
         db.select({
           count: sql<number>`count(*)::int`,
         }).from(Socks5ProxyTransactionModel)
           .where(gte(Socks5ProxyTransactionModel.createdAt, weekStart)),
 
-        // Available = all time total (stock indicator)
+        
         db.select({
           count: sql<number>`count(*)::int`,
         }).from(Socks5ProxyTransactionModel),
@@ -425,9 +408,9 @@ export async function getAdminSummaryBoxes(req: Request, res: Response) {
       });
     }
 
-    // ── TRANSACTIONS TAB ─────────────────────────────────────────────────────
+    
     const [approvedRow, pendingRow, rejectedRow, topUserRow] = await Promise.all([
-      // selected period এ approved top-up এর sum + count
+      
       db.select({
         total: sql<number>`coalesce(sum(${AddedFundModel.amount}), 0)::real`,
         count: sql<number>`count(*)::int`,
@@ -437,7 +420,7 @@ export async function getAdminSummaryBoxes(req: Request, res: Response) {
           eq(AddedFundModel.status, "approved"),
         )),
 
-      // selected period এ pending count
+      
       db.select({ count: sql<number>`count(*)::int` })
         .from(AddedFundModel)
         .where(and(
@@ -445,7 +428,7 @@ export async function getAdminSummaryBoxes(req: Request, res: Response) {
           eq(AddedFundModel.status, "pending"),
         )),
 
-      // selected period এ rejected count
+      
       db.select({ count: sql<number>`count(*)::int` })
         .from(AddedFundModel)
         .where(and(
@@ -453,8 +436,8 @@ export async function getAdminSummaryBoxes(req: Request, res: Response) {
           eq(AddedFundModel.status, "rejected"),
         )),
 
-      // selected period এ সবচেয়ে বেশি top-up করা user
-      // একই user এর সব approved top-up sum করে সবচেয়ে বড় যে
+      
+      
       db.select({
         username: UserModel.username,
         total:    sql<number>`coalesce(sum(${AddedFundModel.amount}), 0)::real`,
@@ -494,11 +477,7 @@ export async function getAdminSummaryBoxes(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/statistics/proxy-transactions
-//   ?page=1&limit=20&search=<ip|username>
-//   Admin — Socks5ProxyTransactionModel এর paginated list
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getAdminProxyTransactions(req: Request, res: Response) {
   try {
     const page   = Math.max(1, parseInt((req.query.page  as string) || "1", 10));
@@ -506,7 +485,7 @@ export async function getAdminProxyTransactions(req: Request, res: Response) {
     const search = ((req.query.search as string) || "").trim().toLowerCase();
     const offset = (page - 1) * limit;
 
-    // Build where clause
+    
     const where = search
       ? sql`(lower(${Socks5ProxyTransactionModel.ip}) like ${"%" + search + "%"}
           or lower(${UserModel.username}) like ${"%" + search + "%"}
@@ -577,11 +556,7 @@ export async function getAdminProxyTransactions(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/statistics/top-users
-//   ?tab=proxy|transactions&period=7d|1m|3m
-//   Top spenders — "Top Users" chart tab এর জন্য
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getAdminTopUsers(req: Request, res: Response) {
   try {
     const tab    = (req.query.tab    as string) || "proxy";
@@ -589,7 +564,7 @@ export async function getAdminTopUsers(req: Request, res: Response) {
     const start  = getChartPeriodStart(period);
 
     if (tab === "proxy") {
-      // প্রতিটা দিনের জন্য সব users এর data আনো
+      
       const rows = await db
         .select({
           day:      sql<string>`date_trunc('day', ${Socks5ProxyTransactionModel.createdAt})`,
@@ -604,7 +579,7 @@ export async function getAdminTopUsers(req: Request, res: Response) {
         .groupBy(sql`date_trunc('day', ${Socks5ProxyTransactionModel.createdAt})`, UserModel.username)
         .orderBy(sql`date_trunc('day', ${Socks5ProxyTransactionModel.createdAt})`);
 
-      // প্রতিটা দিনের জন্য সবচেয়ে বেশি $ খরচ করা user বের করো
+      
       const byDay = new Map<string, { date: string; name: string; turnover: number; deposit: number }>();
       for (const r of rows) {
         const existing = byDay.get(r.day);
@@ -624,13 +599,13 @@ export async function getAdminTopUsers(req: Request, res: Response) {
         name:    r.name,
         turnover: r.turnover,
         value:   r.turnover,
-        deposit: r.deposit,  // ওই দিন top user কতবার proxy কিনেছে (count)
+        deposit: r.deposit,  
       }));
 
       return res.json({ success: true, data: { chartData } });
     }
 
-    // transactions tab — Top Users
+    
     const rows = await db
       .select({
         day:      sql<string>`date_trunc('day', ${AddedFundModel.createdAt})`,
@@ -648,7 +623,7 @@ export async function getAdminTopUsers(req: Request, res: Response) {
       .groupBy(sql`date_trunc('day', ${AddedFundModel.createdAt})`, UserModel.username)
       .orderBy(sql`date_trunc('day', ${AddedFundModel.createdAt})`);
 
-    // প্রতিটা দিনের জন্য সবচেয়ে বেশি $ top-up করা user বের করো
+    
     const byDay = new Map<string, { date: string; name: string; turnover: number; deposit: number }>();
     for (const r of rows) {
       const existing = byDay.get(r.day);
@@ -658,7 +633,7 @@ export async function getAdminTopUsers(req: Request, res: Response) {
           date:     r.date,
           name:     r.name ?? "Unknown",
           turnover: Number(turnover.toFixed(2)),
-          deposit:  Number(r.deposit),  // ওই দিন top user কতবার top-up করেছে (count)
+          deposit:  Number(r.deposit),  
         });
       }
     }

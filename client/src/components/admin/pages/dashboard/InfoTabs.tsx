@@ -4,7 +4,7 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import "react-quill-new/dist/quill.snow.css";
 
-// --- Types ---
+
 
 interface InfoTabsProps {
   notice:             string;
@@ -13,7 +13,7 @@ interface InfoTabsProps {
   privacyPolicy:      string;
 }
 
-// --- Sub-components ---
+
 
 const SectionHeader = ({ title }: { title: string }) => (
   <div className="flex items-center justify-center gap-4 mb-8 pt-4">
@@ -43,7 +43,7 @@ const RichContent = ({ html, title }: { html: string; title: string }) => (
   <div className="bg-black border border-c-emerald-900/20 rounded-xl overflow-hidden flex min-h-[200px] max-h-[500px]">
     <div className="flex-1 flex flex-col p-6">
       <SectionHeader title={title} />
-      {/* ql-editor class — Quill এর নিজস্ব CSS (bold/italic/heading/list) apply করে */}
+      {}
       <div
         className="
           ql-editor
@@ -61,7 +61,7 @@ const RichContent = ({ html, title }: { html: string; title: string }) => (
   </div>
 );
 
-// --- Main Component ---
+
 
 export default function InfoTabs({
   notice,

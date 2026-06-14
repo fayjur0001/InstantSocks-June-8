@@ -64,7 +64,7 @@ export default function PaymentProvidersPage() {
       })
       .catch((err) => {
         console.error("Failed to load payment API config:", err);
-        // Fall back to empty defaults so page still renders
+        
         setProviders(buildProviders("", "", "", "", "", ""));
       })
       .finally(() => setLoading(false));
@@ -87,7 +87,7 @@ export default function PaymentProvidersPage() {
         currentMethod: activeProviderId,
       });
     }
-    // Update local provider state so card shows the saved values
+    
     setProviders((prev) =>
       prev.map((p) => (p.id === id ? { ...p, initialConfig: data } : p)),
     );

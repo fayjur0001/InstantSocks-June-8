@@ -1,4 +1,4 @@
-"use client"; // Required if you are using Next.js App Router
+"use client"; 
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -34,7 +34,7 @@ const Nav = () => {
                   : "text-gray-400 border border-transparent hover:text-white hover:bg-white/10"
               }`}
             >
-              {/* Active State Indicator Dot */}
+              {}
               {isActive && (
                 <span className="w-1.5 h-1.5 mr-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
               )}

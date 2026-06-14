@@ -32,7 +32,7 @@ interface ProxyTableProps {
     setSelectedProxy: React.Dispatch<React.SetStateAction<ProxyItem | null>>;
     cart: ProxyItem[];
     addToCart: (proxy: ProxyItem) => void;
-    // ── নতুন props — parent থেকে pagination control করার জন্য ──
+    
     totalItems: number;
     currentPage: number;
     setCurrentPage: (page: number) => void;
@@ -53,7 +53,7 @@ function ProxyTable({
     setCurrentPage,
     isLoading = false,
 }: ProxyTableProps) {
-    // ✅ internal page state সরানো হয়েছে — parent control করবে
+    
 
     const columns = useMemo<ColumnDef<ProxyItem, unknown>[]>(
         () => [

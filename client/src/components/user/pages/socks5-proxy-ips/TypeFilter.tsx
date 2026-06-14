@@ -25,7 +25,7 @@ function TypeFilter({setTypeTab, typeTab, setFilters, setPage, EMPTY_FILTERS}: T
                     className="flex items-center gap-2 cursor-pointer group"
                     onClick={() => setTypeTab(tab.value)}
                 >
-                    {/* Radio circle */}
+                    {}
                     <div
                         className={`w-[14px] h-[14px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${typeTab === tab.value
                             ? "border-c-emerald-500"

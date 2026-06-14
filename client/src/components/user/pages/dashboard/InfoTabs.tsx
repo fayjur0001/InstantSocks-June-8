@@ -4,14 +4,14 @@ import React, { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { publicApi, PublicContentData } from "@/lib/api";
 
-// --- Mock Data (original এর মতোই রাখা হলো — fallback হিসেবে) ---
+
 
 export interface Notice {
   id: string;
   text: string;
 }
 
-// --- Sub-components ---
+
 
 const SectionHeader = ({ title }: { title: string }) => (
   <div className="flex items-center justify-center gap-4 mb-8 pt-4">
@@ -37,7 +37,7 @@ const SectionHeader = ({ title }: { title: string }) => (
   </div>
 );
 
-// Rich HTML render — scoped CSS দিয়ে bold/italic/heading কাজ করবে
+
 const RichContent = ({ html, title }: { html: string; title: string }) => (
   <div className="bg-black border border-c-emerald-900/20 rounded-xl overflow-hidden flex h-[500px]">
     <div className="flex-1 flex flex-col p-6">
@@ -54,7 +54,7 @@ const RichContent = ({ html, title }: { html: string; title: string }) => (
   </div>
 );
 
-// --- Main Component ---
+
 
 export default function InfoTabs() {
   const [content, setContent] = useState<PublicContentData>({
@@ -74,7 +74,7 @@ export default function InfoTabs() {
   return (
     <div className="w-full mt-2 lg:mt-4">
 
-      {/* Scoped styles — শুধু .rich-html ভেতরে apply হবে */}
+      {}
       <style>{`
         .rich-html { color: #cbd5e1; font-size: 0.875rem; line-height: 1.6; }
         .rich-html p { margin-bottom: 0.75rem; }
@@ -95,7 +95,7 @@ export default function InfoTabs() {
 
       <Tabs defaultValue="notices" className="w-full">
 
-        {/* Tab Navigation — original এর মতোই */}
+        {}
         <TabsList className="bg-transparent h-auto p-0 flex flex-wrap gap-2.5 lg:gap-5 justify-start">
           <TabsTrigger value="notices">Notices</TabsTrigger>
           <TabsTrigger value="rules">Rules & Regulations</TabsTrigger>

@@ -20,10 +20,10 @@ function FilterHeaderInput({
 }) {
   const [local, setLocal] = useState(value);
 
-  // Sync when parent clears filters externally
+  
   useEffect(() => { setLocal(value); }, [value]);
 
-  // Debounce: push to parent 400ms after user stops typing
+  
   useEffect(() => {
     const t = setTimeout(() => {
       if (local !== value) onChange(local);

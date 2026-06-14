@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 
 export type BadgeTier = "Basic" | "Bronze" | "Silver" | "Gold" | "Diamond";
 
@@ -46,7 +46,7 @@ export interface GetDiscountUsersResponse {
   total:     number;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+
 
 export const discountService = {
   getTiers: () =>

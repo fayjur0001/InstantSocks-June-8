@@ -25,12 +25,12 @@ export interface TransactionRecord {
 }
 
 interface TransactionsTableProps {
-  // Bug 1 Fix: searchQuery সরিয়ে আলাদা props
+  
   txIdQuery?: string;
   usernameQuery?: string;
-  // Bug 2 Fix: wallet filter prop
+  
   walletFilter?: string;
-  // Bug 3 Fix: dateRange prop
+  
   dateRange?: DateRange;
   showDelete?: boolean;
   filter?: "all" | "transaction" | "manual";
@@ -113,11 +113,11 @@ export default function TransactionsTable({
   const filteredData = useMemo(() => {
     let data = allRecords;
 
-    // Tab filter
+    
     if (filter === "transaction") data = data.filter((r) => r.type === "transaction");
     if (filter === "manual") data = data.filter((r) => r.type === "manual");
 
-    // Bug 1 Fix: TXID ও username আলাদাভাবে filter
+    
     if (txIdQuery) {
       const q = txIdQuery.toLowerCase();
       data = data.filter((item) => item.txId.toLowerCase().includes(q));
@@ -127,14 +127,14 @@ export default function TransactionsTable({
       data = data.filter((item) => item.username.toLowerCase().includes(q));
     }
 
-    // Bug 2 Fix: wallet filter
+    
     if (walletFilter && walletFilter !== "all") {
       data = data.filter(
         (item) => item.wallet.toLowerCase() === walletFilter.toLowerCase()
       );
     }
 
-    // Bug 3 Fix: date range filter
+    
     if (dateRange?.from) {
       const from = new Date(dateRange.from);
       from.setHours(0, 0, 0, 0);

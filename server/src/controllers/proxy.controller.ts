@@ -29,9 +29,7 @@ import {
   nsocksCheckBlacks,
 } from "@/utils/nsocks.adapter";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/proxy/list
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getProxyDetails(req: Request, res: Response) {
   try {
     const proxyId = z.string().min(1).parse(req.params.id);
@@ -167,9 +165,7 @@ export async function getProxyList(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/proxy/cart
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getCart(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -186,9 +182,7 @@ export async function getCart(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/cart
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function addToCart(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -213,7 +207,7 @@ export async function addToCart(req: Request, res: Response) {
     }
 
 
-    // User-এর badge tier অনুযায়ী discount apply করো
+    
     const { discountPct } = await getUserBadge(userId);
     const discountedPrice = applyDiscount(price, discountPct);
 
@@ -229,9 +223,7 @@ export async function addToCart(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DELETE /api/proxy/cart/:id
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function removeFromCart(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -263,9 +255,7 @@ export async function removeFromCart(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/rent
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function rentProxy(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -448,7 +438,7 @@ export async function rentProxy(req: Request, res: Response) {
       title:   notifTitle,
       message: notifMessage,
     });
-    // Bell badge real-time update
+    
     await pusher({
       page:    "/notifications",
       to:      `user-${userId}`,
@@ -466,9 +456,7 @@ export async function rentProxy(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/proxy/my-rentals
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getMyRentals(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -498,7 +486,7 @@ export async function getMyRentals(req: Request, res: Response) {
 
     const total = countRows as number;
 
-    // NSocks history থেকে real-time online status আনো
+    
     let nsocksHistoryMap: Record<string, { online: number; minsLeft: string }> = {};
     try {
       const apiKey = await SiteOptions.socks5ProxyAPIKey.get();
@@ -512,18 +500,18 @@ export async function getMyRentals(req: Request, res: Response) {
         }
       }
     } catch {
-      // NSocks history না আসলে DB data দিয়ে চলবে — silent fallback
+      
     }
 
-    // rentals-এ nsocksOnline, nsocksMinsLeft, nsocksHistoryId যোগ করো
+    
     const enriched = rentals.map((r) => {
       const noteMatch = r.note?.match(/nsocks_history_id:(\d+)/);
       const historyId = noteMatch?.[1] ?? null;
       const nsocksStatus = historyId ? nsocksHistoryMap[historyId] : null;
       return {
         ...r,
-        nsocksHistoryId: historyId,                                    // client-side actions এর জন্য
-        nsocksOnline:    nsocksStatus ? nsocksStatus.online   : null,  // 1=online, 0=offline, null=unknown
+        nsocksHistoryId: historyId,                                    
+        nsocksOnline:    nsocksStatus ? nsocksStatus.online   : null,  
         nsocksMinsLeft:  nsocksStatus ? nsocksStatus.minsLeft : null,
       };
     });
@@ -540,9 +528,7 @@ export async function getMyRentals(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/proxy/auth
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getProxyAuth(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -572,9 +558,7 @@ export async function getProxyAuth(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PUT /api/proxy/auth
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function updateProxyAuth(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -619,9 +603,7 @@ export async function updateProxyAuth(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/swap-port
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function swapPort(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -677,9 +659,7 @@ export async function swapPort(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/renew
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function renewProxy(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -734,8 +714,8 @@ export async function renewProxy(req: Request, res: Response) {
         return null;
       }
 
-      // INSERT না — NSocks-এ traffic renew হয়, DB-তে নতুন row নয়।
-      // নতুন INSERT করলে getBalance() ওই price আবার deduct করে (double charge)।
+      
+      
       const [row] = await tx
         .update(Socks5ProxyTransactionModel)
         .set({ updatedAt: new Date() })
@@ -768,9 +748,7 @@ export async function renewProxy(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/proxy/all
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function adminGetAllProxies(req: Request, res: Response) {
   try {
     const { page, limit, userId } = z
@@ -825,9 +803,7 @@ export async function adminGetAllProxies(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/proxy/ips
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function adminGetProxyIPs(req: Request, res: Response) {
   try {
     const {
@@ -938,9 +914,7 @@ export async function adminGetProxyIPs(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/proxy/states
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getProxyStates(req: Request, res: Response) {
   try {
     const USE_MOCK = process.env.MOCK_SERVICES === "true";
@@ -995,9 +969,7 @@ export async function getProxyStates(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/proxy/countries
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getProxyCountries(req: Request, res: Response) {
   try {
     const { country } = z
@@ -1034,9 +1006,7 @@ export async function getProxyCountries(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/proxy/nsocks-history
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function getNsocksHistory(req: Request, res: Response) {
   try {
     const { ip, port, country, state, city, zip, isp, type, online, paid, comment, page, count } = z
@@ -1079,9 +1049,7 @@ export async function getNsocksHistory(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/nsocks-refund
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function nsocksRefundProxy(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -1090,7 +1058,7 @@ export async function nsocksRefundProxy(req: Request, res: Response) {
       .object({ historyId: z.number().int().positive() })
       .parse(req.body);
 
-    // ownership verify — User A যেন User B-এর proxy refund না করতে পারে
+    
     const ownership = await db.query.Socks5ProxyTransactionModel.findFirst({
       where: (m, { and, eq, like }) =>
         and(
@@ -1122,9 +1090,7 @@ export async function nsocksRefundProxy(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/nsocks-renew-traffic
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function nsocksRenewProxyTraffic(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -1133,7 +1099,7 @@ export async function nsocksRenewProxyTraffic(req: Request, res: Response) {
       .object({ historyId: z.number().int().positive() })
       .parse(req.body);
 
-    // ownership verify
+    
     const ownership = await db.query.Socks5ProxyTransactionModel.findFirst({
       where: (m, { and, eq, like }) =>
         and(
@@ -1165,9 +1131,7 @@ export async function nsocksRenewProxyTraffic(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/nsocks-autorenew
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function nsocksToggleAutoRenew(req: Request, res: Response) {
   try {
     const userId = req.payload!.id;
@@ -1179,7 +1143,7 @@ export async function nsocksToggleAutoRenew(req: Request, res: Response) {
       })
       .parse(req.body);
 
-    // ownership verify
+    
     const ownership = await db.query.Socks5ProxyTransactionModel.findFirst({
       where: (m, { and, eq, like }) =>
         and(
@@ -1211,9 +1175,7 @@ export async function nsocksToggleAutoRenew(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/proxy/nsocks-balance
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function adminGetNsocksBalance(req: Request, res: Response) {
   try {
     const apiKey = await SiteOptions.socks5ProxyAPIKey.get();
@@ -1232,9 +1194,7 @@ export async function adminGetNsocksBalance(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/proxy/nsocks-proxy/:id
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function adminGetNsocksProxy(req: Request, res: Response) {
   try {
     const proxyId = z.string().min(1).parse(req.params.id);
@@ -1259,9 +1219,7 @@ export async function adminGetNsocksProxy(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/check-risk
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function checkProxyRiskScore(req: Request, res: Response) {
   try {
     const { service, proxyId, ip } = z
@@ -1298,9 +1256,7 @@ export async function checkProxyRiskScore(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/proxy/check-blacks
-// ─────────────────────────────────────────────────────────────────────────────
+
 export async function checkProxyBlacklists(req: Request, res: Response) {
   try {
     const { proxyId } = z
@@ -1339,11 +1295,9 @@ export async function checkProxyBlacklists(req: Request, res: Response) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Admin wrappers
-// ─────────────────────────────────────────────────────────────────────────────
 
-// GET /api/admin/proxy/nsocks-history
+
+
 export async function adminGetNsocksHistory(req: Request, res: Response) {
   try {
     const { ip, port, country, state, city, zip, isp, type, online, paid, comment, page, count } = z
@@ -1383,7 +1337,7 @@ export async function adminGetNsocksHistory(req: Request, res: Response) {
   }
 }
 
-// POST /api/admin/proxy/nsocks-refund
+
 export async function adminNsocksRefundProxy(req: Request, res: Response) {
   try {
     const { historyId } = z
@@ -1403,7 +1357,7 @@ export async function adminNsocksRefundProxy(req: Request, res: Response) {
   }
 }
 
-// POST /api/admin/proxy/nsocks-renew-traffic
+
 export async function adminNsocksRenewProxyTraffic(req: Request, res: Response) {
   try {
     const { historyId } = z
@@ -1423,7 +1377,7 @@ export async function adminNsocksRenewProxyTraffic(req: Request, res: Response) 
   }
 }
 
-// POST /api/admin/proxy/nsocks-autorenew
+
 export async function adminNsocksToggleAutoRenew(req: Request, res: Response) {
   try {
     const { historyId, enable } = z
@@ -1446,7 +1400,7 @@ export async function adminNsocksToggleAutoRenew(req: Request, res: Response) {
   }
 }
 
-// POST /api/admin/proxy/check-risk
+
 export async function adminCheckProxyRiskScore(req: Request, res: Response) {
   try {
     const { service, proxyId, ip } = z
@@ -1478,7 +1432,7 @@ export async function adminCheckProxyRiskScore(req: Request, res: Response) {
   }
 }
 
-// POST /api/admin/proxy/check-blacks
+
 export async function adminCheckProxyBlacklists(req: Request, res: Response) {
   try {
     const { proxyId } = z.object({ proxyId: z.string().min(1) }).parse(req.body);

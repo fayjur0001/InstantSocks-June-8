@@ -65,7 +65,7 @@ export interface RentalItem {
   createdAt: string;
   updatedAt: string;
   user?: { id: number; username: string; email: string } | null;
-  // NSocks enriched fields (getMyRentals response)
+  
   nsocksHistoryId?: string | null;
   nsocksOnline?: number | null;
   nsocksMinsLeft?: string | null;
@@ -78,19 +78,19 @@ export interface ProxyAuthInfo {
   password: string;
 }
 
-// ─── NEW: Country & State types ───────────────────────────────────────────────
+
 
 export interface ProxyCountry {
-  ct: string;   // country code, e.g. "US", "GB"
-  online: number; // proxy count
+  ct: string;   
+  online: number; 
 }
 
 export interface ProxyState {
-  state: string; // e.g. "TX", "CA"
+  state: string; 
   count: number;
 }
 
-// ─── NSocks History Params ────────────────────────────────────────────────────
+
 
 export interface NsocksHistoryParams {
   ip?: string;
@@ -108,13 +108,12 @@ export interface NsocksHistoryParams {
   count?: number;
 }
 
-// ─── I1 — Proxy List ──────────────────────────────────────────────────────────
+
 
 export const proxyApi = {
-  /**
-   * GET /api/proxy/list
-   * Country, type, state filter সহ proxy list আনে।
-   */
+  
+
+
   getList: (params: ProxyListParams = {}): Promise<{
     success: boolean;
     proxies: ProxyListItem[];
@@ -135,12 +134,11 @@ export const proxyApi = {
     return apiFetch(`/api/proxy/list?${q.toString()}`);
   },
 
-  // ─── NEW: Countries ──────────────────────────────────────────────────────────
+  
 
-  /**
-   * GET /api/proxy/countries
-   * NSocks থেকে সব available countries + count আনে।
-   */
+  
+
+
   getDetails: (proxyId: string): Promise<{ success: boolean; proxy: ProxyListItem }> =>
     apiFetch(`/api/proxy/details/${proxyId}`),
 
@@ -149,30 +147,27 @@ export const proxyApi = {
     countries: ProxyCountry[];
   }> => apiFetch("/api/proxy/countries"),
 
-  // ─── NEW: States (USA only) ───────────────────────────────────────────────────
+  
 
-  /**
-   * GET /api/proxy/states
-   * NSocks থেকে USA-র সব states + count আনে।
-   */
+  
+
+
   getStates: (): Promise<{
     success: boolean;
     states: ProxyState[];
   }> => apiFetch("/api/proxy/states"),
 
-  // ─── I1 — Cart ──────────────────────────────────────────────────────────────
+  
 
-  /**
-   * GET /api/proxy/cart
-   * User-এর current cart items আনে।
-   */
+  
+
+
   getCart: (): Promise<{ success: boolean; items: CartItem[] }> =>
     apiFetch("/api/proxy/cart"),
 
-  /**
-   * POST /api/proxy/cart
-   * Cart-এ proxy add করে।
-   */
+  
+
+
   addToCart: (
     proxyId: string,
     price: number,
@@ -183,19 +178,17 @@ export const proxyApi = {
       body: JSON.stringify({ proxyId, price, originalPrice }),
     }),
 
-  /**
-   * DELETE /api/proxy/cart/:id
-   * Cart থেকে একটা item সরায়। id = CartItem.id (DB id, proxy id না)
-   */
+  
+
+
   removeFromCart: (id: number): Promise<{ success: boolean; message: string }> =>
     apiFetch(`/api/proxy/cart/${id}`, { method: "DELETE" }),
 
-  // ─── I1 — Buy ───────────────────────────────────────────────────────────────
+  
 
-  /**
-   * POST /api/proxy/rent
-   * Cart-এর proxyIds কিনে। proxyIds = ProxyListItem.id গুলো।
-   */
+  
+
+
   rent: (
     proxyIds: string[]
   ): Promise<{ success: boolean; transactions: RentalItem[] }> =>
@@ -204,19 +197,17 @@ export const proxyApi = {
       body: JSON.stringify({ proxyIds }),
     }),
 
-  // ─── I1 — Socks5 Auth ───────────────────────────────────────────────────────
+  
 
-  /**
-   * GET /api/proxy/auth
-   * User-এর socks5 auth credentials আনে।
-   */
+  
+
+
   getAuth: (): Promise<{ success: boolean; auth: ProxyAuthInfo }> =>
     apiFetch("/api/proxy/auth"),
 
-  /**
-   * PUT /api/proxy/auth
-   * Socks5 username/password আপডেট করে।
-   */
+  
+
+
   saveAuth: (
     username: string,
     password: string
@@ -226,11 +217,11 @@ export const proxyApi = {
       body: JSON.stringify({ username, password }),
     }),
 
-  // ─── I2 — My Rentals ────────────────────────────────────────────────────────
+  
 
-  /**
-   * GET /api/proxy/my-rentals
-   */
+  
+
+
   getMyRentals: (
     page = 1,
     limit = 20
@@ -241,11 +232,11 @@ export const proxyApi = {
     totalPage: number;
   }> => apiFetch(`/api/proxy/my-rentals?page=${page}&limit=${limit}`),
 
-  // ─── I2 — Renew ─────────────────────────────────────────────────────────────
+  
 
-  /**
-   * POST /api/proxy/renew
-   */
+  
+
+
   renew: (
     rentalId: number
   ): Promise<{ success: boolean; message: string }> =>
@@ -254,11 +245,11 @@ export const proxyApi = {
       body: JSON.stringify({ rentalId }),
     }),
 
-  // ─── I2 — Swap Port ─────────────────────────────────────────────────────────
+  
 
-  /**
-   * POST /api/proxy/swap-port
-   */
+  
+
+
   swapPort: (
     currentPort: string,
     newPort: string
@@ -268,12 +259,11 @@ export const proxyApi = {
       body: JSON.stringify({ currentPort, newPort }),
     }),
 
-  // ─── NSocks Direct (user) ────────────────────────────────────────────────────
+  
 
-  /**
-   * GET /api/proxy/nsocks-history
-   * User-এর NSocks proxy history আনে।
-   */
+  
+
+
   getNsocksHistory: (params: NsocksHistoryParams = {}): Promise<{
     success: boolean;
     data: unknown;
@@ -295,27 +285,27 @@ export const proxyApi = {
     return apiFetch(`/api/proxy/nsocks-history?${q.toString()}`);
   },
 
-  /**
-   * POST /api/proxy/nsocks-refund
-   */
+  
+
+
   nsocksRefund: (historyId: number): Promise<{ success: boolean; message: string }> =>
     apiFetch("/api/proxy/nsocks-refund", {
       method: "POST",
       body: JSON.stringify({ historyId }),
     }),
 
-  /**
-   * POST /api/proxy/nsocks-renew-traffic
-   */
+  
+
+
   nsocksRenewTraffic: (historyId: number): Promise<{ success: boolean; message: string }> =>
     apiFetch("/api/proxy/nsocks-renew-traffic", {
       method: "POST",
       body: JSON.stringify({ historyId }),
     }),
 
-  /**
-   * POST /api/proxy/nsocks-autorenew
-   */
+  
+
+
   nsocksAutoRenew: (
     historyId: number,
     enable: boolean
@@ -325,9 +315,9 @@ export const proxyApi = {
       body: JSON.stringify({ historyId, enable }),
     }),
 
-  /**
-   * POST /api/proxy/check-risk
-   */
+  
+
+
   checkRisk: (
     service: "scl" | "ipq",
     proxyId?: string,
@@ -338,9 +328,9 @@ export const proxyApi = {
       body: JSON.stringify({ service, proxyId, ip }),
     }),
 
-  /**
-   * POST /api/proxy/check-blacks
-   */
+  
+
+
   checkBlacks: (proxyId: string): Promise<{ success: boolean; data: unknown }> =>
     apiFetch("/api/proxy/check-blacks", {
       method: "POST",
@@ -348,12 +338,12 @@ export const proxyApi = {
     }),
 };
 
-// ─── Admin ────────────────────────────────────────────────────────────────────
+
 
 export const adminProxyApi = {
-  /**
-   * GET /api/admin/proxy/ips
-   */
+  
+
+
   getIPs: (params: ProxyListParams = {}): Promise<{
     success: boolean;
     proxies: ProxyListItem[];
@@ -374,9 +364,9 @@ export const adminProxyApi = {
     return apiFetch(`/api/admin/proxy/ips?${q.toString()}`);
   },
 
-  /**
-   * GET /api/admin/proxy/all
-   */
+  
+
+
   getAllRentals: (
     page = 1,
     limit = 20,
@@ -392,17 +382,17 @@ export const adminProxyApi = {
     return apiFetch(`/api/admin/proxy/all?${q.toString()}`);
   },
 
-  // ─── Admin NSocks Direct ─────────────────────────────────────────────────────
+  
 
-  /**
-   * GET /api/admin/proxy/nsocks-balance
-   */
+  
+
+
   getNsocksBalance: (): Promise<{ success: boolean; data: unknown }> =>
     apiFetch("/api/admin/proxy/nsocks-balance"),
 
-  /**
-   * GET /api/admin/proxy/nsocks-history
-   */
+  
+
+
   getNsocksHistory: (params: NsocksHistoryParams = {}): Promise<{
     success: boolean;
     data: unknown;
@@ -424,27 +414,27 @@ export const adminProxyApi = {
     return apiFetch(`/api/admin/proxy/nsocks-history?${q.toString()}`);
   },
 
-  /**
-   * POST /api/admin/proxy/nsocks-refund
-   */
+  
+
+
   nsocksRefund: (historyId: number): Promise<{ success: boolean; message: string }> =>
     apiFetch("/api/admin/proxy/nsocks-refund", {
       method: "POST",
       body: JSON.stringify({ historyId }),
     }),
 
-  /**
-   * POST /api/admin/proxy/nsocks-renew-traffic
-   */
+  
+
+
   nsocksRenewTraffic: (historyId: number): Promise<{ success: boolean; message: string }> =>
     apiFetch("/api/admin/proxy/nsocks-renew-traffic", {
       method: "POST",
       body: JSON.stringify({ historyId }),
     }),
 
-  /**
-   * POST /api/admin/proxy/nsocks-autorenew
-   */
+  
+
+
   nsocksAutoRenew: (
     historyId: number,
     enable: boolean
@@ -454,9 +444,9 @@ export const adminProxyApi = {
       body: JSON.stringify({ historyId, enable }),
     }),
 
-  /**
-   * POST /api/admin/proxy/check-risk
-   */
+  
+
+
   checkRisk: (
     service: "scl" | "ipq",
     proxyId?: string,
@@ -467,26 +457,26 @@ export const adminProxyApi = {
       body: JSON.stringify({ service, proxyId, ip }),
     }),
 
-  /**
-   * POST /api/admin/proxy/check-blacks
-   */
+  
+
+
   checkBlacks: (proxyId: string): Promise<{ success: boolean; data: unknown }> =>
     apiFetch("/api/admin/proxy/check-blacks", {
       method: "POST",
       body: JSON.stringify({ proxyId }),
     }),
 
-  /**
-   * GET /api/admin/proxy/countries
-   */
+  
+
+
   getCountries: (): Promise<{
     success: boolean;
     countries: ProxyCountry[];
   }> => apiFetch("/api/admin/proxy/countries"),
 
-  /**
-   * GET /api/admin/proxy/states
-   */
+  
+
+
   getStates: (): Promise<{
     success: boolean;
     states: ProxyState[];

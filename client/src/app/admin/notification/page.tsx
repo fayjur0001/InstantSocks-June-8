@@ -1,4 +1,4 @@
-// PATH: client/src/app/admin/notification/page.tsx
+
 "use client";
 
 import { useCallback, useEffect, useState } from "react";

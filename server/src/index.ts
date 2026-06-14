@@ -22,10 +22,10 @@ import dashboardRoutes       from "@/routes/dashboard.routes";
 import adminDashboardRoutes  from "@/routes/admin-dashboard.routes";
 import notificationRoutes    from "@/routes/notification.routes";
 import discountRoutes        from "@/routes/discount.routes";
-// ✅ FIX: getSiteStatus সরাসরি import — /api/site-status এ আলাদা register করার জন্য
+
 import { getSiteStatus }     from "@/controllers/settings.controller";
 
-// ✅ FIX: required env vars startup এ validate — missing হলে production এ silent failure হবে না
+
 const REQUIRED_ENV = ["JWT_SECRET", "DATABASE_URL"] as const;
 const missingEnv = REQUIRED_ENV.filter((k) => !process.env[k]);
 if (missingEnv.length > 0) {
@@ -47,16 +47,14 @@ app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(attachAuth);
 
-// Root
+
 app.get("/", (_req, res) => res.json({ success: true, message: "Backend server is running successfully" }));
 app.get("/api/health", (_req, res) => res.json({ success: true, status: "ok" }));
 
-// ✅ FIX: /api/site-status public route আলাদাভাবে register করা হলো।
-//         settingsRoutes /api/admin এ mount — তাই সেখানে থাকলে /api/admin/site-status হয়ে যায়।
-//         Client apiFetch("/api/site-status") call করে — তাই এখানে সরাসরি register করা দরকার।
+
 app.get("/api/site-status", getSiteStatus);
 
-// ── API Routes ────────────────────────────────────────────────────────────────
+
 app.use("/api/auth",           authRoutes);
 app.use("/api/admin/users",    usersRoutes);
 app.use("/api/support",        supportRoutes);
@@ -67,13 +65,13 @@ app.use("/api/proxy",          proxyRoutes);
 app.use("/api/admin/proxy",    adminProxyRoutes);
 app.use("/api/admin",          adminDashboardRoutes);
 app.use("/api/admin",          settingsRoutes);
-app.use("/api",                settingsRoutes);  // /api/public-content — logged-in user access
+app.use("/api",                settingsRoutes);  
 app.use("/api/admin/rentals",  adminRentalsRoutes);
 app.use("/api/dashboard",      dashboardRoutes);
 app.use("/api/notifications",  notificationRoutes);
 app.use("/api/admin/discount", discountRoutes);
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 app.use(notFound);
 app.use(errorHandler);
 

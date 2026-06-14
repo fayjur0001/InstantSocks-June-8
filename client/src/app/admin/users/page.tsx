@@ -49,7 +49,7 @@ import { adminUsersService, type AdminUserApiItem } from "@/lib/admin-users.serv
 import { useAuth } from "@/context/AuthContext";
 
 
-// --- Interfaces ---
+
 export interface UserData {
   id: string;
   username: string;
@@ -62,7 +62,7 @@ export interface UserData {
   lastLoginIp: string;
 }
 
-// "suspended" filter option সহ — all / online / banned / suspended
+
 export interface FilterState {
   username: string;
   email: string;
@@ -72,7 +72,7 @@ export interface FilterState {
 }
 
 const ITEMS_PER_PAGE = 10;
-// Input debounce — 400ms পরে API call, keystroke-এ না
+
 const DEBOUNCE_MS = 400;
 
 const getApiErrorMessage = (error: unknown, fallback: string) => {
@@ -110,7 +110,7 @@ const mapUser = (user: AdminUserApiItem): UserData => {
   };
 };
 
-// --- Main Component ---
+
 const OneTimeRentTable = () => {
   const { loginAs } = useAuth();
   const [page, setPage] = useState(1);
@@ -118,7 +118,7 @@ const OneTimeRentTable = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // draftFilters — input-এ যা type করা হচ্ছে (UI state, debounce হওয়ার আগে)
+  
   const [draftFilters, setDraftFilters] = useState<FilterState>({
     username: "",
     email: "",
@@ -127,7 +127,7 @@ const OneTimeRentTable = () => {
     status: "all",
   });
 
-  // appliedFilters — এটা দিয়ে actual API call হয়
+  
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     username: "",
     email: "",
@@ -136,13 +136,13 @@ const OneTimeRentTable = () => {
     status: "all",
   });
 
-  // Refs so loadUsers always reads latest values without stale closures
+  
   const appliedRef = useRef(appliedFilters);
   const pageRef = useRef(page);
   useEffect(() => { appliedRef.current = appliedFilters; }, [appliedFilters]);
   useEffect(() => { pageRef.current = page; }, [page]);
 
-  // Debounce: username/email typing শেষ হলে appliedFilters update হবে
+  
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const applyDebounced = useCallback((next: FilterState) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -152,7 +152,7 @@ const OneTimeRentTable = () => {
     }, DEBOUNCE_MS);
   }, []);
 
-  // role/status/date select করলে immediately apply (debounce নেই)
+  
   const applyImmediate = useCallback((next: FilterState) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     setPage(1);
@@ -199,13 +199,13 @@ const OneTimeRentTable = () => {
     }
   }, []);
 
-  // appliedFilters বা page বদলালেই API call
+  
   useEffect(() => {
     loadUsers(page, appliedFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [appliedFilters, page]);
 
-  // Patch a single user in local state immediately — no refetch needed.
+  
   const optimisticUpdate = (userId: string, patch: Partial<UserData>) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, ...patch } : u))
@@ -242,26 +242,26 @@ const OneTimeRentTable = () => {
     const currentBanType = banType;
     const newStatus = currentBanType === "7days" ? "suspended" : "banned";
 
-    // Modal আগেই বন্ধ করো
+    
     setBanModalOpen(false);
     setBanTarget(null);
 
-    // Filter active থাকলে optimistic update:
-    // "online" filter → row সরাও (user আর online নেই)
-    // "banned" filter → 7-day ban করলে row সরাও (সে এখন suspended, banned filter-এ থাকবে না)
-    // "suspended" filter → permanent ban করলে row সরাও (সে এখন banned, suspended filter-এ থাকবে না)
-    // "all" বা matching filter → status update করো
+    
+    
+    
+    
+    
     const activeStatus = appliedRef.current.status;
     if (activeStatus === "online") {
       setUsers((prev) => prev.filter((u) => u.id !== target.id));
     } else if (activeStatus === "banned" && currentBanType === "7days") {
-      // "banned" filter-এ ছিল, 7-day ban করলে status "suspended" — এই filter থেকে বেরিয়ে যাবে
+      
       setUsers((prev) => prev.filter((u) => u.id !== target.id));
     } else if (activeStatus === "suspended" && currentBanType === "permanent") {
-      // "suspended" filter-এ ছিল, permanent ban করলে status "banned" — এই filter থেকে বেরিয়ে যাবে
+      
       setUsers((prev) => prev.filter((u) => u.id !== target.id));
     } else {
-      // "all" বা matching filter (banned→banned, suspended→suspended) — status update করো
+      
       optimisticUpdate(target.id, { status: newStatus });
     }
 
@@ -277,11 +277,11 @@ const OneTimeRentTable = () => {
   const handleUnban = async (user: UserData) => {
     const activeStatus = appliedRef.current.status;
 
-    // "banned" বা "suspended" filter active থাকলে — unban করলে সে list থেকে সরে যাবে
+    
     if (activeStatus === "banned" || activeStatus === "suspended") {
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
     } else {
-      // "all" বা "online" filter — status offline করো
+      
       optimisticUpdate(user.id, { status: "offline" });
     }
 
@@ -303,7 +303,7 @@ const OneTimeRentTable = () => {
 
   const handleUserSave = async (payload: { username: string; email: string }) => {
     if (!selectedUser) return;
-    // error re-throw — EditUserModal নিজেই catch করে inline দেখাবে
+    
     await adminUsersService.updateUser(
       selectedUser.id,
       payload.username,
@@ -315,7 +315,7 @@ const OneTimeRentTable = () => {
 
   const handlePasswordSave = async (password: string) => {
     if (!selectedUser) return;
-    // error re-throw — EditPasswordModal নিজেই catch করে inline দেখাবে
+    
     await adminUsersService.changePassword(selectedUser.id, password);
     toast.success("Password updated successfully.");
   };
@@ -574,7 +574,7 @@ const OneTimeRentTable = () => {
       <div className="bg-c-bg-700 border border-c-slate-800 rounded-xl p-5 shadow-sm">
         <div className="flex flex-col space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Username — debounced */}
+            {}
             <Input
               placeholder="Username..."
               value={draftFilters.username}
@@ -586,7 +586,7 @@ const OneTimeRentTable = () => {
               className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 placeholder:text-c-slate-500"
             />
 
-            {/* Email — debounced */}
+            {}
             <Input
               placeholder="Email address..."
               value={draftFilters.email}
@@ -598,7 +598,7 @@ const OneTimeRentTable = () => {
               className="bg-c-bg-800 border-c-slate-700 text-c-slate-200 placeholder:text-c-slate-500"
             />
 
-            {/* Role — immediate */}
+            {}
             <Select
               value={draftFilters.role}
               onValueChange={(val) => {
@@ -618,7 +618,7 @@ const OneTimeRentTable = () => {
               </SelectContent>
             </Select>
 
-            {/* Date range — immediate */}
+            {}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -665,7 +665,7 @@ const OneTimeRentTable = () => {
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-2">
-            {/* Status filter — all / online / banned / suspended */}
+            {}
             <RadioGroup
               value={draftFilters.status}
               onValueChange={(val: FilterState["status"]) => {
